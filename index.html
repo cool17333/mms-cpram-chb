@@ -283,23 +283,31 @@
             </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
-            <div class="relative border-2 border-dashed border-red-300 hover:border-red-500 rounded-xl bg-red-50/40 flex flex-col items-center justify-center overflow-hidden group transition-colors" style="min-height:13rem;">
-                <div class="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md z-10">ก่อนแก้ไข</div>
-                <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onchange="previewImage(event,'preview-before')">
-                <img id="preview-before" class="absolute inset-0 w-full h-full object-cover hidden">
-                <div class="text-red-300 group-hover:text-red-500 text-center flex flex-col items-center pointer-events-none">
-                    <svg class="w-8 h-8 mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span class="text-xs font-semibold">คลิกเพื่ออัปโหลด</span>
+            <!-- BEFORE -->
+            <div class="flex flex-col gap-2">
+                <div class="relative border-2 border-dashed border-red-300 hover:border-red-500 rounded-xl bg-red-50/40 flex flex-col items-center justify-center overflow-hidden group transition-colors" style="min-height:13rem;">
+                    <div class="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md z-10">ก่อนแก้ไข</div>
+                    <input type="file" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onchange="addImages(event,'before')">
+                    <img id="preview-before" class="absolute inset-0 w-full h-full object-cover hidden">
+                    <div id="prompt-before" class="text-red-300 group-hover:text-red-500 text-center flex flex-col items-center pointer-events-none">
+                        <svg class="w-8 h-8 mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <span class="text-xs font-semibold">คลิกเพื่ออัปโหลด<br>(เลือกได้หลายรูป)</span>
+                    </div>
                 </div>
+                <div id="thumbs-before" class="no-export flex flex-wrap gap-2"></div>
             </div>
-            <div class="relative border-2 border-dashed border-green-300 hover:border-green-500 rounded-xl bg-green-50/40 flex flex-col items-center justify-center overflow-hidden group transition-colors" style="min-height:13rem;">
-                <div class="absolute top-3 left-3 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md z-10">หลังแก้ไข</div>
-                <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onchange="previewImage(event,'preview-after')">
-                <img id="preview-after" class="absolute inset-0 w-full h-full object-cover hidden">
-                <div class="text-green-300 group-hover:text-green-500 text-center flex flex-col items-center pointer-events-none">
-                    <svg class="w-8 h-8 mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span class="text-xs font-semibold">คลิกเพื่ออัปโหลด</span>
+            <!-- AFTER -->
+            <div class="flex flex-col gap-2">
+                <div class="relative border-2 border-dashed border-green-300 hover:border-green-500 rounded-xl bg-green-50/40 flex flex-col items-center justify-center overflow-hidden group transition-colors" style="min-height:13rem;">
+                    <div class="absolute top-3 left-3 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md z-10">หลังแก้ไข</div>
+                    <input type="file" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onchange="addImages(event,'after')">
+                    <img id="preview-after" class="absolute inset-0 w-full h-full object-cover hidden">
+                    <div id="prompt-after" class="text-green-300 group-hover:text-green-500 text-center flex flex-col items-center pointer-events-none">
+                        <svg class="w-8 h-8 mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <span class="text-xs font-semibold">คลิกเพื่ออัปโหลด<br>(เลือกได้หลายรูป)</span>
+                    </div>
                 </div>
+                <div id="thumbs-after" class="no-export flex flex-wrap gap-2"></div>
             </div>
         </div>
     </div>
@@ -370,6 +378,24 @@
 
     </div><!-- end inner padding -->
 </div><!-- end report-content -->
+
+<!-- ==================== PHOTO GALLERY (export page 2) ==================== -->
+<div id="photo-gallery" class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200" style="display:none">
+    <div class="bg-[#18181b] px-8 py-6">
+        <p class="text-orange-500 text-xs font-bold tracking-widest uppercase mb-1">● BREAKDOWN REPORT — รูปภาพประกอบ</p>
+        <h1 id="gallery-title" class="text-white text-2xl md:text-3xl font-bold">ชื่อเครื่องจักร...</h1>
+    </div>
+    <div class="p-8 grid grid-cols-2 gap-6">
+        <div class="border-2 border-dashed border-red-300 rounded-xl bg-red-50/40 p-4">
+            <div class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md inline-block mb-4" style="white-space:nowrap">ก่อนแก้ไข</div>
+            <div id="gallery-before" class="grid grid-cols-2 gap-3"></div>
+        </div>
+        <div class="border-2 border-dashed border-green-300 rounded-xl bg-green-50/40 p-4">
+            <div class="bg-green-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md inline-block mb-4" style="white-space:nowrap">หลังแก้ไข</div>
+            <div id="gallery-after" class="grid grid-cols-2 gap-3"></div>
+        </div>
+    </div>
+</div>
 
 <!-- FORM EXPORT BUTTONS -->
 <div class="max-w-6xl mx-auto mt-6 no-print pb-10">
@@ -864,11 +890,108 @@ function removePartRow(btn) {
 // ============================================================
 // PHOTOS
 // ============================================================
-function previewImage(event, imageId) {
-    if (!event.target.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = () => { const img = document.getElementById(imageId); img.src = reader.result; img.classList.remove('hidden'); };
-    reader.readAsDataURL(event.target.files[0]);
+// ============================================================
+// IMAGE GALLERY (before / after — multi image + cover)
+// ============================================================
+const imgStore = { before: [], after: [] };   // เก็บ dataURL ของแต่ละรูป
+const imgCover = { before: 0, after: 0 };      // index รูปที่โชว์หน้าแรก
+
+function addImages(event, side) {
+    const files = [...event.target.files];
+    if (!files.length) return;
+    let pending = files.length;
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            imgStore[side].push(reader.result);
+            if (--pending === 0) renderImageSide(side);
+        };
+        reader.readAsDataURL(file);
+    });
+    event.target.value = '';   // เผื่อเลือกไฟล์เดิมซ้ำ
+}
+
+function setCover(side, idx) {
+    imgCover[side] = idx;
+    renderImageSide(side);
+}
+
+function removeImage(side, idx) {
+    imgStore[side].splice(idx, 1);
+    if (imgCover[side] >= imgStore[side].length) imgCover[side] = Math.max(0, imgStore[side].length - 1);
+    renderImageSide(side);
+}
+
+function renderImageSide(side) {
+    const list   = imgStore[side];
+    const cover  = imgCover[side];
+    const coverImg = document.getElementById('preview-' + side);
+    const prompt   = document.getElementById('prompt-' + side);
+    const thumbs   = document.getElementById('thumbs-' + side);
+
+    // รูป cover ในกล่องหลัก
+    if (list.length) {
+        coverImg.src = list[cover] || list[0];
+        coverImg.classList.remove('hidden');
+        if (prompt) prompt.classList.add('hidden');
+    } else {
+        coverImg.src = '';
+        coverImg.classList.add('hidden');
+        if (prompt) prompt.classList.remove('hidden');
+    }
+
+    // แถบ thumbnail (ไม่ออกใน export)
+    thumbs.innerHTML = '';
+    if (list.length <= 1) return;   // มีรูปเดียวไม่ต้องโชว์ตัวเลือก
+
+    const ring = side === 'before' ? 'border-red-500' : 'border-green-500';
+    list.forEach((src, i) => {
+        const isCover = i === cover;
+        const cell = document.createElement('div');
+        cell.className = `relative w-14 h-14 rounded-lg overflow-hidden cursor-pointer border-2 ${isCover ? ring : 'border-gray-200'} hover:opacity-90 transition`;
+        cell.title = isCover ? 'รูปที่แสดงหน้าแรก' : 'คลิกเพื่อเลือกแสดงหน้าแรก';
+        cell.onclick = () => setCover(side, i);
+        cell.innerHTML = `
+            <img src="${src}" class="w-full h-full object-cover">
+            ${isCover ? '<div class="absolute bottom-0 inset-x-0 bg-orange-500 text-white text-[9px] text-center font-bold leading-tight py-0.5">★ หน้าแรก</div>' : ''}
+            <button type="button" onclick="event.stopPropagation();removeImage('${side}',${i})"
+                    class="absolute top-0 right-0 bg-black/60 hover:bg-red-600 text-white w-4 h-4 flex items-center justify-center text-xs leading-none rounded-bl">×</button>`;
+        thumbs.appendChild(cell);
+    });
+}
+
+function resetImages() {
+    imgStore.before = []; imgStore.after = [];
+    imgCover.before = 0;  imgCover.after = 0;
+    renderImageSide('before'); renderImageSide('after');
+}
+
+// สร้างหน้า gallery (รูปทั้งหมด) สำหรับ export
+function buildGallery() {
+    document.getElementById('gallery-title').textContent =
+        document.getElementById('machine-name')?.value?.trim() || 'ชื่อเครื่องจักร...';
+
+    const fill = (containerId, list) => {
+        const c = document.getElementById(containerId);
+        c.innerHTML = '';
+        if (!list.length) {
+            c.innerHTML = '<p class="col-span-2 text-center text-gray-400 text-sm py-8">— ไม่มีรูป —</p>';
+            return;
+        }
+        list.forEach(src => {
+            const d = document.createElement('div');
+            d.className = 'rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm';
+            d.innerHTML = `<img src="${src}" class="w-full object-cover" style="aspect-ratio:4/3">`;
+            c.appendChild(d);
+        });
+    };
+    fill('gallery-before', imgStore.before);
+    fill('gallery-after',  imgStore.after);
+}
+
+// มีรูปเกินที่โชว์หน้าแรก (ต้องมีหน้า gallery ไหม)
+function hasExtraImages() {
+    return imgStore.before.length > 1 || imgStore.after.length > 1;
 }
 
 // ============================================================
@@ -1047,6 +1170,9 @@ function openEditMode(item) {
     const whys = item.whys || [];
     if (!whys.length) addWhy();
     else whys.forEach(w => { addWhy(); const boxes = wContainer.querySelectorAll('.why-item textarea'); boxes[boxes.length-1].value = w; });
+
+    // รูปภาพไม่ได้เก็บใน sheet → เคลียร์ให้ผู้ใช้แนบใหม่
+    resetImages();
 
     calcDowntime();
 
@@ -1389,106 +1515,120 @@ function exportRowPDF(item) {
     showPDFPicker(item);
 }
 
+function _download(href, filename) {
+    const a = Object.assign(document.createElement('a'),
+                { href, download: filename, style: 'display:none' });
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 200);
+}
+
+// ย้าย node ไป wrapper ที่ (0,0) → ตัด mx-auto/padding (ไม่ขาดซ้าย)
+//   ซ่อน .no-export, foreignObjectRendering → ภาษาไทยไม่เพี้ยน
+//   คืน canvas ของเนื้อหา node นั้น
+async function _captureNode(node, capW) {
+    const parent      = node.parentNode;
+    const placeholder = document.createComment('cap-ph');
+    parent.insertBefore(placeholder, node);
+
+    const prevStyle = node.getAttribute('style') || '';
+    const prevClass = node.className;
+    node.classList.remove('overflow-hidden');
+    node.style.cssText = `width:${capW}px;max-width:${capW}px;margin:0;border-radius:0;box-shadow:none;display:block`;
+
+    // ซ่อน element ที่ไม่ต้องการใน export
+    const hidden = [...node.querySelectorAll('.no-export')].map(e => {
+        const d = e.style.display; e.style.display = 'none'; return [e, d];
+    });
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText =
+        `position:fixed;top:0;left:0;z-index:2147483647;background:#ffffff;width:${capW}px;padding:0;margin:0`;
+    wrapper.appendChild(node);
+    document.body.appendChild(wrapper);
+
+    try {
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const fullH = wrapper.scrollHeight;
+        return await html2canvas(wrapper, {
+            scale: 2, useCORS: true, backgroundColor: '#ffffff',
+            foreignObjectRendering: true, logging: false,
+            width: capW, height: fullH, windowWidth: capW, windowHeight: fullH,
+            scrollX: 0, scrollY: 0, x: 0, y: 0,
+        });
+    } finally {
+        parent.insertBefore(node, placeholder);
+        placeholder.remove();
+        wrapper.remove();
+        node.className = prevClass;
+        node.setAttribute('style', prevStyle);
+        hidden.forEach(([e, d]) => { e.style.display = d; });
+    }
+}
+
 // ===================================================================
-// EXPORT ENGINE — เรียก html2canvas + jsPDF โดยตรง (ไม่ผ่าน html2pdf)
-//   portrait → PDF custom page เต็มเนื้อหา 1 หน้า
-//   ppt      → PNG ความละเอียดสูง สำหรับ PowerPoint
-// ใช้ clone ลง wrapper ที่ (0,0) → ตัด mx-auto/padding → ไม่ขาดซ้าย
-// foreignObjectRendering → ให้ browser render เอง → ภาษาไทยไม่เพี้ยน
+// EXPORT ENGINE
+//   portrait → PDF (หน้า 1 = ฟอร์ม, หน้า 2 = รูปภาพทั้งหมด ถ้ามีหลายรูป)
+//   ppt      → PNG (ไฟล์หลัก + ไฟล์รูปภาพ ถ้ามีหลายรูป)
 // ===================================================================
 async function exportPDF(fmt = 'portrait') {
     if (typeof html2canvas === 'undefined') { alert('ไม่พบไลบรารี html2canvas'); return; }
 
     const btn    = document.getElementById('btn-export');
     const loader = document.getElementById('loading-text');
-    const el     = document.getElementById('report-content');
     const name   = document.getElementById('machine-name')?.value?.trim() || 'Breakdown';
     const isPNG  = (fmt === 'ppt');
+    const CAP_W  = isPNG ? 1900 : 1150;
+    const withGallery = hasExtraImages();
 
     btn.disabled = true; btn.classList.add('opacity-50');
     loader.classList.remove('hidden');
     window.scrollTo(0, 0);
 
-    // รอฟอนต์ก่อน → กันตัวหนังสือเพี้ยน
     try { if (document.fonts?.ready) await document.fonts.ready; } catch (_) {}
 
-    const CAP_W = isPNG ? 1900 : 1150;
-
-    // ---- ย้าย element ไป wrapper ที่ (0,0) ----
-    const parent      = el.parentNode;
-    const placeholder = document.createComment('rc-ph');
-    parent.insertBefore(placeholder, el);
-
-    const prevStyle = el.getAttribute('style') || '';
-    const prevClass = el.className;
-    el.classList.remove('overflow-hidden');
-    el.style.cssText = `width:${CAP_W}px;max-width:${CAP_W}px;margin:0;border-radius:0;box-shadow:none`;
-
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText =
-        `position:fixed;top:0;left:0;z-index:2147483647;background:#ffffff;width:${CAP_W}px;padding:0;margin:0`;
-    wrapper.appendChild(el);
-    document.body.appendChild(wrapper);
-
-    function _download(href, filename) {
-        const a = Object.assign(document.createElement('a'),
-                    { href, download: filename, style: 'display:none' });
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => a.remove(), 200);
-    }
-
     try {
-        // รอ layout settle
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        // ---------- หน้า 1: ฟอร์ม ----------
+        const mainCanvas = await _captureNode(document.getElementById('report-content'), CAP_W);
 
-        const fullH = wrapper.scrollHeight;
-
-        // ---------- render ----------
-        const canvas = await html2canvas(wrapper, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            foreignObjectRendering: true,
-            logging: false,
-            width: CAP_W,
-            height: fullH,
-            windowWidth: CAP_W,
-            windowHeight: fullH,
-            scrollX: 0,
-            scrollY: 0,
-            x: 0,
-            y: 0,
-        });
+        // ---------- หน้า 2: รูปภาพทั้งหมด (ถ้ามี) ----------
+        let galCanvas = null;
+        if (withGallery) {
+            buildGallery();
+            const gal = document.getElementById('photo-gallery');
+            gal.style.display = 'block';
+            galCanvas = await _captureNode(gal, CAP_W);
+            gal.style.display = 'none';
+        }
 
         if (isPNG) {
-            // ===== PNG สำหรับ PowerPoint =====
-            _download(canvas.toDataURL('image/png'), `BD_${name}.png`);
-
+            // ===== PNG =====
+            _download(mainCanvas.toDataURL('image/png'), `BD_${name}.png`);
+            if (galCanvas) {
+                await new Promise(r => setTimeout(r, 400)); // กัน browser บล็อก download ซ้อน
+                _download(galCanvas.toDataURL('image/png'), `BD_${name}_รูปภาพ.png`);
+            }
         } else {
-            // ===== PDF — custom page เต็มเนื้อหา 100% =====
+            // ===== PDF — custom page ต่อหน้า เต็มเนื้อหา =====
             const { jsPDF } = window.jspdf;
-            const M     = 18;                              // margin (pt)
-            const pW    = 595;                             // A4 portrait width
-            const ratio = canvas.width / canvas.height;
-            const dW    = pW - M * 2;
-            const dH    = dW / ratio;
-            const pH    = dH + M * 2;
+            const M  = 18, pW = 595;
+            const dims = (c) => { const dW = pW - M * 2; const dH = dW / (c.width / c.height); return { dW, dH, pH: dH + M * 2 }; };
 
-            const pdf = new jsPDF({ unit:'pt', format:[pW, pH], orientation:'portrait' });
-            pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', M, M, dW, dH);
+            const d1  = dims(mainCanvas);
+            const pdf = new jsPDF({ unit:'pt', format:[pW, d1.pH], orientation:'portrait' });
+            pdf.addImage(mainCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', M, M, d1.dW, d1.dH);
+
+            if (galCanvas) {
+                const d2 = dims(galCanvas);
+                pdf.addPage([pW, d2.pH], 'portrait');
+                pdf.addImage(galCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', M, M, d2.dW, d2.dH);
+            }
             _download(pdf.output('datauristring'), `BD_${name}.pdf`);
         }
     } catch (err) {
         console.error('[exportPDF]', err);
         alert('เกิดข้อผิดพลาด: ' + (err?.message || String(err)));
     } finally {
-        // ---- ย้าย element กลับที่เดิม ----
-        parent.insertBefore(el, placeholder);
-        placeholder.remove();
-        wrapper.remove();
-        el.className = prevClass;
-        el.setAttribute('style', prevStyle);
         btn.disabled = false; btn.classList.remove('opacity-50');
         loader.classList.add('hidden');
     }

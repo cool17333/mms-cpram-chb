@@ -312,23 +312,18 @@
         </div>
     </div>
 
-    <!-- WHY-WHY ANALYSIS -->
+    <!-- WHY-WHY TREE ANALYSIS -->
     <div class="border border-gray-200 rounded-2xl p-6 shadow-sm mb-6 bg-white">
         <div class="flex justify-between items-center mb-5">
             <label class="text-gray-900 font-bold flex items-center text-base uppercase tracking-wide">
-                <span class="mr-2 text-orange-500">🔍</span> การวิเคราะห์สาเหตุ (WHY-WHY ANALYSIS)
+                <span class="mr-2 text-orange-500">🌳</span> การวิเคราะห์แบบรากต้นไม้ (Why-Why Tree Analysis)
             </label>
-            <button id="add-why-btn" onclick="addWhy()"
-                    class="no-print bg-gray-900 text-white hover:bg-orange-500 px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center shadow-sm">
-                <span class="mr-1 text-lg leading-none">+</span> เพิ่ม Why
+            <button type="button" onclick="addRootWhy()"
+                    class="no-print border border-blue-300 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center shadow-sm" style="white-space:nowrap">
+                <span class="mr-1 text-lg leading-none">+</span> เพิ่มปัญหาหลัก (Why 1 ใหม่)
             </button>
         </div>
-        <div id="why-container" class="flex flex-col md:flex-row items-stretch gap-3 w-full">
-            <div class="why-item flex-1 relative bg-white border border-gray-200 rounded-xl p-4 shadow-sm group why-box">
-                <span class="font-bold text-orange-600 text-xs why-label block mb-2 uppercase tracking-widest">Why 1:</span>
-                <textarea class="w-full text-gray-800 text-sm outline-none resize-none auto-resize bg-transparent font-medium" rows="3" placeholder="ระบุสาเหตุที่ 1..."></textarea>
-            </div>
-        </div>
+        <div id="why-tree" class="space-y-1"></div>
     </div>
 
     <!-- ACTION + PREVENTION -->
@@ -781,45 +776,102 @@ function calcDowntime() {
 }
 
 // ============================================================
-// WHY-WHY ANALYSIS
+// WHY-WHY TREE  (โครงสร้างแบบรากต้นไม้)
+//   node = { text, children: [] }
+//   level >= 5 → ถือเป็น "รากเหง้าของปัญหา" (Root Cause) สีแดง
 // ============================================================
-const MAX_WHYS = 5;
-function addWhy() {
-    const c = document.getElementById('why-container');
-    if (c.querySelectorAll('.why-item').length >= MAX_WHYS) return;
-    const n = c.querySelectorAll('.why-item').length + 1;
-    const arrow = document.createElement('div');
-    arrow.className = 'why-arrow hidden md:flex items-center justify-center text-gray-300 text-2xl font-light';
-    arrow.innerHTML = '➔';
-    c.appendChild(arrow);
-    const div = document.createElement('div');
-    div.className = 'why-item flex-1 relative bg-white border border-gray-200 rounded-xl p-4 shadow-sm group why-box';
-    div.innerHTML = `
-        <span class="font-bold text-orange-600 text-xs why-label block mb-2 uppercase tracking-widest">Why ${n}:</span>
-        <textarea class="w-full text-gray-800 text-sm outline-none resize-none auto-resize bg-transparent font-medium" rows="3" placeholder="ระบุสาเหตุที่ ${n}..."></textarea>
-        <button onclick="removeWhy(this)" class="no-print absolute top-3 right-3 text-gray-300 hover:text-white hover:bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-all p-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+let whyTree = [];
+
+function _newWhy() { return { text: '', children: [] }; }
+
+function addRootWhy() { whyTree.push(_newWhy()); renderWhyTree(); }
+function addChildWhy(node) { node.children.push(_newWhy()); renderWhyTree(); }
+
+function removeWhyNode(node) {
+    const rm = (list) => {
+        const i = list.indexOf(node);
+        if (i >= 0) { list.splice(i, 1); return true; }
+        return list.some(n => rm(n.children));
+    };
+    rm(whyTree);
+    if (!whyTree.length) whyTree.push(_newWhy());
+    renderWhyTree();
+}
+
+function resetWhyTree() { whyTree = [_newWhy()]; renderWhyTree(); }
+
+function renderWhyTree() {
+    const c = document.getElementById('why-tree');
+    if (!c) return;
+    c.innerHTML = '';
+    whyTree.forEach((node, i) => c.appendChild(_renderWhyNode(node, String(i + 1))));
+}
+
+function _renderWhyNode(node, label) {
+    const level  = label.split('.').length;
+    const isRoot = level >= 5;                         // 5 Whys → รากเหง้า
+    const badge  = isRoot ? 'bg-red-100 text-red-700 border border-red-200'
+                          : 'bg-blue-100 text-blue-700 border border-blue-200';
+    const inpCls = isRoot ? 'border-red-200 bg-red-50/60 placeholder-red-300'
+                          : 'border-gray-200 bg-white';
+    const ph     = isRoot ? 'รากเหง้าของปัญหา (Root Cause)?' : 'ระบุสาเหตุ...';
+
+    const container = document.createElement('div');
+
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 mb-1.5';
+    row.innerHTML = `
+        <span class="shrink-0 text-xs font-bold px-2.5 py-1.5 rounded-lg ${badge}" style="white-space:nowrap">Why ${label}</span>
+        <input type="text" class="why-node-input flex-1 border ${inpCls} rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-400 transition-colors" placeholder="${ph}">
+        <button type="button" class="add-btn no-print shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 font-bold text-lg leading-none" title="เพิ่มสาเหตุย่อย">+</button>
+        <button type="button" class="del-btn no-print shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-500 border border-red-200" title="ลบ">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
         </button>`;
-    c.appendChild(div);
-    div.querySelector('textarea').addEventListener('input', function() { this.style.height='auto'; this.style.height=this.scrollHeight+'px'; });
-    if (c.querySelectorAll('.why-item').length >= MAX_WHYS) document.getElementById('add-why-btn').style.visibility = 'hidden';
+    const input = row.querySelector('.why-node-input');
+    input.value = node.text || '';
+    input.addEventListener('input', e => { node.text = e.target.value; });
+    row.querySelector('.add-btn').onclick = () => addChildWhy(node);
+    row.querySelector('.del-btn').onclick = () => removeWhyNode(node);
+    container.appendChild(row);
+
+    // สาเหตุย่อย — เยื้องเข้า + เส้นประเชื่อม
+    if (node.children.length) {
+        const childWrap = document.createElement('div');
+        childWrap.style.cssText = 'margin-left:16px;padding-left:16px;border-left:2px dashed #cbd5e1';
+        node.children.forEach((ch, j) => childWrap.appendChild(_renderWhyNode(ch, label + '.' + (j + 1))));
+        container.appendChild(childWrap);
+    }
+    return container;
 }
-function removeWhy(btn) {
-    const item = btn.closest('.why-item');
-    const prev = item.previousElementSibling;
-    if (prev?.classList.contains('why-arrow')) prev.remove();
-    item.remove();
-    reindexWhys();
-    if (document.getElementById('why-container').querySelectorAll('.why-item').length < MAX_WHYS)
-        document.getElementById('add-why-btn').style.visibility = 'visible';
+
+// ---- serialize / parse สำหรับเก็บใน Google Sheet ----
+function serializeWhyTree() {
+    const lines = [];
+    const walk = (node, label) => {
+        lines.push(label + '\t' + (node.text || '').replace(/[\r\n]+/g, ' ').trim());
+        node.children.forEach((ch, j) => walk(ch, label + '.' + (j + 1)));
+    };
+    whyTree.forEach((n, i) => walk(n, String(i + 1)));
+    return lines.filter(l => l.split('\t')[1]).length ? lines.join('\n') : '';
 }
-function reindexWhys() {
-    document.getElementById('why-container').querySelectorAll('.why-item').forEach((item, i) => {
-        item.querySelector('.why-label').textContent = 'Why ' + (i + 1) + ':';
-        item.querySelector('textarea').placeholder = 'ระบุสาเหตุที่ ' + (i + 1) + '...';
-        const btn = item.querySelector('button');
-        if (i === 0 && btn) btn.remove();
+
+function parseWhyTree(text) {
+    const lines = (text || '').split('\n').filter(l => l.trim());
+    const roots = [], map = {};
+    lines.forEach(line => {
+        const tab   = line.indexOf('\t');
+        const label = (tab >= 0 ? line.slice(0, tab) : line).trim();
+        const txt   = tab >= 0 ? line.slice(tab + 1) : '';
+        const node  = { text: txt, children: [] };
+        map[label]  = node;
+        const parts = label.split('.');
+        if (parts.length === 1) roots.push(node);
+        else {
+            const parent = map[parts.slice(0, -1).join('.')];
+            (parent ? parent.children : roots).push(node);
+        }
     });
+    return roots.length ? roots : [_newWhy()];
 }
 
 // ============================================================
@@ -1009,8 +1061,7 @@ function collectFormData() {
         ? Math.max(0, Math.floor((new Date(bdEnd) - new Date(bdStart)) / 60000))
         : 0;
 
-    const whys = [...document.querySelectorAll('#why-container .why-item textarea')]
-        .map(t => t.value.trim());
+    const whys = [serializeWhyTree()];   // tree → string เดียว เก็บใน column Why 1
 
     const parts = [...document.querySelectorAll('#parts-tbody tr')].map(tr => {
         const c = tr.querySelectorAll('input');
@@ -1163,13 +1214,15 @@ function openEditMode(item) {
     (item.device || '').split(' | ').filter(Boolean).forEach(d => addDeviceRow(d));
     if (!dList.children.length) addDeviceRow();
 
-    // whys
-    const wContainer = document.getElementById('why-container');
-    wContainer.innerHTML = '';
-    whyCount = 0;
-    const whys = item.whys || [];
-    if (!whys.length) addWhy();
-    else whys.forEach(w => { addWhy(); const boxes = wContainer.querySelectorAll('.why-item textarea'); boxes[boxes.length-1].value = w; });
+    // whys (tree) — รองรับทั้ง format ใหม่ (tree) และเก่า (flat)
+    const rawWhys = item.whys || [];
+    if (rawWhys.length && /^\d+(\.\d+)*\t/.test(rawWhys[0])) {
+        whyTree = parseWhyTree(rawWhys[0]);                       // format ใหม่
+    } else {
+        whyTree = rawWhys.filter(Boolean).map(t => ({ text: t, children: [] }));  // format เก่า
+        if (!whyTree.length) whyTree = [_newWhy()];
+    }
+    renderWhyTree();
 
     // รูปภาพไม่ได้เก็บใน sheet → เคลียร์ให้ผู้ใช้แนบใหม่
     resetImages();
@@ -1537,7 +1590,8 @@ async function _captureNode(node, capW) {
     node.style.cssText = `width:${capW}px;max-width:${capW}px;margin:0;border-radius:0;box-shadow:none;display:block`;
 
     // ซ่อน element ที่ไม่ต้องการใน export
-    const hidden = [...node.querySelectorAll('.no-export')].map(e => {
+    // ซ่อนปุ่มแก้ไข/เพิ่ม-ลบ ทั้งหมด (รวมทุก <button>) → รายงานสะอาด
+    const hidden = [...node.querySelectorAll('.no-export, .no-print, button')].map(e => {
         const d = e.style.display; e.style.display = 'none'; return [e, d];
     });
 
@@ -1550,9 +1604,10 @@ async function _captureNode(node, capW) {
     try {
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
         const fullH = wrapper.scrollHeight;
+        // normal mode (foreignObjectRendering:false): ภาษาไทยถูกต้อง + ค่า input แสดงครบ
         return await html2canvas(wrapper, {
             scale: 2, useCORS: true, backgroundColor: '#ffffff',
-            foreignObjectRendering: true, logging: false,
+            foreignObjectRendering: false, logging: false,
             width: capW, height: fullH, windowWidth: capW, windowHeight: fullH,
             scrollX: 0, scrollY: 0, x: 0, y: 0,
         });
@@ -1651,6 +1706,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initPDFCards();
     addDeviceRow();
     addPartRow();
+    resetWhyTree();
 
     // Set active tab style
     switchTab('form');

@@ -55,23 +55,23 @@
 
 <!-- ==================== TAB NAV ==================== -->
 <div class="sticky top-0 z-50 bg-[#18181b] border-b border-gray-800 shadow-lg no-print">
-    <div class="max-w-6xl mx-auto px-4 flex items-center gap-1 h-14">
+    <div class="max-w-6xl mx-auto px-2 sm:px-4 flex items-center gap-1 h-14 overflow-x-auto whitespace-nowrap">
         <button onclick="switchTab('form')"
                 id="btn-tab-form"
-                class="tab-btn px-5 py-2 rounded-lg font-bold text-sm transition-all text-gray-400 hover:text-white">
+                class="tab-btn shrink-0 px-3 sm:px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all text-gray-400 hover:text-white">
             📝 บันทึก Breakdown
         </button>
         <button onclick="switchTab('records')"
                 id="btn-tab-records"
-                class="tab-btn px-5 py-2 rounded-lg font-bold text-sm transition-all text-gray-400 hover:text-white">
+                class="tab-btn shrink-0 px-3 sm:px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all text-gray-400 hover:text-white">
             📋 รายการ
         </button>
         <button onclick="switchTab('summary')"
                 id="btn-tab-summary"
-                class="tab-btn px-5 py-2 rounded-lg font-bold text-sm transition-all text-gray-400 hover:text-white">
+                class="tab-btn shrink-0 px-3 sm:px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all text-gray-400 hover:text-white">
             📊 สรุปข้อมูล
         </button>
-        <div class="ml-auto">
+        <div class="ml-auto shrink-0">
             <button onclick="openSettings()"
                     class="text-gray-500 hover:text-orange-400 p-2 rounded-lg transition-colors text-lg"
                     title="ตั้งค่าระบบ (GAS URL)">⚙️</button>
@@ -216,7 +216,7 @@
     <div class="p-6 md:p-8">
 
     <!-- MACHINE + TIME INFO -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div>
             <label class="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-1">โรงงาน (Factory)</label>
             <select id="factory-select" onchange="updateAreaOptions()"
@@ -302,13 +302,13 @@
                 <div id="device-list" class="space-y-2"></div>
             </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <!-- BEFORE -->
             <div class="flex flex-col">
                 <div id="photo-box-before" class="relative border-2 border-dashed border-red-300 hover:border-red-500 rounded-xl bg-red-50/40 flex flex-col items-center justify-center overflow-hidden group transition-colors flex-1" style="min-height:13rem;">
                     <div class="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md z-10">ก่อนแก้ไข</div>
                     <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onchange="setImage(event,'before')">
-                    <img id="preview-before" class="absolute inset-0 w-full h-full object-cover hidden">
+                    <img id="preview-before" class="absolute inset-0 w-full h-full object-contain bg-white hidden">
                     <div id="prompt-before" class="text-red-300 group-hover:text-red-500 text-center flex flex-col items-center pointer-events-none">
                         <svg class="w-8 h-8 mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         <span class="text-xs font-semibold">คลิกเพื่ออัปโหลด</span>
@@ -320,7 +320,7 @@
                 <div id="photo-box-after" class="relative border-2 border-dashed border-green-300 hover:border-green-500 rounded-xl bg-green-50/40 flex flex-col items-center justify-center overflow-hidden group transition-colors flex-1" style="min-height:13rem;">
                     <div class="absolute top-3 left-3 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md z-10">หลังแก้ไข</div>
                     <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onchange="setImage(event,'after')">
-                    <img id="preview-after" class="absolute inset-0 w-full h-full object-cover hidden">
+                    <img id="preview-after" class="absolute inset-0 w-full h-full object-contain bg-white hidden">
                     <div id="prompt-after" class="text-green-300 group-hover:text-green-500 text-center flex flex-col items-center pointer-events-none">
                         <svg class="w-8 h-8 mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         <span class="text-xs font-semibold">คลิกเพื่ออัปโหลด</span>
@@ -886,7 +886,7 @@ function _renderWhyNode(node, label) {
     row.className = 'flex items-center gap-2 mb-1.5';
     row.innerHTML = `
         <span class="shrink-0 text-xs font-bold px-2.5 py-1.5 rounded-lg ${badge}" style="white-space:nowrap">Why ${label}</span>
-        <input type="text" class="why-node-input flex-1 border ${inpCls} rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-400 transition-colors" placeholder="${ph}">
+        <input type="text" class="why-node-input flex-1 min-w-0 border ${inpCls} rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-400 transition-colors" placeholder="${ph}">
         <button type="button" class="img-btn no-print shrink-0 h-8 px-2 flex items-center gap-1 rounded-lg ${nImg ? 'bg-blue-100 text-blue-700' : 'bg-blue-50 text-blue-500'} hover:bg-blue-100 border border-blue-200 text-xs font-bold" title="เพิ่มรูปประกอบ" style="white-space:nowrap">📷${nImg ? ' ' + nImg : ''}</button>
         <button type="button" class="add-btn no-print shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 font-bold text-lg leading-none" title="เพิ่มสาเหตุย่อย">+</button>
         <button type="button" class="del-btn no-print shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-500 border border-red-200" title="ลบ">
@@ -1063,6 +1063,10 @@ function hasWhyImages() {
     return whyTree.some(walk);
 }
 
+function hasGalleryContent() {
+    return !!imgStore.before || !!imgStore.after || hasWhyImages();
+}
+
 function buildGallery(mode = 'pdf') {
     document.getElementById('gallery-title').textContent =
         document.getElementById('machine-name')?.value?.trim() || 'ชื่อเครื่องจักร...';
@@ -1073,7 +1077,50 @@ function buildGallery(mode = 'pdf') {
 
     const cols = mode === 'png' ? 3 : 2;
 
-    // เก็บ why ทุก node ที่มีรูป (label + ข้อความ + รูป)
+    const mkImgCell = (src) => {
+        const d = document.createElement('div');
+        d.className = 'rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm';
+        d.style.cssText = 'align-self:start';
+        d.innerHTML = `<img src="${src}" style="display:block;width:100%;height:auto">`;
+        return d;
+    };
+
+    const mkFrame = (color, badgeText, detailText) => {
+        const frame = document.createElement('div');
+        frame.className = 'gal-sec';
+        frame.style.cssText =
+            `border:2px dashed ${color.border};border-radius:12px;background:${color.bg};padding:18px`;
+        const head = document.createElement('div');
+        head.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:14px';
+        head.innerHTML =
+            `<span style="white-space:nowrap;font-size:13px;font-weight:700;padding:5px 12px;border-radius:8px;` +
+            `background:${color.badgeBg};color:${color.badgeTx};border:1px solid ${color.badgeBd}">${badgeText}</span>` +
+            (detailText ? `<span style="font-size:14px;font-weight:600;color:#1f2937">${detailText.replace(/</g,'&lt;')}</span>` : '');
+        frame.appendChild(head);
+        return frame;
+    };
+
+    const RED   = { border:'#fca5a5', bg:'#fef2f2', badgeBg:'#dc2626', badgeTx:'#ffffff', badgeBd:'#dc2626' };
+    const GREEN = { border:'#86efac', bg:'#f0fdf4', badgeBg:'#16a34a', badgeTx:'#ffffff', badgeBd:'#16a34a' };
+
+    // ---- รูปก่อน/หลังแก้ไข (มาก่อน why-why) ----
+    if (imgStore.before || imgStore.after) {
+        const row = document.createElement('div');
+        row.className = 'gal-sec';
+        row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start';
+        const half = (color, badge, src) => {
+            const f = mkFrame(color, badge, '');
+            f.classList.remove('gal-sec');           // row เป็น section เดียว
+            if (src) f.appendChild(mkImgCell(src));
+            else f.insertAdjacentHTML('beforeend', '<p style="text-align:center;color:#9ca3af;font-size:13px;padding:24px">— ไม่มีรูป —</p>');
+            return f;
+        };
+        row.appendChild(half(RED,   'ก่อนแก้ไข', imgStore.before));
+        row.appendChild(half(GREEN, 'หลังแก้ไข', imgStore.after));
+        wrap.appendChild(row);
+    }
+
+    // ---- รูปประกอบ why-why (label + รายละเอียด + รูปทั้งหมด) ----
     const sections = [];
     const walk = (node, label) => {
         if (node.images?.length) sections.push({ label, text: node.text || '', images: node.images, isRoot: label.split('.').length >= 5 });
@@ -1082,30 +1129,13 @@ function buildGallery(mode = 'pdf') {
     whyTree.forEach((n, i) => walk(n, String(i + 1)));
 
     sections.forEach(sec => {
-        const frame = document.createElement('div');
         const color = sec.isRoot
             ? { border:'#fca5a5', bg:'#fef2f2', badgeBg:'#fee2e2', badgeTx:'#b91c1c', badgeBd:'#fecaca' }
             : { border:'#93c5fd', bg:'#eff6ff', badgeBg:'#dbeafe', badgeTx:'#1d4ed8', badgeBd:'#bfdbfe' };
-        frame.style.cssText =
-            `border:2px dashed ${color.border};border-radius:12px;background:${color.bg};padding:18px`;
-        // หัวข้อ: badge Why + รายละเอียด
-        const head = document.createElement('div');
-        head.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:14px';
-        head.innerHTML =
-            `<span style="white-space:nowrap;font-size:13px;font-weight:700;padding:5px 12px;border-radius:8px;` +
-            `background:${color.badgeBg};color:${color.badgeTx};border:1px solid ${color.badgeBd}">Why ${sec.label}</span>` +
-            `<span style="font-size:14px;font-weight:600;color:#1f2937">${sec.text.replace(/</g,'&lt;')}</span>`;
-        frame.appendChild(head);
-        // รูปทั้งหมด — สัดส่วนตามต้นฉบับ
+        const frame = mkFrame(color, 'Why ' + sec.label, sec.text);
         const grid = document.createElement('div');
         grid.style.cssText = `display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:14px`;
-        sec.images.forEach(src => {
-            const d = document.createElement('div');
-            d.className = 'rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm';
-            d.style.cssText = 'align-self:start';
-            d.innerHTML = `<img src="${src}" style="display:block;width:100%;height:auto">`;
-            grid.appendChild(d);
-        });
+        sec.images.forEach(src => grid.appendChild(mkImgCell(src)));
         frame.appendChild(grid);
         wrap.appendChild(frame);
     });
@@ -1644,7 +1674,7 @@ function _download(href, filename) {
 // ย้าย node ไป wrapper ที่ (0,0) → ตัด mx-auto/padding (ไม่ขาดซ้าย)
 //   ซ่อน .no-export, foreignObjectRendering → ภาษาไทยไม่เพี้ยน
 //   คืน canvas ของเนื้อหา node นั้น
-async function _captureNode(node, capW) {
+async function _captureNode(node, capW, onMeasure) {
     const parent      = node.parentNode;
     const placeholder = document.createComment('cap-ph');
     parent.insertBefore(placeholder, node);
@@ -1687,7 +1717,11 @@ async function _captureNode(node, capW) {
             `line-height:${cs.lineHeight};overflow:visible;` +
             (isTextarea ? 'white-space:pre-wrap;word-break:break-word;'
                         : 'display:flex;align-items:center;white-space:nowrap;');
-        div.textContent = val || el.placeholder || '';
+        // html2canvas วาดข้อความ (ฟอนต์ Prompt) เลื่อนลง ~0.66em → ขยับ span ขึ้นชดเชย
+        const span = document.createElement('span');
+        span.style.cssText = (isTextarea ? 'display:block;' : '') + 'position:relative;top:-0.66em';
+        span.textContent = val || el.placeholder || '';
+        div.appendChild(span);
         el.parentNode.insertBefore(div, el);
         const prevDisp = el.style.display;
         el.style.display = 'none';
@@ -1702,6 +1736,7 @@ async function _captureNode(node, capW) {
             requestAnimationFrame(() => requestAnimationFrame(go));
             setTimeout(go, 250);
         });
+        if (onMeasure) onMeasure(wrapper);   // วัด geometry ขณะ layout จริง
         const fullH = wrapper.scrollHeight;
         // normal mode (foreignObjectRendering:false): ภาษาไทยถูกต้อง
         return await html2canvas(wrapper, {
@@ -1748,11 +1783,18 @@ async function exportPDF(fmt = 'portrait') {
 
         // ---------- หน้า 2: รูปภาพทั้งหมด (ถ้ามี) ----------
         let galCanvas = null;
+        let galSecs   = [];   // ขอบเขต y (px ใน canvas) ของแต่ละกรอบ — ใช้แบ่งหน้าไม่ผ่ากรอบ
         if (withGallery) {
             buildGallery(isPNG ? 'png' : 'pdf');
             const gal = document.getElementById('photo-gallery');
             gal.style.display = 'block';
-            galCanvas = await _captureNode(gal, CAP_W);
+            galCanvas = await _captureNode(gal, CAP_W, (wrapper) => {
+                const wTop = wrapper.getBoundingClientRect().top;
+                galSecs = [...wrapper.querySelectorAll('.gal-sec')].map(s => {
+                    const r = s.getBoundingClientRect();
+                    return { top: (r.top - wTop) * 2, bottom: (r.bottom - wTop) * 2 };  // scale 2
+                });
+            });
             gal.style.display = 'none';
         }
 
@@ -1783,48 +1825,44 @@ async function exportPDF(fmt = 'portrait') {
                 pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', (pageW - dW) / 2, M, dW, dH);
             };
 
-            // หาเส้นตัดที่เป็น "ช่องว่างระหว่างแถวรูป" (ไม่ตัดผ่ากลางรูป)
-            const findCleanCut = (canvas, idealY, maxUp) => {
-                const W   = canvas.width;
-                const top = Math.max(0, idealY - maxUp);
-                if (idealY - top < 2) return idealY;
-                let band;
-                try { band = canvas.getContext('2d').getImageData(0, top, W, idealY - top).data; }
-                catch (_) { return idealY; }
-                const h = idealY - top;
-                for (let ry = h - 1; ry >= 0; ry--) {        // ไล่ขึ้นจาก idealY
-                    let light = true;
-                    for (let x = 0; x < W; x += 24) {        // sample แนวนอน
-                        const i = (ry * W + x) * 4;
-                        if ((band[i] + band[i + 1] + band[i + 2]) / 3 < 225) { light = false; break; }
-                    }
-                    if (light) return top + ry;              // เจอแถวสว่าง = ช่องว่าง
-                }
-                return idealY;
+            const addSlice = (canvas, sy, sh, pxPerPt) => {
+                if (!firstPage) pdf.addPage('a4', 'portrait');
+                firstPage = false;
+                const tmp = document.createElement('canvas');
+                tmp.width = canvas.width; tmp.height = sh;
+                tmp.getContext('2d').drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, canvas.width, sh);
+                pdf.addImage(tmp.toDataURL('image/jpeg', 0.95), 'JPEG', M, M, availW, sh / pxPerPt);
             };
 
-            // รูปภาพ (ยาว) → slice เต็มหลายหน้า A4 (รูปใหญ่ ไม่ตัดกลางรูป)
-            const addSliced = (canvas) => {
+            // แบ่งหน้าตามขอบกรอบ (.gal-sec) — ทั้งกรอบอยู่หน้าเดียวกัน
+            // ถ้ากรอบไม่พอที่เหลือ → ขึ้นหน้าใหม่ / กรอบเดียวสูงเกิน 1 หน้า → ตัดตามจำเป็น
+            const addBySections = (canvas, secs) => {
                 const pxPerPt  = canvas.width / availW;
                 const sliceHpx = Math.floor(availH * pxPerPt);
-                let sy = 0;
-                while (sy < canvas.height - 1) {
-                    let endY = Math.min(sy + sliceHpx, canvas.height);
-                    if (endY < canvas.height)
-                        endY = findCleanCut(canvas, endY, Math.floor(sliceHpx * 0.3));
-                    const sh = endY - sy;
-                    if (!firstPage) pdf.addPage('a4', 'portrait');
-                    firstPage = false;
-                    const tmp = document.createElement('canvas');
-                    tmp.width = canvas.width; tmp.height = sh;
-                    tmp.getContext('2d').drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, canvas.width, sh);
-                    pdf.addImage(tmp.toDataURL('image/jpeg', 0.95), 'JPEG', M, M, availW, sh / pxPerPt);
-                    sy = endY;
+                if (!secs.length) { addSlice(canvas, 0, Math.min(canvas.height, sliceHpx), pxPerPt); return; }
+
+                let pageStart = 0;                              // เริ่มหน้าแรกที่ 0 (รวม header ดำ)
+                let lastFit   = null;
+                const flush = (endY) => { addSlice(canvas, pageStart, endY - pageStart, pxPerPt); pageStart = endY; };
+
+                secs.forEach(sec => {
+                    if (sec.bottom - pageStart <= sliceHpx) { lastFit = sec.bottom; return; }
+                    // กรอบนี้ไม่พอหน้า → ปิดหน้าที่ขอบกรอบก่อนหน้า แล้วเริ่มหน้าใหม่ที่กรอบนี้
+                    if (lastFit !== null) flush(lastFit);
+                    lastFit = null;
+                    pageStart = sec.top;
+                    // กรอบเดียวสูงเกินหน้า → ตัดเป็นช่วงๆ เท่าที่จำเป็น
+                    while (sec.bottom - pageStart > sliceHpx) flush(pageStart + sliceHpx);
+                    lastFit = sec.bottom;
+                });
+                if (lastFit !== null && lastFit > pageStart) {
+                    // หน้าสุดท้าย — รวม padding ล่างถ้ายังพอ
+                    flush(Math.min(canvas.height, Math.max(lastFit, Math.min(pageStart + sliceHpx, canvas.height))));
                 }
             };
 
             addFitOnePage(mainCanvas);
-            if (galCanvas) addSliced(galCanvas);
+            if (galCanvas) addBySections(galCanvas, galSecs);
             _download(pdf.output('datauristring'), `BD_${name}.pdf`);
         }
     } catch (err) {

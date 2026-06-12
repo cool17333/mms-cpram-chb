@@ -53,24 +53,14 @@
 </head>
 <body class="selection:bg-orange-200 selection:text-orange-900">
 
-<!-- ==================== TAB NAV ==================== -->
+<!-- ==================== TOP NAV ==================== -->
 <div class="sticky top-0 z-50 bg-[#18181b] border-b border-gray-800 shadow-lg no-print">
-    <div class="max-w-6xl mx-auto px-2 sm:px-4 flex items-center gap-1 h-14 overflow-x-auto whitespace-nowrap">
-        <button onclick="switchTab('form')"
-                id="btn-tab-form"
-                class="tab-btn shrink-0 px-3 sm:px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all text-gray-400 hover:text-white">
-            📝 บันทึก Breakdown
+    <div class="max-w-6xl mx-auto px-2 sm:px-4 flex items-center gap-2 h-14 whitespace-nowrap">
+        <button id="btn-home" onclick="goHome()"
+                class="hidden shrink-0 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all bg-gray-800 text-gray-200 hover:bg-orange-500 hover:text-white flex items-center gap-1.5">
+            <span>🏠</span> Home
         </button>
-        <button onclick="switchTab('records')"
-                id="btn-tab-records"
-                class="tab-btn shrink-0 px-3 sm:px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all text-gray-400 hover:text-white">
-            📋 รายการ
-        </button>
-        <button onclick="switchTab('summary')"
-                id="btn-tab-summary"
-                class="tab-btn shrink-0 px-3 sm:px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all text-gray-400 hover:text-white">
-            📊 สรุปข้อมูล
-        </button>
+        <span id="nav-title" class="text-white font-bold text-sm sm:text-base truncate"></span>
         <div class="ml-auto shrink-0">
             <button onclick="openSettings()"
                     class="text-gray-500 hover:text-orange-400 p-2 rounded-lg transition-colors text-lg"
@@ -175,8 +165,8 @@
 <!-- ==================== CONFIRM MODAL ==================== -->
 <div id="confirm-modal" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <h2 class="text-base font-bold mb-3 flex items-center gap-2">
-            <span class="text-orange-500 text-xl">📤</span> ยืนยันการบันทึกข้อมูล
+        <h2 id="confirm-title" class="text-base font-bold mb-3 flex items-center gap-2">
+            📤 ยืนยันการแจ้ง Breakdown
         </h2>
         <div id="confirm-summary" class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm space-y-2 mb-5"></div>
         <div class="flex gap-3 justify-end">
@@ -189,8 +179,41 @@
     </div>
 </div>
 
+<!-- ==================== HOME / MENU ==================== -->
+<div id="panel-home" class="tab-panel active p-4 md:p-8">
+<div class="max-w-4xl mx-auto">
+    <div class="text-center mb-8 mt-4 md:mt-8">
+        <p class="text-orange-500 text-xs font-bold uppercase tracking-widest mb-1">🔴 Breakdown Report System</p>
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">เลือกเมนูที่ต้องการ</h1>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <button onclick="goReport()"
+                class="group bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-red-400 hover:shadow-lg transition-all p-7 text-center transform hover:-translate-y-1">
+            <div class="text-5xl mb-4">📝</div>
+            <p class="text-lg font-bold text-gray-900 mb-1">แจ้ง Breakdown Report</p>
+            <p class="text-xs text-gray-500 leading-relaxed">สร้างใบแจ้งเหตุเครื่องจักรเสียใหม่</p>
+            <span class="inline-block mt-4 text-xs font-bold text-white bg-red-500 group-hover:bg-red-600 px-4 py-1.5 rounded-full transition-colors">+ แจ้งใหม่</span>
+        </button>
+        <button onclick="goRecords()"
+                class="group bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-orange-400 hover:shadow-lg transition-all p-7 text-center transform hover:-translate-y-1">
+            <div class="text-5xl mb-4">📋</div>
+            <p class="text-lg font-bold text-gray-900 mb-1">รายการ Breakdown</p>
+            <p class="text-xs text-gray-500 leading-relaxed">เรียกดู / ค้นหา / แก้ไขสถานะรายการที่เคยแจ้ง</p>
+            <span class="inline-block mt-4 text-xs font-bold text-white bg-orange-500 group-hover:bg-orange-600 px-4 py-1.5 rounded-full transition-colors">ดูรายการ</span>
+        </button>
+        <button onclick="goSummary()"
+                class="group bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all p-7 text-center transform hover:-translate-y-1">
+            <div class="text-5xl mb-4">📊</div>
+            <p class="text-lg font-bold text-gray-900 mb-1">สรุปข้อมูล Breakdown</p>
+            <p class="text-xs text-gray-500 leading-relaxed">KPI / กราฟ / ตารางสรุปรายเดือน-พื้นที่</p>
+            <span class="inline-block mt-4 text-xs font-bold text-white bg-blue-500 group-hover:bg-blue-600 px-4 py-1.5 rounded-full transition-colors">ดูสรุป</span>
+        </button>
+    </div>
+</div>
+</div><!-- end panel-home -->
+
 <!-- ==================== TAB 1: FORM ==================== -->
-<div id="panel-form" class="tab-panel active p-4 md:p-8">
+<div id="panel-form" class="tab-panel p-4 md:p-8">
 <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200" id="report-content">
 
     <!-- HEADER -->
@@ -202,14 +225,16 @@
                    placeholder="ชื่อเครื่องจักร...">
         </div>
         <div id="status-container"
-             class="flex items-center gap-3 border-2 border-green-400 bg-green-900/30 rounded-full px-5 py-2.5 self-start md:self-auto cursor-pointer">
-            <span id="status-icon" class="text-base">✅</span>
-            <select onchange="updateStatus(this)"
-                    class="bg-transparent border-none outline-none font-bold text-sm text-green-400 cursor-pointer appearance-none">
-                <option value="done">ดำเนินการเสร็จสิ้น</option>
-                <option value="wip">กำลังดำเนินการ</option>
+             class="flex items-center gap-3 border-2 border-red-400 bg-red-900/30 rounded-full px-5 py-2.5 self-start md:self-auto cursor-pointer">
+            <span id="status-icon" class="text-base">🔴</span>
+            <select id="status-select" onchange="updateStatus(this)"
+                    class="bg-transparent border-none outline-none font-bold text-sm text-red-400 cursor-pointer appearance-none disabled:cursor-not-allowed">
+                <option value="report">แจ้ง Breakdown</option>
+                <option value="wip">กำลังดำเนินการแก้ไข</option>
                 <option value="wait">รออะไหล่</option>
+                <option value="done">ดำเนินการเสร็จสิ้น</option>
             </select>
+            <span id="status-lock" class="hidden text-gray-400 text-xs" title="แจ้งใหม่ต้องอยู่สถานะ 'แจ้ง Breakdown' เท่านั้น">🔒</span>
         </div>
     </div>
 
@@ -416,7 +441,7 @@
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            <span id="btn-add-label">Add Data → Google Sheet</span>
+            <span id="btn-add-label">แจ้ง Breakdown</span>
         </button>
         <button id="btn-cancel-edit" onclick="cancelEdit()"
                 class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-4 px-8 rounded-full shadow transition-all text-sm">
@@ -464,11 +489,12 @@
             </div>
             <div>
                 <label class="text-xs font-bold text-gray-500 block mb-1">สถานะ</label>
-                <select id="rec-status" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 cursor-pointer">
+                <select id="rec-status" onchange="applyRecordFilter()" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 cursor-pointer">
                     <option value="">ทั้งหมด</option>
-                    <option value="ดำเนินการเสร็จสิ้น">✅ เสร็จสิ้น</option>
-                    <option value="กำลังดำเนินการ">🟡 กำลังดำเนินการ</option>
-                    <option value="รออะไหล่">🔴 รออะไหล่</option>
+                    <option value="แจ้ง Breakdown">🔴 แจ้ง Breakdown</option>
+                    <option value="กำลังดำเนินการแก้ไข">🟠 กำลังดำเนินการแก้ไข</option>
+                    <option value="รออะไหล่">🟡 รออะไหล่</option>
+                    <option value="ดำเนินการเสร็จสิ้น">🟢 ดำเนินการเสร็จสิ้น</option>
                 </select>
             </div>
             <div>
@@ -680,21 +706,65 @@ function saveSettings() {
 }
 
 // ============================================================
-// TAB SWITCHING
+// PAGE NAVIGATION (Home → เลือกเมนู)
 // ============================================================
+const PAGE_TITLE = {
+    home:    '',
+    form:    '📝 แจ้ง Breakdown Report',
+    records: '📋 รายการ Breakdown',
+    summary: '📊 สรุปข้อมูล Breakdown',
+};
+
 function switchTab(name) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => {
-        b.classList.remove('bg-orange-500', 'text-white');
-        b.classList.add('text-gray-400');
-    });
-    document.getElementById('panel-' + name).classList.add('active');
-    const btn = document.getElementById('btn-tab-' + name);
-    btn.classList.add('bg-orange-500', 'text-white');
-    btn.classList.remove('text-gray-400');
+    document.getElementById('panel-' + name)?.classList.add('active');
+
+    document.getElementById('nav-title').textContent = PAGE_TITLE[name] || '';
+    document.getElementById('btn-home').classList.toggle('hidden', name === 'home');
 
     if (name === 'summary') checkSummarySetup();
     if (name === 'records') checkRecordsSetup();
+    window.scrollTo(0, 0);
+}
+
+// กลับหน้าเลือกเมนู (เหมือนเปิดแอปใหม่) — ออกจากโหมดแก้ไขด้วย
+function goHome() {
+    if (editMode) cancelEdit();
+    switchTab('home');
+}
+
+// แจ้ง Breakdown ใหม่ → ฟอร์มเปล่า + ล็อกสถานะไว้ที่ "แจ้ง Breakdown"
+function goReport() {
+    resetForm();
+    switchTab('form');
+}
+
+function goRecords() {
+    switchTab('records');
+    if (GAS_URL) loadRecords();        // โหลดรายการทั้งหมดให้อัตโนมัติ
+}
+
+function goSummary() {
+    switchTab('summary');
+}
+
+// ล้างฟอร์มให้เป็นใบแจ้งใหม่ (เลิกโหมดแก้ไข + ล็อกสถานะ)
+function resetForm() {
+    cancelEdit();
+    ['machine-name','inp-machine-id','inp-line','inp-problem','inp-corrective','inp-preventive']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    setDT('bd-start', ''); setDT('bd-end', '');
+    const fSel = document.getElementById('factory-select'); if (fSel) fSel.value = '';
+    updateAreaOptions();
+    const tSel = document.getElementById('inp-bd-type'); if (tSel) tSel.selectedIndex = 0;
+
+    document.getElementById('device-list').innerHTML = ''; addDeviceRow();
+    document.getElementById('parts-tbody').innerHTML = ''; addPartRow();
+    resetWhyTree();
+    resetImages();
+    calcDowntime();
+
+    setStatusLocked(true);   // ใบแจ้งใหม่ต้องเป็น "แจ้ง Breakdown" เท่านั้น
 }
 
 function checkSummarySetup() {
@@ -761,18 +831,30 @@ function updateSumArea() {
 // ============================================================
 // STATUS BADGE
 // ============================================================
+const STATUS_CFG = {
+    report: { label:'แจ้ง Breakdown',        cls:'border-red-400 bg-red-900/30',     color:'#f87171', icon:'🔴' },
+    wip:    { label:'กำลังดำเนินการแก้ไข',   cls:'border-orange-400 bg-orange-900/30', color:'#fb923c', icon:'🔧' },
+    wait:   { label:'รออะไหล่',              cls:'border-yellow-400 bg-yellow-900/30', color:'#facc15', icon:'⏳' },
+    done:   { label:'ดำเนินการเสร็จสิ้น',    cls:'border-green-400 bg-green-900/30',   color:'#4ade80', icon:'✅' },
+};
+
 function updateStatus(sel) {
     const container = document.getElementById('status-container');
     const icon = document.getElementById('status-icon');
-    const cfg = {
-        done: { cls: 'border-green-400 bg-green-900/30', color: '#4ade80', icon: '✅' },
-        wip:  { cls: 'border-orange-400 bg-orange-900/30', color: '#fb923c', icon: '🔧' },
-        wait: { cls: 'border-red-400 bg-red-900/30', color: '#f87171', icon: '⏳' },
-    };
-    const c = cfg[sel.value] || cfg.done;
-    container.className = `flex items-center gap-3 border-2 ${c.cls} rounded-full px-5 py-2.5 self-start md:self-auto cursor-pointer`;
+    const c = STATUS_CFG[sel.value] || STATUS_CFG.report;
+    container.className = `flex items-center gap-3 border-2 ${c.cls} rounded-full px-5 py-2.5 self-start md:self-auto`;
     sel.style.color = c.color;
     icon.textContent = c.icon;
+}
+
+// แจ้งใหม่ → ล็อกสถานะไว้ที่ "แจ้ง Breakdown" / แก้ไข → ปลดล็อกให้เปลี่ยนได้
+function setStatusLocked(locked) {
+    const sSel = document.getElementById('status-select');
+    if (!sSel) return;
+    if (locked) sSel.value = 'report';
+    sSel.disabled = locked;
+    updateStatus(sSel);
+    document.getElementById('status-lock')?.classList.toggle('hidden', !locked);
 }
 
 // ============================================================
@@ -1154,7 +1236,7 @@ function collectFormData() {
     const factory = document.getElementById('factory-select');
     const area    = document.getElementById('area-select');
     const statusSel = document.querySelector('#status-container select');
-    const statusMap = { done:'ดำเนินการเสร็จสิ้น', wip:'กำลังดำเนินการ', wait:'รออะไหล่' };
+    const statusMap = { report:'แจ้ง Breakdown', wip:'กำลังดำเนินการแก้ไข', wait:'รออะไหล่', done:'ดำเนินการเสร็จสิ้น' };
 
     const bdStart = getDT('bd-start');
     const bdEnd   = getDT('bd-end');
@@ -1210,8 +1292,15 @@ function showAddDataConfirm() {
     const m  = d.downtimeMin % 60;
     const dtText = d.downtimeMin ? `${h} ชม. ${m} นาที` : '—';
 
+    const isEdit = !!(editMode && editRowIndex);
+    const badge  = STATUS_BADGE[d.status] || 'bg-gray-100 text-gray-600';
+
+    document.getElementById('confirm-title').textContent = isEdit ? '✏️ ยืนยันการแก้ไขข้อมูล' : '📤 ยืนยันการแจ้ง Breakdown';
+    document.getElementById('confirm-btn-label').textContent = isEdit ? 'ยืนยันการแก้ไข' : 'ยืนยันการแจ้ง';
+
     document.getElementById('confirm-summary').innerHTML = `
-        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+        ${isEdit ? '<div class="mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 font-bold">⚠️ กำลังแก้ไขรายการเดิม — ตรวจสอบสถานะให้ถูกต้องก่อนยืนยัน</div>' : ''}
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs items-center">
             <span class="text-gray-500 font-bold">เครื่องจักร</span>   <span class="font-bold text-gray-900">${d.machineName}</span>
             <span class="text-gray-500 font-bold">โรงงาน</span>        <span>${d.factory}</span>
             <span class="text-gray-500 font-bold">พื้นที่</span>         <span>${d.area || '—'}</span>
@@ -1219,7 +1308,7 @@ function showAddDataConfirm() {
             <span class="text-gray-500 font-bold">เวลาเสร็จ</span>      <span>${d.bdEnd ? d.bdEnd.replace('T',' ') : '—'}</span>
             <span class="text-gray-500 font-bold">Downtime</span>       <span class="font-bold text-orange-500">${dtText}</span>
             <span class="text-gray-500 font-bold">ประเภท</span>         <span>${d.bdType}</span>
-            <span class="text-gray-500 font-bold">สถานะ</span>          <span>${d.status}</span>
+            <span class="text-gray-500 font-bold">สถานะ</span>          <span><span class="inline-block px-2 py-0.5 rounded-full font-bold ${badge}">${d.status}</span></span>
         </div>
         ${d.problem ? `<div class="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600"><span class="font-bold">ปัญหา: </span>${d.problem.slice(0,120)}${d.problem.length>120?'…':''}</div>` : ''}`;
 
@@ -1300,10 +1389,14 @@ function openEditMode(item) {
         [...aSel.options].forEach(o => { if (o.value === item.area || o.text === item.area) o.selected = true; });
     }, 50);
 
-    // status
-    const statusRevMap = { 'ดำเนินการเสร็จสิ้น':'done', 'กำลังดำเนินการ':'wip', 'รออะไหล่':'wait' };
-    const sSel = document.querySelector('#status-container select');
-    if (sSel) { sSel.value = statusRevMap[item.status] || 'done'; updateStatus(sSel); }
+    // status — แก้ไขได้ (ปลดล็อก) รองรับค่าเก่า 'กำลังดำเนินการ' ด้วย
+    const statusRevMap = {
+        'แจ้ง Breakdown':'report', 'กำลังดำเนินการแก้ไข':'wip', 'กำลังดำเนินการ':'wip',
+        'รออะไหล่':'wait', 'ดำเนินการเสร็จสิ้น':'done',
+    };
+    const sSel = document.getElementById('status-select');
+    if (sSel) { sSel.disabled = false; sSel.value = statusRevMap[item.status] || 'report'; updateStatus(sSel); }
+    document.getElementById('status-lock')?.classList.add('hidden');
 
     // bdType
     const typeSel = document.getElementById('inp-bd-type');
@@ -1343,9 +1436,10 @@ function openEditMode(item) {
 function cancelEdit() {
     editMode = editRowIndex = editSheetName = null;
     editMode = false;
-    document.getElementById('btn-add-label').textContent = 'Add Data → Google Sheet';
+    document.getElementById('btn-add-label').textContent = 'แจ้ง Breakdown';
     document.getElementById('btn-cancel-edit').classList.add('hidden');
     setVisible('edit-banner', false);
+    setStatusLocked(true);   // กลับสู่โหมดแจ้งใหม่ → ล็อกสถานะ
 }
 
 // ============================================================
@@ -1393,12 +1487,14 @@ async function loadRecords() {
     }
 }
 
-// กรองรายการที่โหลดมาแล้วด้วยรหัสเครื่องจักร (substring, ไม่สนตัวพิมพ์) — ทำงานทันทีฝั่ง browser
+// กรองรายการที่โหลดมาแล้วด้วยรหัสเครื่องจักร + สถานะ — ทำงานทันทีฝั่ง browser
 function applyRecordFilter() {
-    const q = (document.getElementById('rec-machine-id')?.value || '').trim().toLowerCase();
-    const rows = q
-        ? _lastRecords.filter(r => String(r.machineId || '').toLowerCase().includes(q))
-        : _lastRecords;
+    const q   = (document.getElementById('rec-machine-id')?.value || '').trim().toLowerCase();
+    const st  = document.getElementById('rec-status')?.value || '';
+    const rows = _lastRecords.filter(r =>
+        (!q  || String(r.machineId || '').toLowerCase().includes(q)) &&
+        (!st || r.status === st)
+    );
 
     if (!rows.length) {
         document.getElementById('rec-tbody').innerHTML = '';
@@ -1412,9 +1508,10 @@ function applyRecordFilter() {
 }
 
 const STATUS_BADGE = {
-    'ดำเนินการเสร็จสิ้น': 'bg-green-100 text-green-700',
-    'กำลังดำเนินการ':     'bg-yellow-100 text-yellow-700',
-    'รออะไหล่':           'bg-red-100 text-red-700',
+    'แจ้ง Breakdown':       'bg-red-100 text-red-700',
+    'กำลังดำเนินการแก้ไข':  'bg-orange-100 text-orange-700',
+    'รออะไหล่':             'bg-yellow-100 text-yellow-700',
+    'ดำเนินการเสร็จสิ้น':   'bg-green-100 text-green-700',
 };
 
 function renderRecordsTable(rows) {
@@ -1700,7 +1797,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v5';
+const EXPORT_VER = 'v6';
 
 // html2canvas วาดข้อความฟอนต์ Prompt จมลง ~0.45em (ทุก span/ป้าย/ปุ่ม)
 // → วัดค่าจริงบนเครื่องนี้ครั้งเดียวด้วย probe เล็กๆ แล้วใช้ชดเชยตอน capture จริง
@@ -2059,9 +2156,10 @@ window.addEventListener('DOMContentLoaded', () => {
     addDeviceRow();
     addPartRow();
     resetWhyTree();
+    setStatusLocked(true);   // ฟอร์มเริ่มต้น = แจ้งใหม่ → ล็อกสถานะ
 
-    // Set active tab style
-    switchTab('form');
+    // เปิดแอปมาที่หน้าเลือกเมนู (Home)
+    switchTab('home');
 
     // Year options (current ± 2)
     const cy = new Date().getFullYear();

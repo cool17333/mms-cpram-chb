@@ -1672,12 +1672,57 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v4';
+const EXPORT_VER = 'v5';
+
+// html2canvas วาดข้อความฟอนต์ Prompt จมลง ~0.45em (ทุก span/ป้าย/ปุ่ม)
+// → วัดค่าจริงบนเครื่องนี้ครั้งเดียวด้วย probe เล็กๆ แล้วใช้ชดเชยตอน capture จริง
+let _h2cShiftEm;
+async function _measureH2cShift() {
+    if (_h2cShiftEm !== undefined) return _h2cShiftEm;
+    try { if (document.fonts?.ready) await document.fonts.ready; } catch (_) {}
+    const TXT = 'Hgjpq กฎูแฤ';
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;top:0;left:0;width:300px;height:40px;display:flex;' +
+        'align-items:center;padding-left:20px;background:#ffffff;color:#000000;' +
+        'font:500 20px Prompt,sans-serif;z-index:2147483647';
+    probe.textContent = TXT;
+    document.body.appendChild(probe);
+    let cap;
+    try { cap = await html2canvas(probe, { scale: 2, logging: false, backgroundColor: '#ffffff' }); }
+    catch (_) { probe.remove(); return (_h2cShiftEm = 0); }
+    probe.remove();
+    const inkCenter = (cv) => {
+        const px = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height);
+        let t = -1, b = -1;
+        for (let y = 0; y < cv.height; y++) {
+            let d = 0;
+            for (let x = 0; x < cv.width; x++) {
+                const i = (y * cv.width + x) * 4;
+                if (px.data[i] < 120 && px.data[i+1] < 120 && px.data[i+2] < 120) d++;
+            }
+            if (d > 1) { if (t < 0) t = y; b = y; }
+        }
+        return t < 0 ? null : (t + b) / 2;
+    };
+    // อ้างอิง: วาดสตริงเดียวกันเองด้วยสูตร strut (ตรงกับที่ browser แสดงบนจอ)
+    const ref = document.createElement('canvas');
+    ref.width = cap.width; ref.height = cap.height;
+    const rx = ref.getContext('2d');
+    rx.fillStyle = '#ffffff'; rx.fillRect(0, 0, ref.width, ref.height);
+    rx.fillStyle = '#000000'; rx.font = '500 40px Prompt, sans-serif';
+    const fm = rx.measureText(TXT);
+    rx.textBaseline = 'alphabetic';
+    rx.fillText(TXT, 40, ref.height / 2 + ((fm.fontBoundingBoxAscent ?? 30) - (fm.fontBoundingBoxDescent ?? 10)) / 2);
+    const a = inkCenter(cap), b = inkCenter(ref);
+    _h2cShiftEm = (a === null || b === null) ? 0 : (a - b) / 40;   // 40px = ขนาดฟอนต์ใน capture (scale 2)
+    return _h2cShiftEm;
+}
 
 // ย้าย node ไป wrapper ที่ (0,0) → ตัด mx-auto/padding (ไม่ขาดซ้าย)
 //   ซ่อน .no-export, foreignObjectRendering → ภาษาไทยไม่เพี้ยน
 //   คืน canvas ของเนื้อหา node นั้น
 async function _captureNode(node, capW, onMeasure) {
+    const shiftEm = await _measureH2cShift();   // วัดก่อนแตะ DOM (cache ครั้งเดียวต่อ session)
     const parent      = node.parentNode;
     const placeholder = document.createComment('cap-ph');
     parent.insertBefore(placeholder, node);
@@ -1806,13 +1851,29 @@ async function _captureNode(node, capW, onMeasure) {
             o.w = r.width;             o.h = r.height;
         });
         const fullH = wrapper.scrollHeight;
-        // normal mode (foreignObjectRendering:false): ภาษาไทยถูกต้อง
-        return _drawFieldText(await html2canvas(wrapper, {
-            scale: 2, useCORS: true, backgroundColor: '#ffffff',
-            foreignObjectRendering: false, logging: false,
-            width: capW, height: fullH, windowWidth: capW, windowHeight: fullH,
-            scrollX: 0, scrollY: 0, x: 0, y: 0,
-        }));
+        // ชดเชยข้อความจม: patch fillText ยกขึ้น shiftEm เฉพาะช่วงที่ html2canvas วาด
+        // (คืน patch ก่อน _drawFieldText — ข้อความช่องกรอกใช้พิกัดตรงอยู่แล้ว)
+        const origFillText = CanvasRenderingContext2D.prototype.fillText;
+        const needShift = Math.abs(shiftEm) > 0.04;
+        if (needShift) {
+            CanvasRenderingContext2D.prototype.fillText = function (t, x, y, ...rest) {
+                const m = /(\d+(?:\.\d+)?)px/.exec(this.font);
+                return origFillText.call(this, t, x, m ? y - shiftEm * parseFloat(m[1]) : y, ...rest);
+            };
+        }
+        let canvas;
+        try {
+            // normal mode (foreignObjectRendering:false): ภาษาไทยถูกต้อง
+            canvas = await html2canvas(wrapper, {
+                scale: 2, useCORS: true, backgroundColor: '#ffffff',
+                foreignObjectRendering: false, logging: false,
+                width: capW, height: fullH, windowWidth: capW, windowHeight: fullH,
+                scrollX: 0, scrollY: 0, x: 0, y: 0,
+            });
+        } finally {
+            if (needShift) CanvasRenderingContext2D.prototype.fillText = origFillText;
+        }
+        return _drawFieldText(canvas);
     } finally {
         swapped.forEach(([el, div, d]) => { div.remove(); el.style.display = d; });
         parent.insertBefore(node, placeholder);

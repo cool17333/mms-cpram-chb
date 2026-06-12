@@ -1671,6 +1671,9 @@ function _download(href, filename) {
     setTimeout(() => a.remove(), 200);
 }
 
+// เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
+const EXPORT_VER = 'v4';
+
 // ย้าย node ไป wrapper ที่ (0,0) → ตัด mx-auto/padding (ไม่ขาดซ้าย)
 //   ซ่อน .no-export, foreignObjectRendering → ภาษาไทยไม่เพี้ยน
 //   คืน canvas ของเนื้อหา node นั้น
@@ -1743,7 +1746,11 @@ async function _captureNode(node, capW, onMeasure) {
             ctx.clip();
             ctx.fillStyle = o.color;
             ctx.font = o.font.replace(/(\d+(?:\.\d+)?)px/, (m, n) => (parseFloat(n) * S) + 'px');
-            ctx.textBaseline = 'middle';
+            // จัดกึ่งกลางแนวตั้งแบบเดียวกับ browser เป๊ะ: วาง baseline ที่
+            // center + (fontAscent - fontDescent)/2  (สูตร strut centering ของ CSS)
+            const fm = ctx.measureText('Mg');
+            const baseOff = ((fm.fontBoundingBoxAscent ?? 0) - (fm.fontBoundingBoxDescent ?? 0)) / 2;
+            ctx.textBaseline = baseOff ? 'alphabetic' : 'middle';
             if (o.isTextarea) {
                 // ตัดบรรทัดเอง (ไทยตัดกลางคำได้ / อังกฤษพยายามตัดที่ช่องว่าง)
                 ctx.textAlign = 'left';
@@ -1762,16 +1769,23 @@ async function _captureNode(node, capW, onMeasure) {
                 });
                 lines.forEach((ln, i) => ctx.fillText(ln,
                     (o.x + o.padL) * S,
-                    (o.y + o.padT + o.lineH / 2 + i * o.lineH) * S));
+                    (o.y + o.padT + o.lineH / 2 + i * o.lineH) * S + baseOff));
             } else {
                 let tx;
                 if (o.align === 'center')                      { ctx.textAlign = 'center'; tx = (o.x + o.w / 2) * S; }
                 else if (o.align === 'right' || o.align === 'end') { ctx.textAlign = 'right';  tx = (o.x + o.w - o.padR) * S; }
                 else                                           { ctx.textAlign = 'left';   tx = (o.x + o.padL) * S; }
-                ctx.fillText(o.text, tx, (o.y + o.h / 2) * S);
+                ctx.fillText(o.text, tx, (o.y + o.h / 2) * S + baseOff);
             }
             ctx.restore();
         });
+        // ประทับเวอร์ชันมุมล่างขวา (จางๆ) — ไว้ตรวจว่าไฟล์มาจากโค้ดรุ่นไหน
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.font = '18px sans-serif'; ctx.fillStyle = '#c8c8c8';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+        ctx.fillText(EXPORT_VER, canvas.width - 8, canvas.height - 6);
+        ctx.restore();
         return canvas;
     };
 
@@ -1944,6 +1958,13 @@ function initAutoResize() {
 // INIT
 // ============================================================
 window.addEventListener('DOMContentLoaded', () => {
+    // ป้ายเวอร์ชันมุมล่างขวาของหน้า (ไม่ติดไปกับ export)
+    const verTag = document.createElement('div');
+    verTag.className = 'no-export';
+    verTag.textContent = EXPORT_VER;
+    verTag.style.cssText = 'position:fixed;bottom:4px;right:8px;font-size:11px;color:#9ca3af;z-index:50;pointer-events:none';
+    document.body.appendChild(verTag);
+
     initAutoResize();
     initPDFCards();
     addDeviceRow();

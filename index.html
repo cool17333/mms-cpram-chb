@@ -221,8 +221,8 @@
                 class="group bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-red-400 hover:shadow-lg transition-all p-7 text-center transform hover:-translate-y-1">
             <div class="text-5xl mb-4">🚨</div>
             <p class="text-lg font-bold text-gray-900 mb-1">แจ้ง Breakdown</p>
-            <p class="text-xs text-gray-500 leading-relaxed">แจ้งเหตุเครื่องจักรเสีย (กรอกสั้นๆ — อาการ + รูป)</p>
-            <span class="inline-block mt-4 text-xs font-bold text-white bg-red-500 group-hover:bg-red-600 px-4 py-1.5 rounded-full transition-colors">+ แจ้งใหม่</span>
+            <p class="text-xs text-gray-500 leading-relaxed">แจ้งเหตุเครื่องจักรเสีย — กรอกสั้นๆ อาการ + รูป</p>
+            <span class="inline-block mt-4 text-xs font-bold text-white bg-red-500 group-hover:bg-red-600 px-4 py-1.5 rounded-full transition-colors">+ แจ้ง Breakdown</span>
         </button>
         <button onclick="goRecords()"
                 class="group bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-orange-400 hover:shadow-lg transition-all p-7 text-center transform hover:-translate-y-1">
@@ -264,28 +264,20 @@
             </p>
         </div>
         <div id="status-container"
-             class="flex items-center gap-3 border-2 border-red-400 bg-red-900/30 rounded-full px-5 py-2.5 self-start md:self-auto cursor-pointer">
-            <span id="status-icon" class="text-base">🔴</span>
+             class="flex items-center gap-2 border-2 border-red-400 bg-red-900/30 rounded-full pl-4 pr-3 py-2.5 self-start md:self-auto">
             <select id="status-select" onchange="updateStatus(this)"
-                    class="bg-transparent border-none outline-none font-bold text-sm text-red-400 cursor-pointer appearance-none disabled:cursor-not-allowed">
-                <option value="report">แจ้ง Breakdown</option>
-                <option value="wip">กำลังดำเนินการแก้ไข</option>
-                <option value="wait">รออะไหล่</option>
-                <option value="done">ดำเนินการเสร็จสิ้น</option>
+                    class="bg-transparent border-none outline-none font-bold text-sm text-red-400 cursor-pointer appearance-none disabled:cursor-not-allowed disabled:opacity-100">
+                <option value="report">🔴 แจ้ง Breakdown</option>
+                <option value="wip">🔧 กำลังดำเนินการแก้ไข</option>
+                <option value="wait">⏳ รออะไหล่</option>
+                <option value="done">✅ ดำเนินการเสร็จสิ้น</option>
             </select>
-            <span id="status-lock" class="hidden text-gray-400 text-xs" title="แจ้งใหม่ต้องอยู่สถานะ 'แจ้ง Breakdown' เท่านั้น">🔒</span>
+            <span id="status-caret" class="text-white/50 text-xs pointer-events-none">▾</span>
+            <span id="status-lock" class="hidden text-white/60 text-xs" title="แจ้งใหม่ต้องอยู่สถานะ 'แจ้ง Breakdown' เท่านั้น">🔒</span>
         </div>
     </div>
 
     <div class="p-6 md:p-8">
-
-    <!-- STAGE ACTIONS (โผล่ตอนแก้ไข/Manual — เปลี่ยนสถานะงาน) -->
-    <div id="stage-actions" class="hidden no-export mb-5 flex flex-wrap items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-        <span class="text-xs font-bold text-amber-800 mr-1">ขั้นตอนงาน:</span>
-        <button type="button" onclick="quickStatus('wip')"  class="text-xs font-bold px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors">🔧 รับงาน / กำลังดำเนินการ</button>
-        <button type="button" onclick="quickStatus('wait')" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors">⏳ รออะไหล่</button>
-        <button type="button" onclick="quickStatus('done')" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors">✅ ปิดงาน / เสร็จสิ้น</button>
-    </div>
 
     <!-- MACHINE + TIME INFO -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -805,7 +797,12 @@ async function doLogin() {
     try {
         const res  = await fetch(`${GAS_URL}?action=login&pw=${encodeURIComponent(pw)}`);
         const json = await res.json();
-        if (!json.success) { showToast('❌ รหัสผ่านไม่ถูกต้อง', 'error'); return; }
+        if (!json.success) {
+            const msg = /unknown action/i.test(json.error || '')
+                ? '⚠️ GAS ยังไม่ได้อัปเดต — กรุณา redeploy เวอร์ชันใหม่'
+                : '❌ รหัสผ่านไม่ถูกต้อง';
+            showToast(msg, 'error'); return;
+        }
         userRole = json.role; sessionPw = pw;
         document.getElementById('login-pw').value = '';
         applyRole();
@@ -910,7 +907,6 @@ function setFormMode(mode) {
     formMode = mode;
     const full = mode === 'full';
     document.querySelectorAll('.stage-fix').forEach(el => el.classList.toggle('hidden', !full));
-    document.getElementById('stage-actions').classList.add('hidden');   // ใช้ปุ่ม footer แทน
 }
 
 // ล็อกช่องเวลาเริ่ม BD (ตอนปิดงานห้ามแก้)
@@ -931,7 +927,14 @@ function setFormStage(stage) {
     const light = (stage === 'report' || stage === 'accept');
     setFormMode(light ? 'report' : 'full');
     setBdStartLocked(stage === 'close');
-    setStatusLocked(stage === 'report' || stage === 'accept');  // accept คงโชว์ "แจ้ง Breakdown" จนกดรับงาน
+
+    // สถานะ: report ล็อก / อื่นๆ เลือกได้ที่มุมขวาบน (accept ตั้งเริ่มเป็น กำลังดำเนินการ)
+    if (stage === 'report') {
+        setStatusLocked(true);
+    } else {
+        setStatusLocked(false);
+        if (stage === 'accept') { const s = document.getElementById('status-select'); s.value = 'wip'; updateStatus(s); }
+    }
 
     showTracking();
     document.getElementById('tracking-display').classList.toggle('hidden', stage === 'report'); // 1.2 ไม่โชว์เลขตอนแจ้ง
@@ -955,9 +958,9 @@ function quickStatus(v) {
     updateStatus(sSel);
 }
 
-// การกระทำตามขั้นงาน
-function acceptJob() { quickStatus('wip');  showAddDataConfirm(); }   // รับงาน → กำลังดำเนินการ
-function saveEdit()  {                       showAddDataConfirm(); }   // แก้ไขข้อมูล (คงสถานะ)
+// การกระทำตามขั้นงาน (สถานะเลือกที่มุมขวาบน)
+function acceptJob() {                       showAddDataConfirm(); }   // รับงาน — ใช้สถานะที่เลือก (เริ่ม=กำลังดำเนินการ)
+function saveEdit()  {                       showAddDataConfirm(); }   // แก้ไขข้อมูล (คงสถานะที่เลือก)
 function closeJob()  { quickStatus('done'); showAddDataConfirm(); }   // ปิดงาน → เสร็จสิ้น
 
 function closeTrackingModal() {
@@ -1104,11 +1107,9 @@ const STATUS_CFG = {
 
 function updateStatus(sel) {
     const container = document.getElementById('status-container');
-    const icon = document.getElementById('status-icon');
     const c = STATUS_CFG[sel.value] || STATUS_CFG.report;
-    container.className = `flex items-center gap-3 border-2 ${c.cls} rounded-full px-5 py-2.5 self-start md:self-auto`;
+    container.className = `flex items-center gap-2 border-2 ${c.cls} rounded-full pl-4 pr-3 py-2.5 self-start md:self-auto`;
     sel.style.color = c.color;
-    icon.textContent = c.icon;
 }
 
 // แจ้งใหม่ → ล็อกสถานะไว้ที่ "แจ้ง Breakdown" / แก้ไข → ปลดล็อกให้เปลี่ยนได้
@@ -1119,6 +1120,7 @@ function setStatusLocked(locked) {
     sSel.disabled = locked;
     updateStatus(sSel);
     document.getElementById('status-lock')?.classList.toggle('hidden', !locked);
+    document.getElementById('status-caret')?.classList.toggle('hidden', locked);
 }
 
 // ============================================================
@@ -2099,7 +2101,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v12';
+const EXPORT_VER = 'v13';
 
 // html2canvas วาดข้อความฟอนต์ Prompt จมลง ~0.45em (ทุก span/ป้าย/ปุ่ม)
 // → วัดค่าจริงบนเครื่องนี้ครั้งเดียวด้วย probe เล็กๆ แล้วใช้ชดเชยตอน capture จริง

@@ -473,31 +473,59 @@
     <div id="gallery-wrap" class="p-8"></div>
 </div>
 
-<!-- FORM EXPORT BUTTONS -->
+<!-- FORM ACTION BUTTONS (เปลี่ยนตามขั้นงาน) -->
 <div class="max-w-6xl mx-auto mt-6 no-print pb-10">
-    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center flex-wrap">
         <button id="btn-export" onclick="showPDFPicker()"
-                class="bg-gray-900 hover:bg-black text-white font-bold py-4 px-8 rounded-full shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center text-sm border border-gray-800">
-            <svg class="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            Export PDF
+                class="hidden bg-gray-900 hover:bg-black text-white font-bold py-4 px-8 rounded-full shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center text-sm border border-gray-800">
+            <svg class="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Export
         </button>
-        <button onclick="showAddDataConfirm()"
-                class="bg-orange-500 hover:bg-orange-400 text-white font-bold py-4 px-8 rounded-full shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center text-sm">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            <span id="btn-add-label">แจ้ง Breakdown</span>
+        <button id="btn-report" onclick="showAddDataConfirm()"
+                class="hidden bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-10 rounded-full shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center text-sm">
+            🚨 <span class="ml-2">แจ้ง Breakdown</span>
         </button>
-        <button id="btn-cancel-edit" onclick="cancelEdit()"
+        <button id="btn-accept" onclick="acceptJob()"
+                class="hidden bg-orange-500 hover:bg-orange-400 text-white font-bold py-4 px-10 rounded-full shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center text-sm">
+            🔧 <span class="ml-2">รับงาน</span>
+        </button>
+        <button id="btn-save-edit" onclick="saveEdit()"
+                class="hidden bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-4 px-8 rounded-full shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center text-sm">
+            ✏️ <span class="ml-2">แก้ไขข้อมูล</span>
+        </button>
+        <button id="btn-close-job" onclick="closeJob()"
+                class="hidden bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center text-sm">
+            ✅ <span class="ml-2">ปิดงาน</span>
+        </button>
+        <button id="btn-manual-save" onclick="showAddDataConfirm()"
+                class="hidden bg-gray-900 hover:bg-black text-white font-bold py-4 px-8 rounded-full shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center text-sm">
+            💾 <span class="ml-2">บันทึกเอกสาร</span>
+        </button>
+        <button id="btn-cancel-edit" onclick="goHome()"
                 class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-4 px-8 rounded-full shadow transition-all text-sm">
-            ✕ ยกเลิกแก้ไข
+            ✕ ยกเลิก
         </button>
     </div>
     <p id="loading-text" class="hidden mt-4 text-center text-gray-800 font-bold animate-pulse">กำลังประมวลผล PDF...</p>
 </div>
 </div><!-- end panel-form -->
+
+<!-- ==================== TRACKING RESULT MODAL (หลังแจ้ง BD) ==================== -->
+<div id="tracking-modal" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
+        <div class="text-5xl mb-3">✅</div>
+        <h2 class="text-lg font-bold text-gray-900 mb-1">แจ้ง Breakdown สำเร็จ</h2>
+        <p class="text-xs text-gray-500 mb-4">บันทึกเข้าระบบเรียบร้อยแล้ว</p>
+        <div class="bg-orange-50 border-2 border-orange-300 rounded-xl py-4 mb-4">
+            <p class="text-xs text-gray-500 mb-1">เลข Tracking Breakdown</p>
+            <p id="tracking-modal-no" class="text-2xl font-bold font-mono text-orange-600 tracking-wider"></p>
+        </div>
+        <div class="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 mb-5">
+            <p class="text-sm font-bold text-amber-800">📸 กรุณา Capture ภาพหน้าจอเพื่อส่งเลข Tracking แจ้ง Breakdown ให้ผู้รับงานต่อไป</p>
+        </div>
+        <button onclick="closeTrackingModal()" class="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-lg text-sm transition-colors">รับทราบ</button>
+    </div>
+</div>
 
 <!-- ==================== TAB 2: RECORDS ====================-->
 <div id="panel-records" class="tab-panel p-4 md:p-8">
@@ -873,22 +901,68 @@ const PAGE_TITLE = {
     summary: '📊 สรุปข้อมูล Breakdown',
 };
 
-// โหมดฟอร์ม: 'report' = แจ้งใหม่ (กรอกน้อย, ล็อกสถานะ) / 'full' = แก้ไข+Manual (กรอกครบ)
-let formMode = 'report';
+// โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
+let formMode  = 'report';
+// ขั้นงาน: 'report'=แจ้งใหม่ 'accept'=รับงาน 'close'=ปิดงาน/แก้ไข 'manual'=Manual Create
+let formStage = 'report';
 
 function setFormMode(mode) {
     formMode = mode;
     const full = mode === 'full';
     document.querySelectorAll('.stage-fix').forEach(el => el.classList.toggle('hidden', !full));
-    document.getElementById('stage-actions').classList.toggle('hidden', !full);
+    document.getElementById('stage-actions').classList.add('hidden');   // ใช้ปุ่ม footer แทน
 }
 
-// ปุ่มลัดเปลี่ยนสถานะงาน (รับงาน/รออะไหล่/ปิดงาน)
+// ล็อกช่องเวลาเริ่ม BD (ตอนปิดงานห้ามแก้)
+function setBdStartLocked(locked) {
+    ['bd-start-date', 'bd-start-time'].forEach(id => {
+        const el = document.getElementById(id); if (!el) return;
+        el.disabled = locked;
+        el.classList.toggle('bg-gray-100', locked);
+        el.classList.toggle('cursor-not-allowed', locked);
+    });
+}
+
+const STAGE_NAV = { report:'🚨 แจ้ง Breakdown', accept:'🔧 รับงาน', close:'✅ ปิดงาน / แก้ไขข้อมูล', manual:'✍️ Manual Create' };
+
+// จัดฟอร์มตามขั้นงาน: layout ฟิลด์ + ล็อก + ปุ่ม footer + เลข Tracking
+function setFormStage(stage) {
+    formStage = stage;
+    const light = (stage === 'report' || stage === 'accept');
+    setFormMode(light ? 'report' : 'full');
+    setBdStartLocked(stage === 'close');
+    setStatusLocked(stage === 'report' || stage === 'accept');  // accept คงโชว์ "แจ้ง Breakdown" จนกดรับงาน
+
+    showTracking();
+    document.getElementById('tracking-display').classList.toggle('hidden', stage === 'report'); // 1.2 ไม่โชว์เลขตอนแจ้ง
+
+    const ids = ['btn-export','btn-report','btn-accept','btn-save-edit','btn-close-job','btn-manual-save','btn-cancel-edit'];
+    ids.forEach(id => document.getElementById(id).classList.add('hidden'));
+    const show = id => document.getElementById(id).classList.remove('hidden');
+    if (stage === 'report')      { show('btn-report'); }
+    else if (stage === 'accept') { show('btn-accept'); show('btn-cancel-edit'); }
+    else if (stage === 'close')  { show('btn-export'); show('btn-save-edit'); show('btn-close-job'); show('btn-cancel-edit'); }
+    else if (stage === 'manual') { show('btn-export'); show('btn-manual-save'); show('btn-cancel-edit'); }
+
+    document.getElementById('nav-title').textContent = STAGE_NAV[stage] || '';
+}
+
+// ปุ่มลัดเปลี่ยนสถานะ (ใช้ภายในตอนรับงาน/ปิดงาน)
 function quickStatus(v) {
     const sSel = document.getElementById('status-select');
     sSel.disabled = false;
     sSel.value = v;
     updateStatus(sSel);
+}
+
+// การกระทำตามขั้นงาน
+function acceptJob() { quickStatus('wip');  showAddDataConfirm(); }   // รับงาน → กำลังดำเนินการ
+function saveEdit()  {                       showAddDataConfirm(); }   // แก้ไขข้อมูล (คงสถานะ)
+function closeJob()  { quickStatus('done'); showAddDataConfirm(); }   // ปิดงาน → เสร็จสิ้น
+
+function closeTrackingModal() {
+    document.getElementById('tracking-modal').classList.add('hidden');
+    goHome();
 }
 
 function switchTab(name) {
@@ -903,26 +977,30 @@ function switchTab(name) {
     window.scrollTo(0, 0);
 }
 
-// กลับหน้าเลือกเมนู (เหมือนเปิดแอปใหม่) — ออกจากโหมดแก้ไขด้วย
+// กลับหน้าเลือกเมนู (เหมือนเปิดแอปใหม่) — ล้างฟอร์มเสมอ
 function goHome() {
-    if (editMode) cancelEdit();
+    cancelEdit();
     switchTab('home');
 }
 
-// แจ้ง Breakdown ใหม่ → ฟอร์มแบบย่อ (อาการ+รูป) + ล็อกสถานะ "แจ้ง Breakdown"
+// แจ้ง Breakdown ใหม่ → ฟอร์มย่อ (อาการ+รูป) ขั้น report
 function goReport() {
-    resetForm('report');
+    clearEditState();
+    resetFormFields();
+    currentTracking = '';
     switchTab('form');
+    setFormStage('report');
 }
 
-// Manual Create → ฟอร์มเต็ม กรอกครบทีเดียว เลือกสถานะได้ (ค่าเริ่มต้น = เสร็จสิ้น)
+// Manual Create → ฟอร์มเต็ม เลือกสถานะได้ (ค่าเริ่มต้น = เสร็จสิ้น)
 function goManualCreate() {
-    resetForm('full');
+    clearEditState();
+    resetFormFields();
+    currentTracking = '';
+    switchTab('form');
+    setFormStage('manual');
     const sSel = document.getElementById('status-select');
     sSel.value = 'done'; updateStatus(sSel);
-    document.getElementById('btn-add-label').textContent = 'บันทึกเอกสาร (Manual)';
-    switchTab('form');
-    document.getElementById('nav-title').textContent = '✍️ Manual Create';
 }
 
 function goRecords() {
@@ -934,11 +1012,13 @@ function goSummary() {
     switchTab('summary');
 }
 
-// ล้างฟอร์ม — mode 'report' (แจ้งใหม่ย่อ) หรือ 'full' (Manual กรอกครบ)
-function resetForm(mode = 'report') {
-    cancelEdit();
+function clearEditState() { editMode = false; editRowIndex = null; editSheetName = null; }
+
+// ล้างค่าฟิลด์ทั้งหมดให้เป็นฟอร์มเปล่า
+function resetFormFields() {
     ['machine-name','inp-machine-id','inp-line','inp-problem','inp-corrective','inp-preventive']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    setBdStartLocked(false);
     setDT('bd-start', ''); setDT('bd-end', '');
     const fSel = document.getElementById('factory-select'); if (fSel) fSel.value = '';
     updateAreaOptions();
@@ -949,13 +1029,6 @@ function resetForm(mode = 'report') {
     resetWhyTree();
     resetImages();
     calcDowntime();
-
-    currentTracking = '';   // เลขรันจริงออกโดย server ตอนบันทึก
-    showTracking();
-
-    setFormMode(mode);
-    if (mode === 'full') setStatusLocked(false);   // Manual → เลือกสถานะได้
-    else                 setStatusLocked(true);    // แจ้งใหม่ → ล็อก "แจ้ง Breakdown"
 }
 
 function checkSummarySetup() {
@@ -1485,22 +1558,20 @@ function showAddDataConfirm() {
     const m  = d.downtimeMin % 60;
     const dtText = d.downtimeMin ? `${h} ชม. ${m} นาที` : '—';
 
-    const isEdit   = !!(editMode && editRowIndex);
-    const isManual = !isEdit && formMode === 'full';
-    const badge    = STATUS_BADGE[d.status] || 'bg-gray-100 text-gray-600';
+    const badge = STATUS_BADGE[d.status] || 'bg-gray-100 text-gray-600';
+    const TITLE = { report:'📤 ยืนยันการแจ้ง Breakdown', accept:'🔧 ยืนยันรับงาน', close:'✅ ยืนยันปิดงาน / แก้ไขข้อมูล', manual:'✍️ ยืนยันสร้างเอกสาร (Manual)' };
+    const BTN   = { report:'ยืนยันการแจ้ง', accept:'ยืนยันรับงาน', close:'ยืนยันบันทึก', manual:'ยืนยันบันทึก' };
+    const NAME  = { report:'ผู้แจ้ง', accept:'ผู้รับงาน', close:'ผู้ดำเนินการ', manual:'ผู้ดำเนินการ' };
 
-    document.getElementById('confirm-title').textContent =
-        isEdit ? '✏️ ยืนยันการแก้ไขข้อมูล' : isManual ? '✍️ ยืนยันสร้างเอกสาร (Manual)' : '📤 ยืนยันการแจ้ง Breakdown';
-    document.getElementById('confirm-btn-label').textContent =
-        isEdit ? 'ยืนยันการแก้ไข' : isManual ? 'ยืนยันบันทึก' : 'ยืนยันการแจ้ง';
-
-    // ชื่อผู้ทำ — label ตามขั้น + เติมชื่อล่าสุดที่เคยกรอก
-    document.getElementById('confirm-name-label').innerHTML =
-        (isEdit || isManual ? '👤 ยืนยันชื่อผู้ดำเนินการ' : '👤 ยืนยันชื่อผู้แจ้ง') + ' <span class="text-red-500">*</span>';
+    document.getElementById('confirm-title').textContent     = TITLE[formStage] || TITLE.report;
+    document.getElementById('confirm-btn-label').textContent = BTN[formStage]   || BTN.report;
+    document.getElementById('confirm-name-label').innerHTML  =
+        '👤 ยืนยันชื่อ' + (NAME[formStage] || 'ผู้แจ้ง') + ' <span class="text-red-500">*</span>';
     document.getElementById('confirm-name').value = localStorage.getItem('last_by_name') || '';
 
+    const isEditStage = (formStage === 'accept' || formStage === 'close');
     document.getElementById('confirm-summary').innerHTML = `
-        ${isEdit ? '<div class="mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 font-bold">⚠️ กำลังแก้ไขรายการเดิม — ตรวจสอบสถานะให้ถูกต้องก่อนยืนยัน</div>' : ''}
+        ${isEditStage ? '<div class="mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 font-bold">⚠️ กำลังแก้ไขรายการเดิม — ตรวจสอบสถานะให้ถูกต้องก่อนยืนยัน</div>' : ''}
         <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs items-center">
             <span class="text-gray-500 font-bold">เลข Tracking</span>  <span class="font-mono font-bold text-orange-600">${currentTracking || 'ออกเลขอัตโนมัติเมื่อบันทึก'}</span>
             <span class="text-gray-500 font-bold">เครื่องจักร</span>   <span class="font-bold text-gray-900">${d.machineName}</span>
@@ -1540,15 +1611,17 @@ async function confirmAddData() {
 
     try {
         if (isEdit) {
-            // อัปเดตแถวเดิม
+            // อัปเดตแถวเดิม (รับงาน / แก้ไข / ปิดงาน)
             await fetch(GAS_URL, {
                 method: 'POST', mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...data, action: 'update', rowIndex: editRowIndex, sheetName: editSheetName }),
             });
             closeConfirm();
+            const msg = formStage === 'accept' ? '✅ รับงานแล้ว' : formStage === 'close' ? '✅ บันทึก/ปิดงานแล้ว' : '✅ อัปเดตแล้ว';
             cancelEdit();
-            showToast('✅ อัปเดตข้อมูลสำเร็จ', 'success');
+            goRecords();                 // กลับหน้ารายการ + รีโหลด
+            showToast(msg, 'success');
         } else {
             // บันทึกใหม่ — server ออกเลขรันให้ แล้วอ่านกลับมาแสดง
             // ใช้ text/plain (simple request) → อ่าน response ได้ ไม่ติด CORS preflight
@@ -1559,8 +1632,14 @@ async function confirmAddData() {
             const json = await res.json();
             closeConfirm();
             if (json && json.success) {
-                if (json.tracking) { currentTracking = json.tracking; showTracking(); }
-                showToast(`✅ แจ้ง Breakdown สำเร็จ → ${json.tracking || ''}`, 'success');
+                if (json.tracking) currentTracking = json.tracking;
+                if (formStage === 'report') {
+                    // แสดง popup เลข Tracking + ข้อความให้ capture ส่งต่อผู้รับงาน
+                    document.getElementById('tracking-modal-no').textContent = currentTracking || '';
+                    document.getElementById('tracking-modal').classList.remove('hidden');
+                } else {
+                    showToast(`✅ บันทึกสำเร็จ → ${currentTracking || ''}`, 'success');
+                }
             } else {
                 showToast('❌ บันทึกไม่สำเร็จ: ' + (json && json.error || 'ไม่ทราบสาเหตุ'), 'error');
             }
@@ -1586,8 +1665,6 @@ function openEditMode(item) {
     editRowIndex  = item.rowIndex;
     editSheetName = item.sheetName;
     currentTracking = item.tracking || genTracking();   // เก็บเลขเดิม (ของเก่าไม่มี → ออกใหม่)
-    showTracking();
-    setFormMode('full');   // แก้ไข → แสดงทุก section + ปุ่มขั้นตอนงาน
 
     // fill form
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
@@ -1616,7 +1693,6 @@ function openEditMode(item) {
     };
     const sSel = document.getElementById('status-select');
     if (sSel) { sSel.disabled = false; sSel.value = statusRevMap[item.status] || 'report'; updateStatus(sSel); }
-    document.getElementById('status-lock')?.classList.add('hidden');
 
     // bdType
     const typeSel = document.getElementById('inp-bd-type');
@@ -1643,24 +1719,20 @@ function openEditMode(item) {
 
     calcDowntime();
 
-    // update buttons
-    document.getElementById('btn-add-label').textContent  = 'อัปเดตข้อมูล';
-    document.getElementById('btn-cancel-edit').classList.remove('hidden');
-    setVisible('edit-banner', true);
-
+    // ขั้นงานตามสถานะ: ยังแจ้งอยู่ → รับงาน, อื่นๆ → ปิดงาน/แก้ไข
+    const stage = (item.status === 'แจ้ง Breakdown') ? 'accept' : 'close';
     switchTab('form');
+    setFormStage(stage);
+    showTracking();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast('✏️ โหลดข้อมูลสำหรับแก้ไขแล้ว', 'info');
+    showToast(stage === 'accept' ? '🔧 รับงาน — ตรวจสอบข้อมูลแล้วกดรับงาน' : '✏️ เปิดเอกสารเพื่อแก้ไข/ปิดงาน', 'info');
 }
 
 function cancelEdit() {
-    editMode = editRowIndex = editSheetName = null;
-    editMode = false;
-    document.getElementById('btn-add-label').textContent = 'แจ้ง Breakdown';
-    document.getElementById('btn-cancel-edit').classList.add('hidden');
-    setVisible('edit-banner', false);
-    setFormMode('report');   // กลับสู่โหมดแจ้งใหม่ (ย่อ)
-    setStatusLocked(true);   // ล็อกสถานะ
+    clearEditState();
+    resetFormFields();
+    currentTracking = '';
+    setFormStage('report');
 }
 
 // ============================================================
@@ -2027,7 +2099,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v11';
+const EXPORT_VER = 'v12';
 
 // html2canvas วาดข้อความฟอนต์ Prompt จมลง ~0.45em (ทุก span/ป้าย/ปุ่ม)
 // → วัดค่าจริงบนเครื่องนี้ครั้งเดียวด้วย probe เล็กๆ แล้วใช้ชดเชยตอน capture จริง
@@ -2386,8 +2458,7 @@ window.addEventListener('DOMContentLoaded', () => {
     addDeviceRow();
     addPartRow();
     resetWhyTree();
-    setFormMode('report');   // ฟอร์มเริ่มต้น = แจ้งใหม่ (ย่อ)
-    setStatusLocked(true);   // ล็อกสถานะ
+    setFormStage('report');  // ฟอร์มเริ่มต้น = แจ้งใหม่ (ย่อ)
     applyRole();             // เริ่มเป็น User → ซ่อน Manual Create/แก้ไข/ลบ
 
     // เปิดแอปมาที่หน้าเลือกเมนู (Home)

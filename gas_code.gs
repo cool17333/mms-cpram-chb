@@ -200,6 +200,9 @@ function doGet(e) {
     if (action === 'getLog') {
       return doGetLog(e.parameter.tracking || '');
     }
+    if (action === 'getMachines') {
+      return doGetMachines();
+    }
     if (action === 'getData') {
       return doGetSummary(year, factory, area);
     }
@@ -317,6 +320,22 @@ function doGetLog(tracking) {
     rows.push({ time: String(r[0]), tracking: r[1], action: r[2], byName: r[3], status: r[4] });
   }
   rows.reverse(); // ล่าสุดก่อน
+  return jsonOut({ success: true, data: rows });
+}
+
+// master รายการเครื่องจักร — อ่านจากแท็บ "_Machines"
+// คอลัมน์: A=รหัสเครื่องจักร  B=ชื่อเครื่องจักร  C=โรงงาน  D=พื้นที่  E=ไลน์ (E ไม่บังคับ)
+function doGetMachines() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('_Machines');
+  if (!sh) return jsonOut({ success: true, data: [] });
+  const data = sh.getDataRange().getValues();
+  const rows = [];
+  for (let i = 1; i < data.length; i++) {
+    const r = data[i];
+    if (!r[0]) continue;
+    rows.push({ id: String(r[0]).trim(), name: r[1] || '', factory: r[2] || '', area: r[3] || '', line: r[4] || '' });
+  }
   return jsonOut({ success: true, data: rows });
 }
 

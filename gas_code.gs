@@ -10,7 +10,7 @@
 //  5. คัดลอก Web App URL ไปใส่ในหน้า Settings ของ app
 // =====================================================
 
-const SPREADSHEET_ID = ''; // ← ใส่ ID ของ Google Sheet ที่ต้องการ
+const SPREADSHEET_ID = '1knVTnZf7Ecu-LxOYv4911J-QHwr-PuSgrd44JY_UFqc'; // ID ของ Google Sheet
 
 // รหัสผ่านตามบทบาท (เก็บฝั่ง server — ไม่โผล่ในหน้าเว็บ)
 const ROLE_PW = {

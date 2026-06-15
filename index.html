@@ -1442,7 +1442,7 @@ function openReportPopup() {
     rmUpdateArea();
     ['rm-machine','rm-line','rm-date','rm-time','rm-problem'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('rm-byname').value = '';   // ว่างทุกครั้ง — กันใส่ชื่อซ้ำคนเดิม
-    imgStore.before = null;
+    imgStore.before = null; imgRef.before = '';
     document.getElementById('rm-preview').classList.add('hidden');
     document.getElementById('rm-photo-hint').classList.remove('hidden');
     document.getElementById('report-modal').classList.remove('hidden');
@@ -1462,12 +1462,12 @@ function rmUpdateArea() {
 function rmSetImage(event) {
     const file = event.target.files[0]; if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-        imgStore.before = reader.result;
+    reader.onload = () => compressImage(reader.result, d => {
+        imgStore.before = d; imgRef.before = '';
         const img = document.getElementById('rm-preview');
-        img.src = reader.result; img.classList.remove('hidden');
+        img.src = d; img.classList.remove('hidden');
         document.getElementById('rm-photo-hint').classList.add('hidden');
-    };
+    });
     reader.readAsDataURL(file);
     event.target.value = '';
 }
@@ -1498,6 +1498,7 @@ async function submitReportPopup() {
         status: 'แจ้ง Breakdown', bdStart: `${date}T${time || '00:00'}`, bdEnd: '', downtimeMin: 0,
         bdType: '', problem, device: '', whys: [''],
         corrective: '', preventive: '', parts: [], byName, action: 'create',
+        imgBefore: imgStore.before || '', imgAfter: '',   // รูปก่อน (จาก popup) → อัปขึ้น Drive
     };
 
     const btn = document.getElementById('rm-submit');
@@ -1937,15 +1938,42 @@ function removePartRow(btn) {
 // ============================================================
 // PHOTOS — ก่อน/หลังแก้ไข (รูปเดียวต่อช่อง)
 // ============================================================
-const imgStore = { before: null, after: null };   // dataURL เดียวต่อข้าง
+const imgStore = { before: null, after: null };   // dataURL สำหรับแสดง
+const imgRef   = { before: '',   after: '' };      // Drive fileId (ถ้าเป็นรูปที่บันทึกแล้ว / '' = รูปใหม่)
+let _imgLoadPromise = Promise.resolve();           // รอโหลดรูปจาก Drive ก่อน export
+
+// ย่อรูปก่อนเก็บ (กว้าง/สูงไม่เกิน 1280px, JPEG) — ลดขนาดอัปโหลด/เก็บ Drive
+function compressImage(dataUrl, cb) {
+    const img = new Image();
+    img.onload = () => {
+        const MAX = 1280;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) { const s = MAX / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        try { cb(c.toDataURL('image/jpeg', 0.72)); } catch (e) { cb(dataUrl); }
+    };
+    img.onerror = () => cb(dataUrl);
+    img.src = dataUrl;
+}
 
 function setImage(event, side) {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => { imgStore[side] = reader.result; renderImageSide(side); };
+    reader.onload = () => compressImage(reader.result, d => { imgStore[side] = d; imgRef[side] = ''; renderImageSide(side); });
     reader.readAsDataURL(file);
     event.target.value = '';   // เผื่อเลือกไฟล์เดิมซ้ำ
+}
+
+// ดึงรูปจาก Drive (fileId) → แสดง
+async function loadImageFromDrive(fileId, side) {
+    if (!fileId || !GAS_URL) return;
+    try {
+        const res  = await fetch(`${GAS_URL}?action=getImage&id=${encodeURIComponent(fileId)}`);
+        const json = await res.json();
+        if (json && json.success && json.dataUrl) { imgStore[side] = json.dataUrl; imgRef[side] = fileId; renderImageSide(side); }
+    } catch (e) { /* เงียบ */ }
 }
 
 function renderImageSide(side) {
@@ -1964,6 +1992,7 @@ function renderImageSide(side) {
 
 function resetImages() {
     imgStore.before = null; imgStore.after = null;
+    imgRef.before = '';     imgRef.after = '';
     renderImageSide('before'); renderImageSide('after');
 }
 
@@ -2096,6 +2125,8 @@ function collectFormData() {
         corrective:  g('inp-corrective'),
         preventive:  g('inp-preventive'),
         parts,
+        imgBefore:   imgRef.before ? imgRef.before : (imgStore.before || ''),   // id เดิม หรือ dataURL ใหม่
+        imgAfter:    imgRef.after  ? imgRef.after  : (imgStore.after  || ''),
     };
 }
 
@@ -2282,8 +2313,12 @@ function openEditMode(item, stage = 'edit') {
     }
     renderWhyTree();
 
-    // รูปภาพไม่ได้เก็บใน sheet → เคลียร์ให้ผู้ใช้แนบใหม่
+    // ดึงรูปก่อน/หลังจาก Drive (ถ้ามี) — เก็บ promise ไว้ให้ export รอ
     resetImages();
+    _imgLoadPromise = Promise.all([
+        loadImageFromDrive(item.imgBefore, 'before'),
+        loadImageFromDrive(item.imgAfter,  'after'),
+    ]);
 
     calcDowntime();
 
@@ -2673,7 +2708,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v30';
+const EXPORT_VER = 'v31';
 
 // html2canvas วาดข้อความฟอนต์ Prompt จมลง ~0.45em (ทุก span/ป้าย/ปุ่ม)
 // → วัดค่าจริงบนเครื่องนี้ครั้งเดียวด้วย probe เล็กๆ แล้วใช้ชดเชยตอน capture จริง
@@ -2893,6 +2928,7 @@ async function _captureNode(node, capW, onMeasure) {
 // ===================================================================
 async function exportPDF(fmt = 'portrait') {
     if (typeof html2canvas === 'undefined') { alert('ไม่พบไลบรารี html2canvas'); return; }
+    try { await _imgLoadPromise; } catch (_) {}   // รอรูปจาก Drive โหลดเสร็จก่อน
 
     const btn    = document.getElementById('btn-export');
     const loader = document.getElementById('loading-text');

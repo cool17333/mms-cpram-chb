@@ -43,6 +43,8 @@ const HEADERS = [
   'ผู้ดำเนินการล่าสุด',   // index 25
   'ผู้รับงาน',            // index 26
   'ผู้ปิดงาน',            // index 27
+  'รูปก่อนแก้ไข (ID)',    // index 28
+  'รูปหลังแก้ไข (ID)',    // index 29
 ];
 
 // ============================================================
@@ -52,6 +54,12 @@ function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+    // อัปโหลดรูปขึ้น Drive (เฉพาะตอนสร้าง/แก้ไข) → เก็บเป็น fileId
+    if (data.action === 'create' || data.action === 'update' || !data.action) {
+      data.imgBefore = saveImgToDrive(data.imgBefore);
+      data.imgAfter  = saveImgToDrive(data.imgAfter);
+    }
 
     // ---- UPDATE existing row ----
     if (data.action === 'update') {
@@ -205,7 +213,28 @@ function buildRow(data, whys, partsStr, keepTimestamp, now) {
     data.byName        || '',
     data.acceptedBy    || '',
     data.closedBy      || '',
+    data.imgBefore     || '',
+    data.imgAfter      || '',
   ];
+}
+
+// อัปโหลดรูป (dataURL) ขึ้น Drive → คืน fileId / ถ้าเป็น id เดิมอยู่แล้วก็คืนเดิม
+function saveImgToDrive(val) {
+  if (!val || String(val).indexOf('data:') !== 0) return val || '';
+  const m = String(val).match(/^data:([^;]+);base64,(.*)$/);
+  if (!m) return '';
+  const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], 'bd_' + Date.now() + '_' + Math.floor(Math.random() * 1e5));
+  const it = DriveApp.getFoldersByName('BreakdownReport_Images');
+  const folder = it.hasNext() ? it.next() : DriveApp.createFolder('BreakdownReport_Images');
+  return folder.createFile(blob).getId();
+}
+
+// ดึงรูปจาก Drive กลับมาเป็น dataURL (สำหรับแสดง/ใส่ PDF)
+function doGetImage(id) {
+  try {
+    const blob = DriveApp.getFileById(id).getBlob();
+    return jsonOut({ success: true, dataUrl: 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes()) });
+  } catch (e) { return jsonOut({ success: false, error: String(e) }); }
 }
 
 // เก็บ log ทุกการกระทำลงชีต "_Log" (ใคร/เมื่อไหร่/ทำอะไร)
@@ -259,6 +288,9 @@ function doGet(e) {
     }
     if (action === 'getMachines') {
       return doGetMachines();
+    }
+    if (action === 'getImage') {
+      return doGetImage(e.parameter.id || '');
     }
     if (action === 'getData') {
       return doGetSummary(year, factory, area);
@@ -357,6 +389,8 @@ function doGetAll(factory, area, status, month, machineId) {
         byName:      r[25] || '',
         acceptedBy:  r[26] || '',
         closedBy:    r[27] || '',
+        imgBefore:   r[28] || '',
+        imgAfter:    r[29] || '',
       });
     }
   });

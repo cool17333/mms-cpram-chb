@@ -78,20 +78,46 @@ function doPost(e) {
       return jsonOut({ success: true, action: 'updated' });
     }
 
-    // ---- SET machines (เขียนทับแท็บ _Machines ทั้งหมด — สำหรับ sync) ----
+    // ---- SET machines (เขียนทับแท็บ _Machines — มีสำรอง + กันลบทั้งหมด) ----
     if (data.action === 'setMachines') {
       if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
         return jsonOut({ success: false, error: 'ต้องเป็น Admin เท่านั้น' });
+      const incoming = (data.machines || []).filter(m => m && String(m.id).trim());
       let sh = ss.getSheetByName('_Machines');
+      const existingCount = sh ? Math.max(0, sh.getLastRow() - 1) : 0;
+
+      // กันข้อมูลหาย: ของใหม่ว่าง แต่ของเดิมมี → ปฏิเสธ (เว้นแต่ตั้งใจล้างด้วย force)
+      if (incoming.length === 0 && existingCount > 0 && !data.force)
+        return jsonOut({ success: false, error: 'รายการว่าง — ยกเลิกเพื่อกันข้อมูลหาย' });
+
+      // สำรองของเดิมไว้ที่ _Machines_bak ก่อนเขียนทับ
+      if (sh && sh.getLastRow() > 1) {
+        let bak = ss.getSheetByName('_Machines_bak') || ss.insertSheet('_Machines_bak');
+        bak.clearContents();
+        const cur = sh.getDataRange().getValues();
+        bak.getRange(1, 1, cur.length, cur[0].length).setValues(cur);
+      }
+
       if (!sh) sh = ss.insertSheet('_Machines');
       sh.clearContents();
       const header = ['รหัสเครื่องจักร', 'ชื่อเครื่องจักร', 'โรงงาน', 'พื้นที่', 'ไลน์'];
       sh.getRange(1, 1, 1, header.length).setValues([header]);
-      const rows = (data.machines || [])
-        .filter(m => m && m.id)
-        .map(m => [m.id || '', m.name || '', m.factory || '', m.area || '', m.line || '']);
+      const rows = incoming.map(m => [m.id || '', m.name || '', m.factory || '', m.area || '', m.line || '']);
       if (rows.length) sh.getRange(2, 1, rows.length, header.length).setValues(rows);
-      return jsonOut({ success: true, count: rows.length });
+      return jsonOut({ success: true, count: rows.length, backedUp: existingCount });
+    }
+
+    // ---- RESTORE machines จาก _Machines_bak (กู้คืน) ----
+    if (data.action === 'restoreMachines') {
+      if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
+        return jsonOut({ success: false, error: 'ต้องเป็น Admin เท่านั้น' });
+      const bak = ss.getSheetByName('_Machines_bak');
+      if (!bak || bak.getLastRow() < 2) return jsonOut({ success: false, error: 'ไม่มีข้อมูลสำรอง' });
+      let sh = ss.getSheetByName('_Machines') || ss.insertSheet('_Machines');
+      sh.clearContents();
+      const cur = bak.getDataRange().getValues();
+      sh.getRange(1, 1, cur.length, cur[0].length).setValues(cur);
+      return jsonOut({ success: true, count: cur.length - 1 });
     }
 
     // ---- DELETE row (Admin เท่านั้น — เช็ครหัสฝั่ง server) ----

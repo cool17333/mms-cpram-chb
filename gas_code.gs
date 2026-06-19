@@ -132,6 +132,19 @@ function doPost(e) {
       return jsonOut({ success: true, count: cur.length - 1 });
     }
 
+    // ---- ACCEPT job (Engineer / Admin รับงาน) ----
+    if (data.action === 'accept') {
+      const role = ROLE_PW[(data.pw || '').trim()];
+      if (role !== 'engineer' && role !== 'admin')
+        return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin เท่านั้น' });
+      const sheet = ss.getSheetByName(data.sheetName);
+      if (!sheet || !data.rowIndex) throw new Error('Sheet or rowIndex not found');
+      sheet.getRange(data.rowIndex, 7).setValue('รับงานแล้ว');
+      sheet.getRange(data.rowIndex, 27).setValue(data.acceptedBy || '');
+      writeLog(ss, data.tracking, 'รับงาน — ' + (data.acceptedBy || ''), data.acceptedBy, 'รับงานแล้ว');
+      return jsonOut({ success: true, action: 'accepted' });
+    }
+
     // ---- CANCEL record (เปลี่ยนสถานะเป็น "ยกเลิกงาน" — Admin เท่านั้น) ----
     if (data.action === 'cancel') {
       if (ROLE_PW[(data.pw || '').trim()] !== 'admin')

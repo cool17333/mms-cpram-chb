@@ -555,6 +555,27 @@
 </div>
 </div><!-- end panel-form -->
 
+<!-- ==================== ACCEPT JOB MODAL ==================== -->
+<div id="accept-modal" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h2 class="text-base font-bold mb-1 flex items-center gap-2 text-blue-700">✅ ยืนยันรับงาน</h2>
+        <p id="accept-tracking-display" class="text-xs text-gray-500 font-mono mb-4"></p>
+        <label class="text-xs font-bold text-gray-500 block mb-1">ชื่อผู้รับงาน <span class="text-red-500">*</span></label>
+        <input id="accept-byname" type="text" placeholder="กรอกชื่อ-นามสกุลผู้รับงาน"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition-colors mb-4">
+        <div class="flex gap-3">
+            <button onclick="closeAcceptModal()"
+                    class="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-colors">
+                ยกเลิก
+            </button>
+            <button onclick="confirmAccept()"
+                    class="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors">
+                ✅ ยืนยันรับงาน
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- ==================== TRACKING RESULT MODAL (หลังแจ้ง BD) ==================== -->
 <div id="tracking-modal" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
@@ -683,7 +704,9 @@
                 <label class="text-xs font-bold text-gray-500 block mb-1">สถานะ</label>
                 <select id="rec-status" onchange="applyRecordFilter()" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 cursor-pointer">
                     <option value="">ทั้งหมด</option>
-                    <option value="แจ้ง Breakdown">🔴 แจ้ง Breakdown</option>
+                    <option value="รอรับงาน">⏳ รอรับงาน</option>
+                    <option value="รับงานแล้ว">🔵 รับงานแล้ว</option>
+                    <option value="แจ้ง Breakdown">🟡 แจ้ง Breakdown (เก่า)</option>
                     <option value="กำลังดำเนินการแก้ไข">🟠 กำลังดำเนินการแก้ไข</option>
                     <option value="รออะไหล่">🟡 รออะไหล่</option>
                     <option value="ดำเนินการเสร็จสิ้น">🟢 ดำเนินการเสร็จสิ้น</option>
@@ -1470,6 +1493,53 @@ function closeTrackingModal() {
 }
 
 // ============================================================
+// รับงาน (Engineer / Admin)
+// ============================================================
+let _acceptItem = null;
+
+function acceptRecord(item) {
+    if (userRole !== 'engineer' && userRole !== 'admin') {
+        showToast('⚠️ ต้องเป็น Engineer หรือ Admin เท่านั้น', 'error'); return;
+    }
+    _acceptItem = item;
+    document.getElementById('accept-tracking-display').textContent =
+        (item.tracking || '') + (item.machineName ? ' — ' + item.machineName : '');
+    document.getElementById('accept-byname').value = '';
+    document.getElementById('accept-modal').classList.remove('hidden');
+}
+
+function closeAcceptModal() {
+    document.getElementById('accept-modal').classList.add('hidden');
+    _acceptItem = null;
+}
+
+async function confirmAccept() {
+    const acceptedBy = document.getElementById('accept-byname').value.trim();
+    if (!acceptedBy) { showToast('⚠️ กรุณากรอกชื่อผู้รับงาน', 'error'); return; }
+    if (!_acceptItem) return;
+    const item = _acceptItem;
+    closeAcceptModal();
+    try {
+        await fetch(GAS_URL, {
+            method: 'POST', mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'accept',
+                sheetName: item.sheetName,
+                rowIndex:  item.rowIndex,
+                tracking:  item.tracking,
+                acceptedBy,
+                pw: userPw,
+            }),
+        });
+        showToast('✅ รับงานเรียบร้อย — ' + acceptedBy, 'success');
+        setTimeout(() => location.reload(), 900);
+    } catch (err) {
+        showToast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
+    }
+}
+
+// ============================================================
 // REPORT POPUP — แจ้ง Breakdown แบบ pop up (ไม่อิงฟอร์มเต็ม)
 // ============================================================
 let machineList = [];   // master เครื่องจักร (รหัส→ชื่อ) จากแท็บ _Machines
@@ -1564,7 +1634,7 @@ async function submitReportPopup() {
     const data = {
         timestamp: new Date().toISOString(), tracking: '',
         machineName: machine, factory, area, machineId: '', line,
-        status: 'แจ้ง Breakdown', bdStart: `${date}T${time || '00:00'}`, bdEnd: '', downtimeMin: 0,
+        status: 'รอรับงาน', bdStart: `${date}T${time || '00:00'}`, bdEnd: '', downtimeMin: 0,
         bdType: '', problem, device: '', whys: [''],
         corrective: '', preventive: '', parts: [], byName, action: 'create',
         imgBefore: imgsToStr('before'), imgAfter: '',   // รูปก่อน (จาก popup) → อัปขึ้น Drive
@@ -1720,9 +1790,9 @@ function updateSumArea() {
 // STATUS BADGE
 // ============================================================
 const STATUS_CFG = {
-    report: { label:'แจ้ง Breakdown',        cls:'border-red-400 bg-red-900/30',     color:'#f87171', icon:'🔴' },
+    report: { label:'รอรับงาน',              cls:'border-amber-400 bg-amber-900/30',   color:'#fbbf24', icon:'⏳' },
     wip:    { label:'กำลังดำเนินการแก้ไข',   cls:'border-orange-400 bg-orange-900/30', color:'#fb923c', icon:'🔧' },
-    wait:   { label:'รออะไหล่',              cls:'border-yellow-400 bg-yellow-900/30', color:'#facc15', icon:'⏳' },
+    wait:   { label:'รออะไหล่',              cls:'border-yellow-400 bg-yellow-900/30', color:'#facc15', icon:'🔩' },
     done:   { label:'ดำเนินการเสร็จสิ้น',    cls:'border-green-400 bg-green-900/30',   color:'#4ade80', icon:'✅' },
 };
 
@@ -2212,7 +2282,7 @@ function collectFormData() {
     const factory = document.getElementById('factory-select');
     const area    = document.getElementById('area-select');
     const statusSel = document.querySelector('#status-container select');
-    const statusMap = { report:'แจ้ง Breakdown', wip:'กำลังดำเนินการแก้ไข', wait:'รออะไหล่', done:'ดำเนินการเสร็จสิ้น' };
+    const statusMap = { report:'รอรับงาน', wip:'กำลังดำเนินการแก้ไข', wait:'รออะไหล่', done:'ดำเนินการเสร็จสิ้น' };
 
     const bdStart = getDT('bd-start');
     const bdEnd   = getDT('bd-end');
@@ -2386,6 +2456,9 @@ let editSheetName = null;
 function editWhyOnly(item) { openEditMode(item, 'whyedit'); }   // แก้ Why-Why หลังปิดงาน
 
 function openEditMode(item, stage = 'edit') {
+    if (stage === 'edit' && (item.status === 'รอรับงาน' || item.status === 'แจ้ง Breakdown')) {
+        showToast('⚠️ ต้องรับงานก่อนถึงจะแก้ไขได้', 'error'); return;
+    }
     editMode      = true;
     editRowIndex  = item.rowIndex;
     editSheetName = item.sheetName;
@@ -2414,7 +2487,8 @@ function openEditMode(item, stage = 'edit') {
 
     // status — แก้ไขได้ (ปลดล็อก) รองรับค่าเก่า 'กำลังดำเนินการ' ด้วย
     const statusRevMap = {
-        'แจ้ง Breakdown':'report', 'กำลังดำเนินการแก้ไข':'wip', 'กำลังดำเนินการ':'wip',
+        'รอรับงาน':'report', 'แจ้ง Breakdown':'report',
+        'รับงานแล้ว':'wip', 'กำลังดำเนินการแก้ไข':'wip', 'กำลังดำเนินการ':'wip',
         'รออะไหล่':'wait', 'ดำเนินการเสร็จสิ้น':'done',
     };
     const sSel = document.getElementById('status-select');
@@ -2538,7 +2612,9 @@ function applyRecordFilter() {
 }
 
 const STATUS_BADGE = {
-    'แจ้ง Breakdown':       'bg-red-100 text-red-700',
+    'รอรับงาน':             'bg-amber-100 text-amber-700',
+    'แจ้ง Breakdown':       'bg-amber-100 text-amber-700',
+    'รับงานแล้ว':           'bg-blue-100 text-blue-700',
     'กำลังดำเนินการแก้ไข':  'bg-orange-100 text-orange-700',
     'รออะไหล่':             'bg-yellow-100 text-yellow-700',
     'ดำเนินการเสร็จสิ้น':   'bg-green-100 text-green-700',
@@ -2553,11 +2629,13 @@ function renderRecordsTable(rows) {
         const date = (r.timestamp||'').slice(0,10);
         const badge= STATUS_BADGE[r.status] || 'bg-gray-100 text-gray-600';
         const isCancelled = r.status === 'ยกเลิกงาน';
-        const isPending   = !isCancelled && r.status !== 'ดำเนินการเสร็จสิ้น';
+        const isWaiting   = r.status === 'รอรับงาน' || r.status === 'แจ้ง Breakdown';
+        const isPending   = !isCancelled && !isWaiting && r.status !== 'ดำเนินการเสร็จสิ้น';
         const isDone      = !isCancelled && r.status === 'ดำเนินการเสร็จสิ้น';
         const j = JSON.stringify(r).replace(/'/g,"&#39;");
-        const isAdmin = (userRole === 'admin');
-        const canEdit = (userRole === 'engineer' || userRole === 'admin');
+        const isAdmin    = (userRole === 'admin');
+        const canEdit    = (userRole === 'engineer' || userRole === 'admin');
+        const canAccept  = (userRole === 'engineer' || userRole === 'admin');
         const hasWhy  = Array.isArray(r.whys) ? r.whys.some(w => String(w).trim()) : false;
         const canPDF  = isDone && (isAdmin || hasWhy);
         const etBadge = r.eventType === 'Breakdown'  ? 'bg-red-100 text-red-700'  :
@@ -2577,6 +2655,8 @@ function renderRecordsTable(rows) {
             <td class="px-4 py-3 text-center">${etHtml}${bdHtml}${!etHtml&&!bdHtml?'<span class="text-gray-400 text-xs">—</span>':''}</td>
             <td class="px-4 py-3 text-center">
                 <div class="flex gap-1 justify-center flex-wrap">
+                    ${(canAccept && isWaiting) ? `<button onclick='acceptRecord(${j})'
+                        class="text-xs font-bold px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors">✅ รับงาน</button>` : ''}
                     ${(canEdit && isPending) ? `<button onclick='openEditMode(${j})'
                         class="text-xs font-bold px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-700 transition-colors">✏️ แก้ไข</button>` : ''}
                     ${(canEdit && isDone) ? `<button onclick='editWhyOnly(${j})'
@@ -2847,7 +2927,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v35';
+const EXPORT_VER = 'v36';
 
 // html2canvas วาดข้อความฟอนต์ Prompt จมลง ~0.45em (ทุก span/ป้าย/ปุ่ม)
 // → วัดค่าจริงบนเครื่องนี้ครั้งเดียวด้วย probe เล็กๆ แล้วใช้ชดเชยตอน capture จริง

@@ -555,6 +555,14 @@
 </div>
 </div><!-- end panel-form -->
 
+<!-- ==================== EXPORT LOADING OVERLAY ==================== -->
+<div id="export-overlay" class="hidden fixed inset-0 flex items-center justify-center" style="z-index:2147483647;background:#f8fafc">
+    <div class="flex flex-col items-center gap-4">
+        <div class="w-14 h-14 border-4 border-gray-200 border-t-red-600 rounded-full animate-spin"></div>
+        <p class="text-gray-800 font-bold text-base">กำลังจัดเตรียมข้อมูล กรุณารอสักครู่</p>
+    </div>
+</div>
+
 <!-- ==================== ACCEPT JOB MODAL ==================== -->
 <div id="accept-modal" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -2911,16 +2919,24 @@ function initPDFCards() {
     });
 }
 
+function showExportOverlay() { document.getElementById('export-overlay').classList.remove('hidden'); }
+function hideExportOverlay() { document.getElementById('export-overlay').classList.add('hidden'); }
+
 async function doExportPDF() {
     const rowItem = _pdfPickerForRow;   // บันทึกก่อน closePDFPicker จะ null ทิ้ง
     closePDFPicker();
-    const fmt  = document.querySelector('input[name="pdf-fmt"]:checked')?.value || 'landscape';
-    if (rowItem) {
-        openEditMode(rowItem, 'whyedit');
-        lockExceptWhy(false);   // ปลด disabled ก่อน capture — value ยังครบ, background ไม่เทา
-        setTimeout(() => exportPDF(fmt), 800);
-    } else {
-        exportPDF(fmt);
+    const fmt = document.querySelector('input[name="pdf-fmt"]:checked')?.value || 'landscape';
+    showExportOverlay();   // บังจอทันที — ผู้ใช้ไม่เห็นหน้าฟอร์มเด้งขึ้นมา
+    try {
+        if (rowItem) {
+            openEditMode(rowItem, 'whyedit');   // สลับหน้า + เติมข้อมูล (อยู่ใต้ overlay)
+            lockExceptWhy(false);               // ปลด disabled — background ไม่เทาใน PDF
+            await new Promise(r => setTimeout(r, 800));   // รอรูป Drive + font โหลด
+        }
+        await exportPDF(fmt);
+    } finally {
+        if (rowItem) { cancelEdit(); switchTab('records'); }   // กลับหน้ารายการ (ใต้ overlay)
+        hideExportOverlay();   // ค่อยเปิดเผย → เห็นหน้ารายการสะอาด ไม่มีหน้าฟอร์มแฟลช
     }
 }
 
@@ -2937,7 +2953,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v38';
+const EXPORT_VER = 'v39';
 
 // html2canvas วาดข้อความฟอนต์ Prompt จมลง ~0.45em (ทุก span/ป้าย/ปุ่ม)
 // → วัดค่าจริงบนเครื่องนี้ครั้งเดียวด้วย probe เล็กๆ แล้วใช้ชดเชยตอน capture จริง
@@ -2949,7 +2965,7 @@ async function _measureH2cShift() {
     const probe = document.createElement('div');
     probe.style.cssText = 'position:fixed;top:0;left:0;width:300px;height:40px;display:flex;' +
         'align-items:center;padding-left:20px;background:#ffffff;color:#000000;' +
-        'font:500 20px Prompt,sans-serif;z-index:2147483647';
+        'font:500 20px Prompt,sans-serif;z-index:2147483646';
     probe.textContent = TXT;
     document.body.appendChild(probe);
     let cap;
@@ -3006,7 +3022,7 @@ async function _captureNode(node, capW, onMeasure) {
 
     const wrapper = document.createElement('div');
     wrapper.style.cssText =
-        `position:fixed;top:0;left:0;z-index:2147483647;background:#ffffff;width:${capW}px;padding:0;margin:0`;
+        `position:fixed;top:0;left:0;z-index:2147483646;background:#ffffff;width:${capW}px;padding:0;margin:0`;
     wrapper.appendChild(node);
     document.body.appendChild(wrapper);
 

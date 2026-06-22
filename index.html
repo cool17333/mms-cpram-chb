@@ -692,6 +692,7 @@
         <span id="clf-result-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-500">—</span>
     </div>
     <div class="mms-card overflow-hidden mb-4">
+        <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-gray-50 border-b border-gray-200">
@@ -701,12 +702,15 @@
                     <th class="text-center px-2 py-3 font-bold text-red-600 w-14">NG</th>
                     <th class="text-center px-2 py-3 font-bold text-yellow-600 w-14">FIX</th>
                     <th class="text-center px-2 py-3 font-bold text-gray-400 w-14">N/A</th>
+                    <th class="text-center px-2 py-3 font-bold text-blue-500 w-16">📷</th>
+                    <th class="text-left px-3 py-3 font-bold text-gray-500 min-w-[120px]">หมายเหตุ</th>
                 </tr>
             </thead>
             <tbody id="clf-items-body">
-                <tr><td colspan="6" class="text-center text-gray-400 py-8">กรุณาเลือกเครื่องจักรและประเภทการตรวจสอบ</td></tr>
+                <tr><td colspan="8" class="text-center text-gray-400 py-8">กรุณาเลือกเครื่องจักรและประเภทการตรวจสอบ</td></tr>
             </tbody>
         </table>
+        </div>
     </div>
     <div class="mms-card p-5">
         <label class="text-xs font-bold text-gray-500 block mb-1">หมายเหตุ (ถ้ามี)</label>
@@ -1357,6 +1361,7 @@
                     <tr class="bg-gray-50">
                         <th class="text-left px-3 py-2 text-gray-600 border border-gray-200">รายการ</th>
                         <th class="text-center px-3 py-2 text-gray-600 border border-gray-200 w-16">ผล</th>
+                        <th class="text-center px-3 py-2 text-gray-600 border border-gray-200 w-20">หมายเหตุ/รูป</th>
                     </tr>
                 </thead>
                 <tbody id="mcd-items-body"></tbody>
@@ -1364,6 +1369,56 @@
             <div id="mcd-remark-wrap" class="mt-4 hidden">
                 <p class="text-xs text-gray-400 mb-1">หมายเหตุ</p>
                 <p id="mcd-remark" class="text-sm text-gray-700 bg-gray-50 rounded-lg p-3"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- modal-clf-confirm: Confirm inspector name before saving checklist -->
+<div id="modal-clf-confirm" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div class="bg-green-700 px-6 py-4">
+            <h2 class="text-base font-bold text-white">✅ ยืนยันการบันทึก Checklist</h2>
+        </div>
+        <div class="p-6">
+            <div id="clf-confirm-summary" class="text-sm text-gray-600 mb-4 leading-relaxed"></div>
+            <label class="text-xs font-bold text-gray-600 block mb-1">ชื่อผู้ตรวจสอบ <span class="text-red-500">*</span></label>
+            <input id="clf-confirm-name" type="text" placeholder="ยืนยันชื่อ..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400 mb-4">
+            <div class="flex gap-3 justify-end">
+                <button onclick="document.getElementById('modal-clf-confirm').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
+                <button onclick="saveChecklistConfirm()" class="mms-btn mms-btn-green">💾 ยืนยันบันทึก</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- modal-cl-copy: Copy daily/PM items from one machine to others -->
+<div id="modal-cl-copy" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="bg-indigo-700 px-6 py-4 flex-shrink-0 flex justify-between items-center">
+            <div>
+                <h2 id="mcc-title" class="text-base font-bold text-white">📋 Copy รายการตรวจสอบ</h2>
+                <p id="mcc-subtitle" class="text-xs text-indigo-200 mt-0.5"></p>
+            </div>
+            <button onclick="document.getElementById('modal-cl-copy').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
+        </div>
+        <div class="p-4 border-b border-gray-100 flex-shrink-0">
+            <input id="mcc-search" type="text" placeholder="ค้นหารหัส / ชื่อเครื่อง..." oninput="mccFilterMachines()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+        </div>
+        <div class="flex-shrink-0 px-4 py-2 flex gap-3 items-center border-b border-gray-100">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" id="mcc-select-all" onchange="mccToggleAll(this.checked)" class="w-4 h-4">
+                เลือกทั้งหมด
+            </label>
+            <span id="mcc-count" class="text-xs text-gray-400"></span>
+        </div>
+        <div id="mcc-machine-list" class="flex-1 overflow-y-auto p-4 space-y-1"></div>
+        <div class="p-4 border-t border-gray-100 flex-shrink-0">
+            <label class="text-xs font-bold text-gray-600 block mb-1">ชื่อผู้แก้ไข <span class="text-red-500">*</span></label>
+            <input id="mcc-editor-name" type="text" placeholder="ระบุชื่อ..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 mb-3">
+            <div class="flex gap-3 justify-end">
+                <button onclick="document.getElementById('modal-cl-copy').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
+                <button onclick="saveClCopy()" class="mms-btn" style="background:#4f46e5;color:#fff">📋 Copy</button>
             </div>
         </div>
     </div>
@@ -4711,6 +4766,9 @@ let _clPmPlans      = {};   // { machineId: plan } from GAS _PmPlans
 let _clPmDates      = {};   // { "machineId_YYYY-MM": [day, day, ...] }
 let _clDailyDefault = [];   // global default daily items from _DailyDefault sheet
 let _clDailyItems   = {};   // deprecated localStorage cache (kept for compat)
+let _clfItemImages  = {};   // { itemId: [{data: dataURL}] } — per-item images in cl-form
+let _clCopyType     = '';   // 'daily' | 'pm' — active copy modal type
+let _clCopySourceId = '';   // source machineId for copy
 let _clCalYear    = new Date().getFullYear();
 let _clCalMonth   = new Date().getMonth(); // 0-based
 let _clCalMachineId = '';
@@ -4935,13 +4993,15 @@ function clfRenderItems() {
     const tbody = document.getElementById('clf-items-body');
     const machineId = document.getElementById('clf-machine')?.value || '';
     if (!machineId) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-8">กรุณาเลือกเครื่องจักรและประเภทการตรวจสอบ</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-gray-400 py-8">กรุณาเลือกเครื่องจักรและประเภทการตรวจสอบ</td></tr>';
+        _clfItemImages = {};
         clfUpdateProgress();
         return;
     }
+    _clfItemImages = {};
     const items = clfGetItems();
     tbody.innerHTML = items.map((item, idx) => `
-        <tr class="border-b border-gray-100">
+        <tr class="border-b border-gray-100" id="clf-row-${item.id}">
             <td class="px-4 py-2.5 text-gray-400 text-xs">${idx+1}</td>
             <td class="px-4 py-2.5 text-sm">${item.label}</td>
             ${['ok','ng','fix','na'].map(v => `
@@ -4949,8 +5009,44 @@ function clfRenderItems() {
                 <input type="radio" name="clf_item_${item.id}" value="${v}" onchange="clfUpdateProgress()"
                     class="w-4 h-4 cursor-pointer accent-${v==='ok'?'green':v==='ng'?'red':v==='fix'?'yellow':'gray'}-500">
             </td>`).join('')}
+            <td class="text-center px-2 py-2">
+                <button type="button" id="clf-img-btn-${item.id}" onclick="clfItemPickImage('${item.id}')"
+                    class="text-xs px-2 py-1 rounded border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100">📷</button>
+            </td>
+            <td class="px-2 py-2">
+                <input type="text" id="clf-remark-${item.id}" placeholder="หมายเหตุ..."
+                    class="w-full border border-gray-100 rounded px-2 py-1 text-xs focus:outline-none focus:border-gray-300 bg-transparent min-w-[100px]">
+            </td>
         </tr>`).join('');
     clfUpdateProgress();
+}
+function clfItemPickImage(itemId) {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+    inp.onchange = () => {
+        const files = [...inp.files];
+        if (!files.length) return;
+        if (!_clfItemImages[itemId]) _clfItemImages[itemId] = [];
+        let pending = files.length;
+        files.forEach(f => {
+            const r = new FileReader();
+            r.onload = () => compressImage(r.result, d => {
+                _clfItemImages[itemId].push({ data: d });
+                if (--pending === 0) clfUpdateImgBtn(itemId);
+            });
+            r.readAsDataURL(f);
+        });
+    };
+    inp.click();
+}
+function clfUpdateImgBtn(itemId) {
+    const btn = document.getElementById('clf-img-btn-' + itemId);
+    if (!btn) return;
+    const n = (_clfItemImages[itemId]||[]).length;
+    btn.textContent = n ? `📷 ${n}` : '📷';
+    btn.className = n
+        ? 'text-xs px-2 py-1 rounded border border-blue-400 bg-blue-100 text-blue-700 hover:bg-blue-200'
+        : 'text-xs px-2 py-1 rounded border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100';
 }
 function clfUpdateProgress() {
     const items = clfGetItems();
@@ -4974,24 +5070,51 @@ function clfUpdateProgress() {
 }
 async function saveChecklistForm() {
     const machineId = document.getElementById('clf-machine')?.value || '';
-    const fac       = document.getElementById('clf-fac')?.value || '';
-    const area      = document.getElementById('clf-area')?.value || '';
     const inspector = (document.getElementById('clf-inspector')?.value || '').trim();
     const type      = document.getElementById('clf-type')?.value || 'daily';
-    const date      = document.getElementById('clf-date')?.value || '';
-    const remark    = document.getElementById('clf-remark')?.value || '';
     if (!machineId) { showToast('กรุณาเลือกเครื่องจักร', 'warn'); return; }
     if (!inspector) { showToast('กรุณากรอกชื่อผู้ตรวจสอบ', 'warn'); return; }
     if (!sessionPw) { showToast('กรุณาเข้าสู่ระบบก่อนบันทึก', 'warn'); return; }
     const items = clfGetItems();
     const answered = items.filter(i => document.querySelector(`input[name="clf_item_${i.id}"]:checked`));
     if (answered.length < items.length) { showToast('กรุณาตอบรายการให้ครบทุกข้อ', 'warn'); return; }
-    const resultsArr = items.map(i => {
-        const r = document.querySelector(`input[name="clf_item_${i.id}"]:checked`);
-        return { id: i.id, label: i.label, result: r ? r.value : 'na' };
-    });
+    const ok  = items.filter(i => document.querySelector(`input[name="clf_item_${i.id}"]:checked`)?.value === 'ok').length;
+    const ng  = items.filter(i => document.querySelector(`input[name="clf_item_${i.id}"]:checked`)?.value === 'ng').length;
+    const fix = items.filter(i => document.querySelector(`input[name="clf_item_${i.id}"]:checked`)?.value === 'fix').length;
     const machine = machineMaster.find(m => m.id === machineId) || {};
-    const machineName = machine.name || machineId;
+    const machineName = machine.name || machine.machineName || machineId;
+    const totalImgs = Object.values(_clfItemImages).reduce((s, arr) => s + arr.length, 0);
+    document.getElementById('clf-confirm-summary').innerHTML =
+        `<strong>${type === 'pm' ? '🔧 PM' : '📋 Daily'} Checklist</strong><br>
+        เครื่องจักร: <strong>${machineName}</strong><br>
+        รายการ: ${items.length} ข้อ &nbsp;
+        <span class="text-green-600 font-bold">✅ OK ${ok}</span> /
+        <span class="text-red-600 font-bold">❌ NG ${ng}</span> /
+        <span class="text-yellow-600 font-bold">🔧 FIX ${fix}</span><br>
+        ผลรวม: ${ng>0?'<span class="text-red-600 font-bold">❌ FAIL</span>':fix>0?'<span class="text-yellow-600 font-bold">🔧 FIX</span>':'<span class="text-green-600 font-bold">✅ PASS</span>'}
+        ${totalImgs ? `<br>รูปประกอบ: <span class="text-blue-600 font-bold">📷 ${totalImgs} รูป</span>` : ''}`;
+    document.getElementById('clf-confirm-name').value = inspector;
+    document.getElementById('modal-clf-confirm').classList.remove('hidden');
+}
+async function saveChecklistConfirm() {
+    const inspector = (document.getElementById('clf-confirm-name')?.value || '').trim();
+    if (!inspector) { showToast('กรุณาระบุชื่อผู้ตรวจสอบ', 'warn'); return; }
+    document.getElementById('modal-clf-confirm').classList.add('hidden');
+    const machineId   = document.getElementById('clf-machine')?.value || '';
+    const fac         = document.getElementById('clf-fac')?.value || '';
+    const area        = document.getElementById('clf-area')?.value || '';
+    const type        = document.getElementById('clf-type')?.value || 'daily';
+    const date        = document.getElementById('clf-date')?.value || '';
+    const remark      = document.getElementById('clf-remark')?.value || '';
+    const machine     = machineMaster.find(m => m.id === machineId) || {};
+    const machineName = machine.name || machine.machineName || machineId;
+    const items = clfGetItems();
+    const resultsArr = items.map(i => {
+        const r   = document.querySelector(`input[name="clf_item_${i.id}"]:checked`);
+        const rem = (document.getElementById('clf-remark-' + i.id)?.value || '').trim();
+        const imgs = (_clfItemImages[i.id] || []).map(x => x.data);
+        return { id: i.id, label: i.label, result: r ? r.value : 'na', remark: rem, images: imgs };
+    });
     const ok  = resultsArr.filter(r => r.result === 'ok').length;
     const ng  = resultsArr.filter(r => r.result === 'ng').length;
     const fix = resultsArr.filter(r => r.result === 'fix').length;
@@ -5077,13 +5200,37 @@ function openClDetail(r) {
     const items = Array.isArray(r.results) ? r.results : [];
     const tbody = document.getElementById('mcd-items-body');
     tbody.innerHTML = items.map(i => {
-        const color = i.result==='ok'?'text-green-600':i.result==='ng'?'text-red-600':i.result==='fix'?'text-yellow-600':'text-gray-400';
-        return `<tr class="border border-gray-100"><td class="px-3 py-1.5 text-xs">${i.label||i.id}</td><td class="px-3 py-1.5 text-center text-xs font-bold ${color}">${(i.result||'—').toUpperCase()}</td></tr>`;
-    }).join('') || '<tr><td colspan="2" class="text-center text-gray-400 py-4">ไม่มีข้อมูลรายการ</td></tr>';
+        const color  = i.result==='ok'?'text-green-600':i.result==='ng'?'text-red-600':i.result==='fix'?'text-yellow-600':'text-gray-400';
+        const remHtml = i.remark ? `<div class="text-xs text-gray-400 mt-0.5 italic">${i.remark}</div>` : '';
+        const imgIds  = Array.isArray(i.images) ? i.images.filter(Boolean) : [];
+        const imgHtml = imgIds.length
+            ? `<div class="flex flex-wrap gap-1 mt-1">${imgIds.map(id => `<button onclick="loadClDetailImage('${id}',this)" class="text-xs text-blue-500 hover:underline border border-blue-100 rounded px-1">📷 ดูรูป</button>`).join('')}</div>`
+            : '';
+        const extraHtml = (remHtml || imgHtml) ? `<div>${remHtml}${imgHtml}</div>` : '';
+        return `<tr class="border border-gray-100">
+            <td class="px-3 py-1.5 text-xs">${i.label||i.id}${extraHtml}</td>
+            <td class="px-3 py-1.5 text-center text-xs font-bold ${color}">${(i.result||'—').toUpperCase()}</td>
+            <td class="px-3 py-1.5 text-center text-xs text-gray-400">${imgIds.length ? `📷 ${imgIds.length}` : ''}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="3" class="text-center text-gray-400 py-4">ไม่มีข้อมูลรายการ</td></tr>';
     const remWrap = document.getElementById('mcd-remark-wrap');
     if (r.remark) { document.getElementById('mcd-remark').textContent = r.remark; remWrap.classList.remove('hidden'); }
     else remWrap.classList.add('hidden');
     m.classList.remove('hidden');
+}
+
+async function loadClDetailImage(fileId, btn) {
+    btn.disabled = true; btn.textContent = '⏳';
+    try {
+        const d = await clFetch({ action:'getImage', id: fileId });
+        if (d.success && d.dataUrl) {
+            const img = document.createElement('img');
+            img.src = d.dataUrl;
+            img.className = 'w-24 h-16 object-cover rounded border border-gray-200 cursor-pointer';
+            img.onclick = () => window.open(d.dataUrl, '_blank');
+            btn.replaceWith(img);
+        } else { btn.textContent = '❌'; }
+    } catch(e) { btn.textContent = '❌'; btn.disabled = false; }
 }
 
 // ---- SUMMARY ----
@@ -5342,8 +5489,9 @@ function renderClScDaily(machines) {
             <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
             <td class="px-4 py-2.5 text-center text-sm">${custom ? custom.length : '—'}</td>
             <td class="px-4 py-2.5 text-center text-sm">${defCount}</td>
-            <td class="px-4 py-2.5 text-center">
-                ${canEdit ? `<button onclick="openClItemsEditor('per-machine-daily','${id}')" class="text-xs text-green-600 hover:underline">✏️ แก้ไข</button>` : ''}
+            <td class="px-4 py-2.5 text-center flex gap-2 justify-center">
+                ${canEdit ? `<button onclick="openClItemsEditor('per-machine-daily','${id}')" class="text-xs text-green-600 hover:underline">✏️</button>` : ''}
+                ${canEdit ? `<button onclick="openClCopyModal('daily','${id}')" class="text-xs text-indigo-600 hover:underline">📋</button>` : ''}
             </td>
         </tr>`;
     }).join('');
@@ -5378,7 +5526,10 @@ async function renderClScPm(machines) {
             </td>
             <td class="px-3 py-2.5 text-center text-xs text-gray-600">${next}</td>
             <td class="px-3 py-2.5 text-center">
-                ${canEdit ? `<button onclick="openClItemsEditor('per-machine-pm','${id}')" class="text-xs text-blue-600 hover:underline">✏️ แก้ไขรายการ PM</button>` : (pmCount ? `<span class="text-xs text-gray-400">${pmCount} หัวข้อ</span>` : '')}
+                <div class="flex gap-2 justify-center">
+                    ${canEdit ? `<button onclick="openClItemsEditor('per-machine-pm','${id}')" class="text-xs text-blue-600 hover:underline">✏️ PM</button>` : (pmCount ? `<span class="text-xs text-gray-400">${pmCount} หัวข้อ</span>` : '')}
+                    ${canEdit ? `<button onclick="openClCopyModal('pm','${id}')" class="text-xs text-indigo-600 hover:underline">📋</button>` : ''}
+                </div>
             </td>
         </tr>`;
     }).join('');
@@ -5572,6 +5723,74 @@ async function saveClItemsEditor() {
 
     document.getElementById('modal-cl-items-editor').classList.add('hidden');
     loadClSchedule();
+}
+
+// ---- COPY ITEMS MODAL (Phase F) ----
+let _mccAllMachines = []; // machines in current scope for copy modal
+
+function openClCopyModal(type, sourceId) {
+    if (userRole !== 'engineer' && userRole !== 'admin') { showToast('ต้องเป็น Engineer หรือ Admin', 'warn'); return; }
+    _clCopyType     = type;
+    _clCopySourceId = sourceId;
+    const fac  = document.getElementById('clsc-fac')?.value  || '';
+    const area = document.getElementById('clsc-area')?.value || '';
+    const sourceM = machineMaster.find(m => (m.id||m.machineId||'') === sourceId) || {};
+    const sourceName = sourceM.name || sourceM.machineName || sourceId;
+    document.getElementById('mcc-title').textContent    = `📋 Copy ${type === 'pm' ? 'PM' : 'Daily'} Items`;
+    document.getElementById('mcc-subtitle').textContent = `จาก: ${sourceName} (${sourceId})`;
+    document.getElementById('mcc-search').value         = '';
+    document.getElementById('mcc-editor-name').value    = '';
+    document.getElementById('mcc-select-all').checked   = false;
+    _mccAllMachines = clMachinesFor(fac, area).filter(m => (m.id||m.machineId||m.machine_id||'') !== sourceId);
+    mccRenderList(_mccAllMachines);
+    document.getElementById('modal-cl-copy').classList.remove('hidden');
+}
+function mccRenderList(machines) {
+    const list = document.getElementById('mcc-machine-list');
+    const count = document.getElementById('mcc-count');
+    count.textContent = machines.length + ' เครื่อง';
+    list.innerHTML = machines.map(m => {
+        const id   = m.id || m.machineId || m.machine_id || '';
+        const name = m.name || m.machineName || id;
+        return `<label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+            <input type="checkbox" class="mcc-checkbox w-4 h-4" value="${id}">
+            <span class="text-xs font-mono text-gray-500 shrink-0">${id}</span>
+            <span class="text-sm">${name}</span>
+        </label>`;
+    }).join('') || '<p class="text-center text-gray-400 py-4 text-sm">ไม่พบเครื่องจักร</p>';
+}
+function mccFilterMachines() {
+    const q = (document.getElementById('mcc-search')?.value || '').toLowerCase();
+    const filtered = q
+        ? _mccAllMachines.filter(m => (m.id||m.machineId||'').toLowerCase().includes(q) || (m.name||m.machineName||'').toLowerCase().includes(q))
+        : _mccAllMachines;
+    mccRenderList(filtered);
+}
+function mccToggleAll(checked) {
+    document.querySelectorAll('.mcc-checkbox').forEach(cb => { cb.checked = checked; });
+}
+async function saveClCopy() {
+    const editorName = (document.getElementById('mcc-editor-name')?.value || '').trim();
+    if (!editorName) { showToast('กรุณาระบุชื่อผู้แก้ไข', 'warn'); return; }
+    const targetIds = [...document.querySelectorAll('.mcc-checkbox:checked')].map(cb => cb.value);
+    if (!targetIds.length) { showToast('กรุณาเลือกเครื่องจักรปลายทางอย่างน้อย 1 เครื่อง', 'warn'); return; }
+    try {
+        const res = await clPost({ action:'copyMachineItems', type: _clCopyType, sourceId: _clCopySourceId, targetIds, editedBy: editorName });
+        if (res.success) {
+            showToast(`📋 Copy สำเร็จ ${res.count} เครื่อง`, 'success');
+            // update local cache
+            const srcPlan = _clPmPlans[_clCopySourceId] || {};
+            targetIds.forEach(tid => {
+                if (!_clPmPlans[tid]) _clPmPlans[tid] = {};
+                if (_clCopyType === 'daily') _clPmPlans[tid].dailyItems = srcPlan.dailyItems || [];
+                else _clPmPlans[tid].pmItems = srcPlan.pmItems || [];
+            });
+            document.getElementById('modal-cl-copy').classList.add('hidden');
+            loadClSchedule();
+        } else {
+            showToast('Copy ล้มเหลว: ' + (res.error||''), 'error');
+        }
+    } catch(e) { showToast('เชื่อมต่อ GAS ล้มเหลว', 'error'); }
 }
 </script>
 </body>

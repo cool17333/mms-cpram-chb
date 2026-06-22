@@ -161,6 +161,8 @@ function doPost(e) {
     if (data.action === 'saveChecklist') {
       const role = ROLE_PW[(data.pw || '').trim()];
       if (!role) return jsonOut({ success: false, error: 'ต้องเข้าสู่ระบบก่อน' });
+      // Upload per-item images to Drive (Checklist_Images folder)
+      data.results = saveChecklistItemImgs(data.results || []);
       let sh = ss.getSheetByName('_Checklists');
       if (!sh) {
         sh = ss.insertSheet('_Checklists');
@@ -187,6 +189,56 @@ function doPost(e) {
       try { lock2.releaseLock(); } catch(e) {}
       writeLog(ss, tracking, 'บันทึก Checklist ' + (data.type||''), data.inspector, data.overallResult);
       return jsonOut({ success: true, tracking });
+    }
+
+    // ---- COPY machine items (engineer+admin) ----
+    if (data.action === 'copyMachineItems') {
+      const role = ROLE_PW[(data.pw || '').trim()];
+      if (role !== 'engineer' && role !== 'admin')
+        return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin' });
+      const sourceId  = String(data.sourceId || '').trim();
+      const targetIds = (data.targetIds || []).map(id => String(id).trim()).filter(Boolean);
+      const type      = data.type || 'daily';
+      if (!sourceId || !targetIds.length) return jsonOut({ success: false, error: 'sourceId/targetIds required' });
+      const COPY_HDR = ['machineId','machineName','factory','area','dailyEnabled','pmFreqMonths','pmStartMonth','dailyItemsJSON','pmItemsJSON','dailyEditedBy','dailyEditedAt','pmEditedBy','pmEditedAt'];
+      let sh = ss.getSheetByName('_PmPlans');
+      if (!sh) {
+        sh = ss.insertSheet('_PmPlans');
+        const hr = sh.getRange(1, 1, 1, COPY_HDR.length);
+        hr.setValues([COPY_HDR]);
+        hr.setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
+        sh.setFrozenRows(1);
+      }
+      const existing = {};
+      const existingOrder = [];
+      if (sh.getLastRow() > 1) {
+        const lastCol = Math.max(sh.getLastColumn(), COPY_HDR.length);
+        const cur = sh.getRange(2, 1, sh.getLastRow()-1, lastCol).getValues();
+        cur.forEach(r => {
+          if (!r[0]) return;
+          const id = String(r[0]);
+          existing[id] = r.concat(new Array(COPY_HDR.length)).slice(0, COPY_HDR.length);
+          existingOrder.push(id);
+        });
+      }
+      if (!existing[sourceId]) return jsonOut({ success: false, error: 'Source machine not found in _PmPlans' });
+      const srcRow   = existing[sourceId];
+      const nowStr   = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm:ss');
+      const colIdx   = type === 'daily' ? 7 : 8;
+      const editByCol = type === 'daily' ? 9 : 11;
+      const editAtCol = type === 'daily' ? 10 : 12;
+      targetIds.forEach(tid => {
+        if (!existing[tid]) { existingOrder.push(tid); existing[tid] = new Array(COPY_HDR.length).fill(''); existing[tid][0] = tid; }
+        existing[tid][colIdx]    = srcRow[colIdx];
+        existing[tid][editByCol] = data.editedBy || '';
+        existing[tid][editAtCol] = nowStr;
+      });
+      sh.clearContents();
+      sh.getRange(1, 1, 1, COPY_HDR.length).setValues([COPY_HDR]);
+      const allRows = existingOrder.map(id => existing[id]).filter(Boolean);
+      if (allRows.length) sh.getRange(2, 1, allRows.length, COPY_HDR.length).setValues(allRows);
+      writeLog(ss, '-', 'Copy ' + type + ' items: ' + sourceId + ' → ' + targetIds.join(','), data.editedBy||'', '');
+      return jsonOut({ success: true, count: targetIds.length });
     }
 
     // ---- SAVE PM Plans (engineer+admin) — per-row UPSERT, item cols preserved ----
@@ -484,6 +536,25 @@ function saveWhyImgs(json) {
   });
   return JSON.stringify(out);
 }
+// อัปโหลดรูปของแต่ละ item ใน checklist (folder Checklist_Images) — replaces dataURL with fileId
+function saveChecklistItemImgs(results) {
+  let folder = null;
+  return (results||[]).map(item => {
+    const imgs = (item.images||[]).map(v => {
+      if (!v || String(v).indexOf('data:') !== 0) return v || '';
+      if (!folder) {
+        const it = DriveApp.getFoldersByName('Checklist_Images');
+        folder = it.hasNext() ? it.next() : DriveApp.createFolder('Checklist_Images');
+      }
+      const m = String(v).match(/^data:([^;]+);base64,(.*)$/);
+      if (!m) return '';
+      const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], 'cl_item_' + Date.now() + '_' + Math.floor(Math.random()*1e5));
+      return folder.createFile(blob).getId();
+    }).filter(Boolean);
+    return Object.assign({}, item, { images: imgs });
+  });
+}
+
 function collectWhyImgIds(json) {
   try { return Object.keys(JSON.parse(json || '{}')).reduce((a, p) => a.concat(JSON.parse(json)[p]), []).filter(Boolean); }
   catch (e) { return []; }

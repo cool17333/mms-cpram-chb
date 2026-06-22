@@ -1313,7 +1313,7 @@
             </div>
             <div>
                 <label class="text-xs font-bold text-gray-500 block mb-1">ค้นหา</label>
-                <input id="mach-f-search" type="text" placeholder="รหัส / ชื่อเครื่องจักร..." oninput="renderMachTable()"
+                <input id="mach-f-search" type="text" placeholder="รหัส / ชื่อเครื่องจักร..." oninput="_machPage=0;renderMachTable()"
                     class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400 transition-colors">
             </div>
         </div>
@@ -1325,6 +1325,16 @@
             <span class="font-bold text-sm text-gray-800">🏭 รายการเครื่องจักรทั้งหมด</span>
             <div class="flex items-center gap-3">
                 <span id="mach-count" class="text-xs text-gray-500 font-medium"></span>
+                <div class="flex items-center gap-1.5">
+                    <label class="text-xs text-gray-400 font-medium whitespace-nowrap">แสดง</label>
+                    <select id="mach-page-size" onchange="machSetPageSize(this.value)"
+                        class="border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-gray-400 transition-colors bg-white">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="0">ทั้งหมด</option>
+                    </select>
+                    <label class="text-xs text-gray-400 font-medium">รายการ</label>
+                </div>
                 <button onclick="saveMachines()" class="mms-btn mms-btn-green text-sm">💾 บันทึกทั้งหมด</button>
             </div>
         </div>
@@ -1347,6 +1357,21 @@
             <p class="text-4xl mb-3">🏭</p>
             <p class="text-sm">ยังไม่มีเครื่องจักรในทะเบียน<br>
             <span class="text-xs">กด "เพิ่มเครื่องจักร" หรือ "นำเข้า Excel" เพื่อเริ่มต้น</span></p>
+        </div>
+        <!-- Pagination bar -->
+        <div id="mach-pagination" class="hidden px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+            <span id="mach-page-info" class="text-xs text-gray-500"></span>
+            <div class="flex items-center gap-1">
+                <button onclick="machGoPage(0)" id="mach-pg-first"
+                    class="px-2.5 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">«</button>
+                <button onclick="machGoPage(_machPage-1)" id="mach-pg-prev"
+                    class="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">‹ ก่อน</button>
+                <div id="mach-pg-nums" class="flex gap-1"></div>
+                <button onclick="machGoPage(_machPage+1)" id="mach-pg-next"
+                    class="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">ถัดไป ›</button>
+                <button onclick="machGoPage(_machTotalPages-1)" id="mach-pg-last"
+                    class="px-2.5 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">»</button>
+            </div>
         </div>
     </div>
 
@@ -1553,6 +1578,7 @@ async function loadMachineMaster() {
 
 // filter พื้นที่ตามโรงงานที่เลือก (รวมพื้นที่จริงที่มีในข้อมูล + ตาม AREA_MAP)
 function machUpdateFilterArea() {
+    _machPage = 0;
     const f = document.getElementById('mach-f-factory').value;
     const sel = document.getElementById('mach-f-area');
     const cur = sel.value;
@@ -1565,29 +1591,65 @@ function machUpdateFilterArea() {
 
 const AREA_OPTS = (fac) => (/2/.test(fac) ? AREA_MAP['2'] : /1/.test(fac) ? AREA_MAP['1'] : []);
 
+let _machPage      = 0;   // หน้าปัจจุบัน (0-based)
+let _machPageSize  = 10;  // 0 = ทั้งหมด
+let _machTotalPages = 1;
+
+function machSetPageSize(val) {
+    _machPageSize = parseInt(val, 10);
+    _machPage = 0;
+    renderMachTable();
+}
+
+function machGoPage(p) {
+    if (p < 0 || p >= _machTotalPages) return;
+    _machPage = p;
+    renderMachTable();
+    document.getElementById('panel-machines').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function renderMachTable() {
     const ff = document.getElementById('mach-f-factory').value;
     const fa = document.getElementById('mach-f-area').value;
     const fq = (document.getElementById('mach-f-search')?.value || '').trim().toLowerCase();
     const tb = document.getElementById('mach-tbody');
-    const emptyEl = document.getElementById('mach-empty');
-    const rows = machineMaster
+    const emptyEl    = document.getElementById('mach-empty');
+    const pagBar     = document.getElementById('mach-pagination');
+
+    const filtered = machineMaster
         .map((m, i) => ({ m, i }))
         .filter(({m}) => (!ff || m.factory === ff) && (!fa || m.area === fa) &&
             (!fq || String(m.id||'').toLowerCase().includes(fq) || String(m.name||'').toLowerCase().includes(fq)));
-    document.getElementById('mach-count').textContent = `${rows.length} / ${machineMaster.length} เครื่อง`;
-    if (!rows.length) {
+
+    const total = filtered.length;
+
+    // Pagination calc
+    const pageSize     = _machPageSize || total || 1;  // 0 = ทั้งหมด
+    _machTotalPages    = Math.max(1, Math.ceil(total / pageSize));
+    if (_machPage >= _machTotalPages) _machPage = _machTotalPages - 1;
+    const start        = _machPage * pageSize;
+    const pageRows     = _machPageSize ? filtered.slice(start, start + pageSize) : filtered;
+
+    // Count label
+    const showing = _machPageSize
+        ? `แสดง ${total ? start+1 : 0}–${Math.min(start+pageSize, total)} จาก ${total} / ${machineMaster.length} เครื่อง`
+        : `แสดงทั้งหมด ${total} / ${machineMaster.length} เครื่อง`;
+    document.getElementById('mach-count').textContent = showing;
+
+    if (!total) {
         tb.innerHTML = '';
-        if (emptyEl) emptyEl.classList.remove('hidden');
+        emptyEl.classList.remove('hidden');
+        pagBar.classList.add('hidden');
         return;
     }
-    if (emptyEl) emptyEl.classList.add('hidden');
-    tb.innerHTML = rows.map(({m, i}, seq) => {
+    emptyEl.classList.add('hidden');
+
+    tb.innerHTML = pageRows.map(({m, i}, seq) => {
         const editInfo = m.editedBy
             ? `<span class="font-medium text-gray-700">${m.editedBy}</span><br><span class="text-gray-400">${m.editedAt ? new Date(m.editedAt).toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'2-digit'}) : ''}</span>`
             : '<span class="text-gray-300">—</span>';
         return `<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-        <td class="px-4 py-2.5 text-center text-xs text-gray-400">${seq+1}</td>
+        <td class="px-4 py-2.5 text-center text-xs text-gray-400">${start+seq+1}</td>
         <td class="px-4 py-2.5"><span class="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded">${m.id||'—'}</span></td>
         <td class="px-4 py-2.5 text-sm font-medium text-gray-800">${m.name||'—'}</td>
         <td class="px-4 py-2.5 text-xs text-gray-600">${m.factory||'—'}</td>
@@ -1604,6 +1666,41 @@ function renderMachTable() {
         </td>
     </tr>`;
     }).join('');
+
+    // Pagination bar
+    const showPag = _machPageSize && _machTotalPages > 1;
+    pagBar.classList.toggle('hidden', !showPag);
+    if (!showPag) return;
+
+    document.getElementById('mach-page-info').textContent =
+        `หน้า ${_machPage+1} / ${_machTotalPages}`;
+
+    // Prev/First/Next/Last enable state
+    const atFirst = _machPage === 0;
+    const atLast  = _machPage === _machTotalPages - 1;
+    document.getElementById('mach-pg-first').disabled = atFirst;
+    document.getElementById('mach-pg-prev').disabled  = atFirst;
+    document.getElementById('mach-pg-next').disabled  = atLast;
+    document.getElementById('mach-pg-last').disabled  = atLast;
+
+    // Page number buttons (show up to 5 around current)
+    const pgNums = document.getElementById('mach-pg-nums');
+    const half = 2;
+    let pStart = Math.max(0, _machPage - half);
+    let pEnd   = Math.min(_machTotalPages - 1, _machPage + half);
+    if (pEnd - pStart < 4) {
+        if (pStart === 0) pEnd = Math.min(_machTotalPages-1, 4);
+        else pStart = Math.max(0, pEnd - 4);
+    }
+    let nums = '';
+    for (let p = pStart; p <= pEnd; p++) {
+        const active = p === _machPage;
+        nums += `<button onclick="machGoPage(${p})"
+            class="px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors ${active
+                ? 'text-white' : 'border border-gray-200 hover:bg-gray-100 text-gray-600'}"
+            ${active ? `style="background:var(--mms-red)"` : ''}>${p+1}</button>`;
+    }
+    pgNums.innerHTML = nums;
 }
 
 // ---------- Machine Modal (Add / Edit) ----------

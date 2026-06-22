@@ -328,33 +328,32 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
 
         <!-- Breakdown Card -->
-        <div class="mms-card mms-card-red p-7 cursor-pointer" onclick="openReportPopup()">
+        <div class="mms-card mms-card-red p-7 cursor-pointer" onclick="goBdHub()">
             <div class="text-4xl mb-4">🚨</div>
-            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">แจ้ง Breakdown</h2>
-            <p class="text-sm mb-5" style="color:var(--mms-text-sub)">แจ้งเหตุเครื่องจักรเสีย ติดตามสถานะ และ Export รายงาน</p>
+            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">ระบบ Breakdown</h2>
+            <p class="text-sm mb-5" style="color:var(--mms-text-sub)">แจ้งเหตุเครื่องจักรเสีย ติดตาม ปิดงาน และ Export รายงาน</p>
             <div class="flex flex-wrap gap-2">
-                <button class="mms-btn mms-btn-red" onclick="event.stopPropagation();openReportPopup()">+ แจ้ง Breakdown</button>
-                <button class="mms-btn" style="background:#f3f4f6;color:var(--mms-text)" onclick="event.stopPropagation();goRecords()">📋 รายการ</button>
+                <button class="mms-btn mms-btn-red" onclick="event.stopPropagation();goBdHub()">🚨 เข้าระบบ Breakdown</button>
             </div>
         </div>
 
         <!-- Registry Card -->
         <div class="mms-card mms-card-blue p-7 cursor-pointer" onclick="goMachines()">
             <div class="text-4xl mb-4">🗂️</div>
-            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">ทะเบียนเครื่องจักร</h2>
+            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">ระบบทะเบียนเครื่องจักร</h2>
             <p class="text-sm mb-5" style="color:var(--mms-text-sub)">จัดการข้อมูลเครื่องจักร เพิ่ม/แก้ไข/ลบ นำเข้า Excel</p>
             <div class="flex flex-wrap gap-2">
-                <button class="mms-btn mms-btn-blue" onclick="event.stopPropagation();goMachines()">🗂️ เปิดทะเบียน</button>
+                <button class="mms-btn mms-btn-blue" onclick="event.stopPropagation();goMachines()">🗂️ เข้าระบบทะเบียน</button>
             </div>
         </div>
 
-        <!-- Checklist Card (coming soon) -->
-        <div class="mms-card mms-card-green p-7 cursor-pointer" onclick="showToast('โมดูล Checklist กำลังพัฒนา...')">
+        <!-- Checklist Card -->
+        <div class="mms-card mms-card-green p-7 cursor-pointer" onclick="goChecklist()">
             <div class="text-4xl mb-4">✅</div>
-            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">Checklist PM</h2>
+            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">ระบบ Check list</h2>
             <p class="text-sm mb-5" style="color:var(--mms-text-sub)">ตรวจสอบประจำวัน/เดือน Compliance KPI แผน PM</p>
             <div class="flex flex-wrap gap-2">
-                <button class="mms-btn mms-btn-green" onclick="event.stopPropagation();showToast('โมดูล Checklist กำลังพัฒนา...')">✅ เปิด Checklist</button>
+                <button class="mms-btn mms-btn-green" onclick="event.stopPropagation();goChecklist()">✅ เข้าระบบ Checklist</button>
             </div>
             <span class="absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded-full" style="background:#e8f8ef;color:var(--mms-green)">Coming Soon</span>
         </div>
@@ -380,20 +379,65 @@
         </div>
     </div>
 
-    <!-- Secondary actions (engineer/admin) -->
-    <div class="text-center mt-6 flex flex-wrap gap-3 justify-center">
-        <button id="btn-manual-create" onclick="goManualCreate()"
-                class="hidden text-xs font-bold text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500 rounded-full px-5 py-2 transition-colors">
-            ✍️ Manual Create — สร้างเอกสารปิดจบ (กรอกครบทีเดียว)
-        </button>
-        <button onclick="goSummary()"
-                class="text-xs font-bold text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500 rounded-full px-5 py-2 transition-colors">
-            📊 ดู Dashboard สรุปข้อมูล Breakdown
-        </button>
-    </div>
 </div>
 
 </div><!-- end panel-home -->
+
+<!-- ==================== BREAKDOWN SUB-HUB ==================== -->
+<div id="panel-bd-hub" class="tab-panel">
+
+<div class="mms-header py-6 px-4 md:px-8">
+    <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <div>
+            <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">ระบบจัดการเครื่องจักร · CPRAM CHB</p>
+            <h1 class="text-xl md:text-2xl font-bold text-white">🚨 ระบบ Breakdown</h1>
+        </div>
+        <div class="flex gap-2 text-sm">
+            <span class="mms-stat-chip" id="bdhub-stat-wip">🔧 WIP: —</span>
+            <span class="mms-stat-chip" id="bdhub-stat-month">📋 เดือนนี้: —</span>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-5xl mx-auto px-4 md:px-8 py-8">
+    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">เลือกการดำเนินการ</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+
+        <!-- แจ้ง Breakdown -->
+        <div class="mms-card mms-card-red p-6 cursor-pointer text-center" onclick="openReportPopup()">
+            <div class="text-4xl mb-3">🚨</div>
+            <h3 class="font-bold mb-1" style="color:var(--mms-text)">แจ้ง Breakdown</h3>
+            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">เปิดใบแจ้งเหตุเครื่องจักรเสีย</p>
+            <button class="mms-btn mms-btn-red w-full justify-center text-sm" onclick="event.stopPropagation();openReportPopup()">+ แจ้ง Breakdown</button>
+        </div>
+
+        <!-- รายการ Breakdown -->
+        <div class="mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #e67e22" onclick="goRecords()">
+            <div class="text-4xl mb-3">📋</div>
+            <h3 class="font-bold mb-1" style="color:var(--mms-text)">รายการ Breakdown</h3>
+            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">ค้นหา ติดตาม แก้ไขสถานะ</p>
+            <button class="mms-btn w-full justify-center text-sm" style="background:#e67e22;color:#fff" onclick="event.stopPropagation();goRecords()">📋 ดูรายการ</button>
+        </div>
+
+        <!-- สรุป Breakdown -->
+        <div class="mms-card mms-card-blue p-6 cursor-pointer text-center" onclick="goSummary()">
+            <div class="text-4xl mb-3">📊</div>
+            <h3 class="font-bold mb-1" style="color:var(--mms-text)">สรุป Breakdown</h3>
+            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">KPI กราฟ ตารางสรุปรายเดือน</p>
+            <button class="mms-btn mms-btn-blue w-full justify-center text-sm" onclick="event.stopPropagation();goSummary()">📊 ดูสรุป</button>
+        </div>
+
+        <!-- Manual Report (Admin only) -->
+        <div id="bdhub-card-manual" class="hidden mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #8e44ad" onclick="goManualCreate()">
+            <div class="text-4xl mb-3">✍️</div>
+            <h3 class="font-bold mb-1" style="color:var(--mms-text)">Manual Report</h3>
+            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">สร้างเอกสารปิดจบทีเดียว</p>
+            <button class="mms-btn w-full justify-center text-sm" style="background:#8e44ad;color:#fff" onclick="event.stopPropagation();goManualCreate()">✍️ Manual Create</button>
+        </div>
+    </div>
+</div>
+
+</div><!-- end panel-bd-hub -->
 
 <!-- ==================== TAB 1: FORM ==================== -->
 <div id="panel-form" class="tab-panel p-4 md:p-8">
@@ -1203,13 +1247,13 @@ function applyRole() {
     document.getElementById('role-display').textContent = roleLabel(userRole);
     document.getElementById('login-row').classList.toggle('hidden', userRole !== 'user');
     document.getElementById('logout-btn').classList.toggle('hidden', userRole === 'user');
-    document.getElementById('btn-manual-create')?.classList.toggle('hidden', userRole === 'user');
+    // Manual Report card ใน bd-hub (เฉพาะ engineer/admin)
+    document.getElementById('bdhub-card-manual')?.classList.toggle('hidden', userRole === 'user');
     // แก้ URL ได้เฉพาะ Admin
     const urlInput = document.getElementById('gas-url-input');
     if (urlInput) urlInput.disabled = !isAdmin;
     document.getElementById('btn-save-url')?.classList.toggle('hidden', !isAdmin);
     document.getElementById('url-lock-hint')?.classList.toggle('hidden', isAdmin);
-    // btn-machines ถูกย้ายเป็น Hub card แล้ว — ไม่ต้องจัดการ
     if (_lastRecords.length) applyRecordFilter();   // re-render ปุ่มตาม role
 }
 
@@ -1489,11 +1533,12 @@ function showTracking() {
 // ============================================================
 const PAGE_TITLE = {
     home:      '',
+    'bd-hub':  '🚨 ระบบ Breakdown',
     form:      '🚨 แจ้ง Breakdown',
     records:   '📋 รายการ Breakdown',
     summary:   '📊 สรุปข้อมูล Breakdown',
-    machines:  '🗂️ ทะเบียนเครื่องจักร',
-    checklist: '✅ Checklist PM',
+    machines:  '🗂️ ระบบทะเบียนเครื่องจักร',
+    checklist: '✅ ระบบ Check list',
 };
 
 // โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
@@ -1826,6 +1871,25 @@ function goHome() {
     cancelEdit();
     switchTab('home');
     initHubStats();
+}
+
+function goBdHub() {
+    switchTab('bd-hub');
+    // อัปเดต stats ใน bd-hub header จาก cache
+    if (_lastRecords.length) {
+        const now  = new Date();
+        const ym   = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        const wip  = _lastRecords.filter(r => r.status === 'wip').length;
+        const month = _lastRecords.filter(r => (r.date||'').startsWith(ym) && r.status !== 'cancel').length;
+        const elW = document.getElementById('bdhub-stat-wip');
+        const elM = document.getElementById('bdhub-stat-month');
+        if (elW) elW.textContent = `🔧 WIP: ${wip}`;
+        if (elM) elM.textContent = `📋 เดือนนี้: ${month}`;
+    }
+}
+
+function goChecklist() {
+    showToast('โมดูล Check list กำลังพัฒนา — เร็วๆ นี้!', 'info');
 }
 
 // ============================================================

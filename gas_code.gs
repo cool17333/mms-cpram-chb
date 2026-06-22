@@ -112,9 +112,9 @@ function doPost(e) {
 
       if (!sh) sh = ss.insertSheet('_Machines');
       sh.clearContents();
-      const header = ['รหัสเครื่องจักร', 'ชื่อเครื่องจักร', 'โรงงาน', 'พื้นที่', 'ไลน์'];
+      const header = ['รหัสเครื่องจักร', 'ชื่อเครื่องจักร', 'โรงงาน', 'พื้นที่', 'ไลน์', 'ผู้แก้ไข', 'แก้ไขเมื่อ'];
       sh.getRange(1, 1, 1, header.length).setValues([header]);
-      const rows = incoming.map(m => [m.id || '', m.name || '', m.factory || '', m.area || '', m.line || '']);
+      const rows = incoming.map(m => [m.id || '', m.name || '', m.factory || '', m.area || '', m.line || '', m.editedBy || '', m.editedAt || '']);
       if (rows.length) sh.getRange(2, 1, rows.length, header.length).setValues(rows);
       return jsonOut({ success: true, count: rows.length, backedUp: existingCount });
     }
@@ -501,7 +501,7 @@ function doGetMachines() {
   for (let i = 1; i < data.length; i++) {
     const r = data[i];
     if (!r[0]) continue;
-    rows.push({ id: String(r[0]).trim(), name: r[1] || '', factory: r[2] || '', area: r[3] || '', line: r[4] || '' });
+    rows.push({ id: String(r[0]).trim(), name: r[1] || '', factory: r[2] || '', area: r[3] || '', line: r[4] || '', editedBy: r[5] || '', editedAt: r[6] || '' });
   }
   return jsonOut({ success: true, data: rows });
 }

@@ -122,9 +122,9 @@
                 class="hidden shrink-0 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all bg-gray-800 text-gray-200 hover:bg-orange-500 hover:text-white flex items-center gap-1.5">
             <span>🏠</span> Home
         </button>
-        <button id="btn-back" onclick="goBdHub()"
+        <button id="btn-back" onclick="goBack()"
                 class="hidden shrink-0 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all bg-gray-700 text-gray-200 hover:bg-red-600 hover:text-white flex items-center gap-1.5">
-            ← ระบบ Breakdown
+            ← กลับ
         </button>
         <span id="nav-title" class="text-white font-bold text-sm sm:text-base truncate"></span>
         <div class="ml-auto shrink-0">
@@ -359,7 +359,6 @@
             <div class="flex flex-wrap gap-2">
                 <button class="mms-btn mms-btn-green" onclick="event.stopPropagation();goChecklist()">✅ เข้าระบบ Checklist</button>
             </div>
-            <span class="absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded-full" style="background:#e8f8ef;color:var(--mms-green)">Coming Soon</span>
         </div>
     </div>
 
@@ -584,6 +583,368 @@
 
 </div>
 </div><!-- end panel-log -->
+
+<!-- ==================== CHECKLIST: HUB ==================== -->
+<div id="panel-cl-hub" class="tab-panel p-4 md:p-6">
+<div class="max-w-5xl mx-auto">
+    <div class="rounded-2xl p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4" style="background:linear-gradient(135deg,#1a472a,#27ae60)">
+        <div>
+            <h1 class="text-2xl font-bold text-white mb-1">✅ ระบบ Check list</h1>
+            <p class="text-green-200 text-sm">ตรวจสอบประจำวัน · PM Compliance · KPI</p>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+            <span id="cl-hub-stat-today" class="mms-stat-chip">📋 วันนี้: —</span>
+            <span id="cl-hub-stat-month" class="mms-stat-chip">📊 เดือนนี้: —</span>
+        </div>
+    </div>
+    <div class="flex flex-wrap gap-3 mb-5 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <select id="cl-hub-fac" onchange="clHubFacChange()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+            <option value="">-- โรงงาน --</option>
+        </select>
+        <select id="cl-hub-area" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+            <option value="">-- Area --</option>
+        </select>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
+        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid var(--mms-green)" onclick="goClForm('daily')">
+            <div class="text-3xl mb-2">📋</div>
+            <h3 class="font-bold mb-1">Checklist รายวัน</h3>
+            <p class="text-xs text-gray-500">บันทึกการตรวจสอบประจำวัน</p>
+        </div>
+        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid var(--mms-blue)" onclick="goClForm('pm')">
+            <div class="text-3xl mb-2">🔧</div>
+            <h3 class="font-bold mb-1">PM Checklist</h3>
+            <p class="text-xs text-gray-500">บันทึกการ Preventive Maintenance</p>
+        </div>
+        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid #8e44ad" onclick="switchTab('cl-list')">
+            <div class="text-3xl mb-2">📁</div>
+            <h3 class="font-bold mb-1">รายการ Checklist</h3>
+            <p class="text-xs text-gray-500">ดูประวัติการตรวจสอบ</p>
+        </div>
+        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid var(--mms-red)" onclick="switchTab('cl-summary')">
+            <div class="text-3xl mb-2">📊</div>
+            <h3 class="font-bold mb-1">สรุปผล / KPI</h3>
+            <p class="text-xs text-gray-500">Compliance rate &amp; KPI dashboard</p>
+        </div>
+        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid #e67e22" onclick="switchTab('cl-calendar')">
+            <div class="text-3xl mb-2">📅</div>
+            <h3 class="font-bold mb-1">ปฏิทิน PM</h3>
+            <p class="text-xs text-gray-500">ดูกำหนด PM รายเดือน</p>
+        </div>
+        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid #16a085" onclick="switchTab('cl-schedule')">
+            <div class="text-3xl mb-2">📐</div>
+            <h3 class="font-bold mb-1">แผน / ตาราง PM</h3>
+            <p class="text-xs text-gray-500">กำหนดแผน PM &amp; รายการตรวจ</p>
+        </div>
+    </div>
+    <div class="mms-card p-5">
+        <h3 class="font-bold mb-3 text-sm">🕐 Checklist ล่าสุด</h3>
+        <div id="cl-hub-recent" class="text-sm text-gray-400 text-center py-4">กำลังโหลด...</div>
+    </div>
+</div>
+</div><!-- end panel-cl-hub -->
+
+<!-- ==================== CHECKLIST: FORM ==================== -->
+<div id="panel-cl-form" class="tab-panel p-4 md:p-6">
+<div class="max-w-4xl mx-auto">
+    <div class="mms-card p-6 mb-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">ประเภท</label>
+                <select id="clf-type" onchange="clfTypeChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                    <option value="daily">📋 รายวัน (Daily)</option>
+                    <option value="pm">🔧 PM (Preventive)</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">วันที่</label>
+                <input type="date" id="clf-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">กะ</label>
+                <select id="clf-shift" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                    <option value="เช้า">เช้า</option>
+                    <option value="บ่าย">บ่าย</option>
+                    <option value="ดึก">ดึก</option>
+                    <option value="-">- (ไม่ระบุ)</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">โรงงาน</label>
+                <select id="clf-fac" onchange="clfFacChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                    <option value="">-- เลือก Factory --</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">Area</label>
+                <select id="clf-area" onchange="clfAreaChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                    <option value="">-- เลือก Area --</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">เครื่องจักร</label>
+                <select id="clf-machine" onchange="clfMachineChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                    <option value="">-- เลือกเครื่องจักร --</option>
+                </select>
+            </div>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">ผู้ตรวจสอบ</label>
+            <input type="text" id="clf-inspector" placeholder="ชื่อผู้ตรวจ..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+        </div>
+    </div>
+    <div class="mms-card p-4 mb-4 flex items-center gap-4">
+        <div class="flex-1 bg-gray-100 rounded-full h-3">
+            <div id="clf-progress-bar" class="bg-green-500 h-3 rounded-full transition-all duration-300" style="width:0%"></div>
+        </div>
+        <span id="clf-progress-text" class="text-sm font-bold text-gray-600 whitespace-nowrap">0 / 0</span>
+        <span id="clf-result-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-500">—</span>
+    </div>
+    <div class="mms-card overflow-hidden mb-4">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="text-left px-4 py-3 font-bold text-gray-600 w-8">#</th>
+                    <th class="text-left px-4 py-3 font-bold text-gray-600">รายการตรวจสอบ</th>
+                    <th class="text-center px-2 py-3 font-bold text-green-600 w-14">OK</th>
+                    <th class="text-center px-2 py-3 font-bold text-red-600 w-14">NG</th>
+                    <th class="text-center px-2 py-3 font-bold text-yellow-600 w-14">FIX</th>
+                    <th class="text-center px-2 py-3 font-bold text-gray-400 w-14">N/A</th>
+                </tr>
+            </thead>
+            <tbody id="clf-items-body">
+                <tr><td colspan="6" class="text-center text-gray-400 py-8">กรุณาเลือกเครื่องจักรและประเภทการตรวจสอบ</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="mms-card p-5">
+        <label class="text-xs font-bold text-gray-500 block mb-1">หมายเหตุ (ถ้ามี)</label>
+        <textarea id="clf-remark" rows="2" placeholder="บันทึกหมายเหตุ..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400 mb-4"></textarea>
+        <div class="flex gap-3 justify-end">
+            <button onclick="switchTab('cl-hub')" class="mms-btn">← ยกเลิก</button>
+            <button id="clf-save-btn" onclick="saveChecklistForm()" class="mms-btn mms-btn-green">💾 บันทึก Checklist</button>
+        </div>
+    </div>
+</div>
+</div><!-- end panel-cl-form -->
+
+<!-- ==================== CHECKLIST: LIST ==================== -->
+<div id="panel-cl-list" class="tab-panel p-4 md:p-6">
+<div class="max-w-5xl mx-auto">
+    <div class="mms-card p-4 mb-4 flex flex-wrap gap-3 items-end">
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">Factory</label>
+            <select id="cll-fac" onchange="cllFacChange()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">ทั้งหมด</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">Area</label>
+            <select id="cll-area" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">ทั้งหมด</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">ประเภท</label>
+            <select id="cll-type" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">ทั้งหมด</option>
+                <option value="daily">รายวัน</option>
+                <option value="pm">PM</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">เดือน</label>
+            <input type="month" id="cll-month" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+        </div>
+        <button onclick="loadClList()" class="mms-btn mms-btn-green">🔍 ค้นหา</button>
+    </div>
+    <div class="mms-card overflow-hidden">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="text-left px-4 py-3 font-bold text-gray-600">Tracking</th>
+                    <th class="text-left px-3 py-3 font-bold text-gray-600">ประเภท</th>
+                    <th class="text-left px-3 py-3 font-bold text-gray-600">วันที่</th>
+                    <th class="text-left px-3 py-3 font-bold text-gray-600">เครื่องจักร</th>
+                    <th class="text-left px-3 py-3 font-bold text-gray-600">ผู้ตรวจ</th>
+                    <th class="text-center px-3 py-3 font-bold text-gray-600">ผล</th>
+                    <th class="text-center px-3 py-3 font-bold text-gray-600"></th>
+                </tr>
+            </thead>
+            <tbody id="cll-body">
+                <tr><td colspan="7" class="text-center text-gray-400 py-8">กรุณากดค้นหาเพื่อโหลดข้อมูล</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</div><!-- end panel-cl-list -->
+
+<!-- ==================== CHECKLIST: SUMMARY ==================== -->
+<div id="panel-cl-summary" class="tab-panel p-4 md:p-6">
+<div class="max-w-5xl mx-auto">
+    <div class="mms-card p-4 mb-4 flex flex-wrap gap-3 items-end">
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">Factory</label>
+            <select id="cls-fac" onchange="loadClSummary()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">ทั้งหมด</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">ปี</label>
+            <select id="cls-year" onchange="loadClSummary()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"></select>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">เดือน</label>
+            <select id="cls-month" onchange="loadClSummary()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">ทั้งปี</option>
+                <option value="01">มกราคม</option><option value="02">กุมภาพันธ์</option>
+                <option value="03">มีนาคม</option><option value="04">เมษายน</option>
+                <option value="05">พฤษภาคม</option><option value="06">มิถุนายน</option>
+                <option value="07">กรกฎาคม</option><option value="08">สิงหาคม</option>
+                <option value="09">กันยายน</option><option value="10">ตุลาคม</option>
+                <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+            </select>
+        </div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+        <div class="mms-card p-5 text-center">
+            <div id="cls-kpi-compliance" class="text-3xl font-bold" style="color:var(--mms-green)">—</div>
+            <div class="text-xs text-gray-500 mt-1">Compliance Rate</div>
+        </div>
+        <div class="mms-card p-5 text-center">
+            <div id="cls-kpi-total" class="text-3xl font-bold text-gray-700">—</div>
+            <div class="text-xs text-gray-500 mt-1">รายการตรวจ</div>
+        </div>
+        <div class="mms-card p-5 text-center">
+            <div id="cls-kpi-ng" class="text-3xl font-bold" style="color:var(--mms-red)">—</div>
+            <div class="text-xs text-gray-500 mt-1">NG</div>
+        </div>
+        <div class="mms-card p-5 text-center">
+            <div id="cls-kpi-fix" class="text-3xl font-bold" style="color:#e67e22">—</div>
+            <div class="text-xs text-gray-500 mt-1">FIX</div>
+        </div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-5">
+        <div class="mms-card p-5">
+            <h3 class="font-bold text-sm mb-3">📊 Compliance รายเดือน</h3>
+            <canvas id="cls-chart" height="220"></canvas>
+        </div>
+        <div class="mms-card p-5">
+            <h3 class="font-bold text-sm mb-3">📋 ผลรายเดือน</h3>
+            <div id="cls-monthly-table" class="text-sm overflow-auto max-h-64">
+                <p class="text-gray-400 text-center py-4">ยังไม่มีข้อมูล</p>
+            </div>
+        </div>
+    </div>
+</div>
+</div><!-- end panel-cl-summary -->
+
+<!-- ==================== CHECKLIST: CALENDAR ==================== -->
+<div id="panel-cl-calendar" class="tab-panel p-4 md:p-6">
+<div class="max-w-4xl mx-auto">
+    <div class="mms-card p-4 mb-4 flex flex-wrap gap-3 items-center">
+        <select id="clcal-fac" onchange="clCalFacChange()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+            <option value="">-- Factory --</option>
+        </select>
+        <select id="clcal-machine" onchange="renderClCalendar()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+            <option value="">-- เครื่องจักร --</option>
+        </select>
+        <div class="flex items-center gap-2 ml-auto">
+            <button onclick="clCalShift(-1)" class="mms-btn px-3">◀</button>
+            <span id="clcal-label" class="font-bold text-sm min-w-[7rem] text-center">—</span>
+            <button onclick="clCalShift(1)" class="mms-btn px-3">▶</button>
+        </div>
+        <button id="clcal-set-btn" onclick="openClSetDates()" class="mms-btn mms-btn-blue hidden">📅 กำหนดวัน PM</button>
+    </div>
+    <div class="mms-card p-4">
+        <div class="grid grid-cols-7 gap-1 mb-2">
+            <div class="text-center text-xs font-bold text-red-500">อา</div>
+            <div class="text-center text-xs font-bold text-gray-600">จ</div>
+            <div class="text-center text-xs font-bold text-gray-600">อ</div>
+            <div class="text-center text-xs font-bold text-gray-600">พ</div>
+            <div class="text-center text-xs font-bold text-gray-600">พฤ</div>
+            <div class="text-center text-xs font-bold text-gray-600">ศ</div>
+            <div class="text-center text-xs font-bold text-blue-600">ส</div>
+        </div>
+        <div id="clcal-grid" class="grid grid-cols-7 gap-1"></div>
+        <div class="flex flex-wrap gap-4 mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500">
+            <span><span class="inline-block w-3 h-3 rounded-full bg-green-400 mr-1 align-middle"></span>Checklist OK</span>
+            <span><span class="inline-block w-3 h-3 rounded-full bg-red-400 mr-1 align-middle"></span>มี NG</span>
+            <span><span class="inline-block w-3 h-3 rounded-full bg-orange-400 mr-1 align-middle"></span>PM กำหนด</span>
+            <span><span class="inline-block w-3 h-3 rounded-full bg-blue-400 mr-1 align-middle"></span>PM ทำแล้ว</span>
+        </div>
+    </div>
+</div>
+</div><!-- end panel-cl-calendar -->
+
+<!-- ==================== CHECKLIST: SCHEDULE ==================== -->
+<div id="panel-cl-schedule" class="tab-panel p-4 md:p-6">
+<div class="max-w-5xl mx-auto">
+    <div class="mms-card p-4 mb-4 flex flex-wrap gap-3 items-end">
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">Factory</label>
+            <select id="clsc-fac" onchange="clScFacChange()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">-- เลือก Factory --</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">Area</label>
+            <select id="clsc-area" onchange="loadClSchedule()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">ทั้งหมด</option>
+            </select>
+        </div>
+    </div>
+    <div class="flex gap-2 mb-4">
+        <button id="clsc-tab-daily" onclick="clScTab('daily')" class="mms-btn mms-btn-green">📋 Daily Items</button>
+        <button id="clsc-tab-pm" onclick="clScTab('pm')" class="mms-btn">🔧 แผน PM</button>
+    </div>
+    <div id="clsc-daily-view">
+        <div class="mms-card overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold text-sm">รายการตรวจสอบประจำวัน</h3>
+                <button onclick="openClDailyEditor(null)" class="mms-btn mms-btn-green text-xs">+ กำหนดรายการ</button>
+            </div>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="text-left px-4 py-3 font-bold text-gray-600">เครื่องจักร</th>
+                        <th class="text-center px-4 py-3 font-bold text-gray-600">รายการ Custom</th>
+                        <th class="text-center px-4 py-3 font-bold text-gray-600">รายการ Default</th>
+                        <th class="text-center px-4 py-3 font-bold text-gray-600"></th>
+                    </tr>
+                </thead>
+                <tbody id="clsc-daily-body">
+                    <tr><td colspan="4" class="text-center text-gray-400 py-8">เลือก Factory เพื่อดูข้อมูล</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="clsc-pm-view" class="hidden">
+        <div class="mms-card overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold text-sm">แผน PM (Preventive Maintenance)</h3>
+                <button onclick="saveAllPmPlans()" class="mms-btn mms-btn-blue text-xs">💾 บันทึกแผน PM ทั้งหมด</button>
+            </div>
+            <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="text-left px-4 py-3 font-bold text-gray-600">เครื่องจักร</th>
+                        <th class="text-center px-3 py-3 font-bold text-gray-600">Daily</th>
+                        <th class="text-center px-3 py-3 font-bold text-gray-600">PM ทุก (เดือน)</th>
+                        <th class="text-left px-3 py-3 font-bold text-gray-600">เริ่มต้น PM</th>
+                        <th class="text-center px-3 py-3 font-bold text-gray-600">PM ถัดไป</th>
+                    </tr>
+                </thead>
+                <tbody id="clsc-pm-body">
+                    <tr><td colspan="5" class="text-center text-gray-400 py-8">เลือก Factory เพื่อดูข้อมูล</td></tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+</div>
+</div><!-- end panel-cl-schedule -->
 
 <!-- ==================== TAB 1: FORM ==================== -->
 <div id="panel-form" class="tab-panel p-4 md:p-8">
@@ -961,6 +1322,92 @@
             <p class="text-sm font-bold text-amber-800">📸 กรุณา Capture ภาพหน้าจอเพื่อส่งเลข Tracking แจ้ง Breakdown ให้ผู้รับงานต่อไป</p>
         </div>
         <button onclick="closeTrackingModal()" class="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-lg text-sm transition-colors">รับทราบ</button>
+    </div>
+</div>
+
+<!-- ==================== CHECKLIST MODALS ==================== -->
+
+<!-- modal-cl-detail: View a checklist record -->
+<div id="modal-cl-detail" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="px-6 py-4 flex-shrink-0 flex justify-between items-center" style="background:linear-gradient(135deg,#1a472a,#27ae60)">
+            <div>
+                <h2 id="mcd-title" class="text-base font-bold text-white">📋 รายละเอียด Checklist</h2>
+                <p id="mcd-tracking" class="text-xs text-green-200 mt-0.5"></p>
+            </div>
+            <button onclick="document.getElementById('modal-cl-detail').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 text-sm">
+                <div><span class="text-xs text-gray-400 block">วันที่</span><span id="mcd-date" class="font-bold"></span></div>
+                <div><span class="text-xs text-gray-400 block">กะ</span><span id="mcd-shift" class="font-bold"></span></div>
+                <div><span class="text-xs text-gray-400 block">ประเภท</span><span id="mcd-type" class="font-bold"></span></div>
+                <div><span class="text-xs text-gray-400 block">เครื่องจักร</span><span id="mcd-machine" class="font-bold"></span></div>
+                <div><span class="text-xs text-gray-400 block">ผู้ตรวจ</span><span id="mcd-inspector" class="font-bold"></span></div>
+                <div><span class="text-xs text-gray-400 block">ผลรวม</span><span id="mcd-result" class="font-bold"></span></div>
+            </div>
+            <div class="flex gap-3 mb-4 text-sm">
+                <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 font-bold" id="mcd-ok-count"></span>
+                <span class="px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold" id="mcd-ng-count"></span>
+                <span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-bold" id="mcd-fix-count"></span>
+                <span class="px-3 py-1 rounded-full bg-gray-100 text-gray-500 font-bold" id="mcd-na-count"></span>
+            </div>
+            <table class="w-full text-sm border-collapse">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="text-left px-3 py-2 text-gray-600 border border-gray-200">รายการ</th>
+                        <th class="text-center px-3 py-2 text-gray-600 border border-gray-200 w-16">ผล</th>
+                    </tr>
+                </thead>
+                <tbody id="mcd-items-body"></tbody>
+            </table>
+            <div id="mcd-remark-wrap" class="mt-4 hidden">
+                <p class="text-xs text-gray-400 mb-1">หมายเหตุ</p>
+                <p id="mcd-remark" class="text-sm text-gray-700 bg-gray-50 rounded-lg p-3"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- modal-cl-set-dates: Set specific PM dates for a machine+month -->
+<div id="modal-cl-set-dates" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-blue-600 px-6 py-4 flex justify-between items-center">
+            <h2 class="text-base font-bold text-white">📅 กำหนดวัน PM</h2>
+            <button onclick="document.getElementById('modal-cl-set-dates').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
+        </div>
+        <div class="p-6">
+            <p id="mcsd-info" class="text-sm text-gray-600 mb-4"></p>
+            <div id="mcsd-days" class="grid grid-cols-7 gap-1 mb-5"></div>
+            <div class="flex gap-3 justify-end">
+                <button onclick="document.getElementById('modal-cl-set-dates').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
+                <button onclick="saveClPmDates()" class="mms-btn mms-btn-blue">💾 บันทึก</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- modal-cl-daily-editor: Edit custom daily items for a machine -->
+<div id="modal-cl-daily-editor" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="bg-green-700 px-6 py-4 flex-shrink-0 flex justify-between items-center">
+            <div>
+                <h2 class="text-base font-bold text-white">📋 กำหนดรายการตรวจสอบรายวัน</h2>
+                <p id="mcde-machine-name" class="text-xs text-green-200 mt-0.5"></p>
+            </div>
+            <button onclick="document.getElementById('modal-cl-daily-editor').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5">
+            <p class="text-xs text-gray-500 mb-3">รายการ Default (ใช้ถ้าไม่มี Custom)</p>
+            <div id="mcde-default-items" class="mb-4 space-y-1 text-sm text-gray-600"></div>
+            <p class="text-xs font-bold text-gray-600 mb-2">รายการ Custom (เฉพาะเครื่องนี้)</p>
+            <div id="mcde-custom-items" class="space-y-2 mb-3"></div>
+            <button onclick="mcdeAddItem()" class="mms-btn text-xs w-full">+ เพิ่มรายการ</button>
+        </div>
+        <div class="p-4 border-t border-gray-100 flex gap-3 justify-end">
+            <button onclick="document.getElementById('modal-cl-daily-editor').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
+            <button onclick="saveClDailyItems()" class="mms-btn mms-btn-green">💾 บันทึก</button>
+        </div>
     </div>
 </div>
 
@@ -1998,14 +2445,20 @@ function showTracking() {
 // PAGE NAVIGATION (Home → เลือกเมนู)
 // ============================================================
 const PAGE_TITLE = {
-    home:      '',
-    'bd-hub':  '🚨 ระบบ Breakdown',
-    form:      '🚨 แจ้ง Breakdown',
-    records:   '📋 รายการ Breakdown',
-    summary:   '📊 สรุปข้อมูล Breakdown',
-    machines:  '🗂️ ระบบทะเบียนเครื่องจักร',
-    checklist: '✅ ระบบ Check list',
-    log:       '📋 Log ระบบ (Admin)',
+    home:           '',
+    'bd-hub':       '🚨 ระบบ Breakdown',
+    form:           '🚨 แจ้ง Breakdown',
+    records:        '📋 รายการ Breakdown',
+    summary:        '📊 สรุปข้อมูล Breakdown',
+    machines:       '🗂️ ระบบทะเบียนเครื่องจักร',
+    checklist:      '✅ ระบบ Check list',
+    log:            '📋 Log ระบบ (Admin)',
+    'cl-hub':       '✅ ระบบ Check list',
+    'cl-form':      '📋 บันทึก Checklist',
+    'cl-list':      '📁 รายการ Checklist',
+    'cl-summary':   '📊 สรุป / KPI',
+    'cl-calendar':  '📅 ปฏิทิน PM',
+    'cl-schedule':  '📐 แผน PM',
 };
 
 // โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
@@ -2322,6 +2775,7 @@ async function submitReportPopup() {
 }
 
 const BD_SUB_PANELS = new Set(['form', 'records', 'summary']);
+const CL_SUB_PANELS = new Set(['cl-form', 'cl-list', 'cl-summary', 'cl-calendar', 'cl-schedule']);
 
 function switchTab(name) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -2329,10 +2783,15 @@ function switchTab(name) {
 
     document.getElementById('nav-title').textContent = PAGE_TITLE[name] || '';
     document.getElementById('btn-home').classList.toggle('hidden', name === 'home');
-    document.getElementById('btn-back').classList.toggle('hidden', !BD_SUB_PANELS.has(name));
+    document.getElementById('btn-back').classList.toggle('hidden', !BD_SUB_PANELS.has(name) && !CL_SUB_PANELS.has(name));
 
     if (name === 'summary') checkSummarySetup();
     if (name === 'records') checkRecordsSetup();
+    if (name === 'cl-hub') initClHub();
+    if (name === 'cl-list') initClList();
+    if (name === 'cl-summary') initClSummary();
+    if (name === 'cl-calendar') initClCalendar();
+    if (name === 'cl-schedule') initClSchedule();
     window.scrollTo(0, 0);
 }
 
@@ -2341,6 +2800,13 @@ function goHome() {
     cancelEdit();
     switchTab('home');
     initHubStats();
+}
+
+function goBack() {
+    const active = document.querySelector('.tab-panel.active');
+    const id = active ? active.id.replace('panel-', '') : '';
+    if (CL_SUB_PANELS.has(id)) { switchTab('cl-hub'); }
+    else { goBdHub(); }
 }
 
 function goBdHub() {
@@ -2359,7 +2825,7 @@ function goBdHub() {
 }
 
 function goChecklist() {
-    showToast('โมดูล Check list กำลังพัฒนา — เร็วๆ นี้!', 'info');
+    switchTab('cl-hub');
 }
 
 // ============================================================
@@ -4194,6 +4660,731 @@ window.addEventListener('DOMContentLoaded', () => {
         ys.appendChild(o);
     }
 });
+
+// ============================================================
+// CHECKLIST MODULE (Phase 3)
+// ============================================================
+
+// Default daily check items (shared across all machines unless overridden)
+const CL_DAILY_DEFAULT = [
+    { id:'d01', label:'ตรวจสอบระดับน้ำมันหล่อลื่น' },
+    { id:'d02', label:'ตรวจสอบระดับน้ำมันไฮดรอลิก' },
+    { id:'d03', label:'ตรวจสอบสายพาน / โซ่' },
+    { id:'d04', label:'ตรวจสอบเสียงผิดปกติ' },
+    { id:'d05', label:'ตรวจสอบแรงสั่นสะเทือน' },
+    { id:'d06', label:'ตรวจสอบอุณหภูมิมอเตอร์' },
+    { id:'d07', label:'ตรวจสอบระบบความปลอดภัย' },
+    { id:'d08', label:'ตรวจสอบความสะอาดโดยรวม' },
+];
+
+// Default PM items — 3 levels (categoryId, subcategoryId, itemId)
+const CL_PM_DEFAULT = [
+    { cat:'ระบบกลไก', sub:'สายพาน/โซ่', items:['ตรวจสอบแรงตึง','ตรวจสอบการสึกหรอ','หล่อลื่น'] },
+    { cat:'ระบบกลไก', sub:'เกียร์/ลูกปืน', items:['ตรวจสอบเสียง','ตรวจสอบอุณหภูมิ','เพิ่มจาระบี'] },
+    { cat:'ระบบไฮดรอลิก', sub:'น้ำมัน', items:['ตรวจระดับน้ำมัน','ตรวจสอบสี/กลิ่น','เปลี่ยนกรอง (ตามกำหนด)'] },
+    { cat:'ระบบไฮดรอลิก', sub:'ปั๊ม/วาล์ว', items:['ตรวจสอบการรั่วซึม','ตรวจสอบแรงดัน'] },
+    { cat:'ระบบไฟฟ้า', sub:'มอเตอร์', items:['ตรวจสอบฉนวน','ตรวจสอบขั้วสายไฟ','ตรวจสอบอุณหภูมิ'] },
+    { cat:'ระบบไฟฟ้า', sub:'แผงควบคุม', items:['ทำความสะอาด','ตรวจสอบสัญญาณเตือน'] },
+    { cat:'ระบบความปลอดภัย', sub:'อุปกรณ์นิรภัย', items:['ตรวจสอบ Emergency stop','ตรวจสอบ Guard cover','ตรวจสอบสัญญาณแสง/เสียง'] },
+];
+
+// In-memory stores (loaded from GAS)
+let _clChecklists = [];   // recent checklists from GAS
+let _clPmPlans    = {};   // { machineId: { dailyEnabled, pmFreq, pmStartDate, pmItemsJSON } }
+let _clPmDates    = {};   // { "machineId_YYYY-MM": [day, day, ...] }
+let _clDailyItems = {};   // { machineId: [{id, label}] } — custom daily items (localStorage)
+let _clCalYear    = new Date().getFullYear();
+let _clCalMonth   = new Date().getMonth(); // 0-based
+let _clCalMachineId = '';
+let _clSetDatesMachineId = '';
+let _clSetDatesYear = 0;
+let _clSetDatesMonth = 0;
+let _clMcdeDachineId = '';  // machine id being edited in daily editor
+let _clScCurrentTab = 'daily';
+let _clChartObj = null;
+
+// ---- helpers ----
+function clFacOptions() {
+    const facs = [...new Set(machineMaster.map(m => m.factory).filter(Boolean))].sort();
+    return facs;
+}
+function clAreaOptions(factory) {
+    const areas = [...new Set(machineMaster.filter(m => !factory || m.factory === factory).map(m => m.area).filter(Boolean))].sort();
+    return areas;
+}
+function clMachinesFor(factory, area) {
+    return machineMaster.filter(m => (!factory || m.factory === factory) && (!area || m.area === area));
+}
+function clResultBadge(result) {
+    if (result === 'PASS') return '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">✅ PASS</span>';
+    if (result === 'FAIL') return '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">❌ FAIL</span>';
+    if (result === 'FIX')  return '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700">🔧 FIX</span>';
+    return '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500">—</span>';
+}
+function clFillFacSelect(elId, selected) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = '<option value="">-- โรงงาน --</option>';
+    clFacOptions().forEach(f => {
+        const o = document.createElement('option');
+        o.value = o.textContent = f;
+        if (f === selected) o.selected = true;
+        el.appendChild(o);
+    });
+}
+function clFillAreaSelect(elId, factory, selected) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = '<option value="">ทั้งหมด</option>';
+    clAreaOptions(factory).forEach(a => {
+        const o = document.createElement('option');
+        o.value = o.textContent = a;
+        if (a === selected) o.selected = true;
+        el.appendChild(o);
+    });
+}
+function clFillMachineSelect(elId, factory, area, selected) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = '<option value="">-- เลือกเครื่องจักร --</option>';
+    clMachinesFor(factory, area).forEach(m => {
+        const o = document.createElement('option');
+        o.value = m.id || m.machineId || m.machine_id || '';
+        o.textContent = m.name || m.machineName || o.value;
+        if (o.value === selected) o.selected = true;
+        el.appendChild(o);
+    });
+}
+function clGetDailyItems(machineId) {
+    // custom items stored in localStorage; fallback to default
+    const key = 'cl_daily_' + machineId;
+    try {
+        const raw = localStorage.getItem(key);
+        if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return null; // null = use default
+}
+function clSetDailyItems(machineId, items) {
+    const key = 'cl_daily_' + machineId;
+    localStorage.setItem(key, JSON.stringify(items));
+    _clDailyItems[machineId] = items;
+}
+function clGetPmPlan(machineId) {
+    return _clPmPlans[machineId] || { dailyEnabled: true, pmFreq: 3, pmStartDate: '2026-01-01' };
+}
+function clNextPmDate(machineId) {
+    const plan = clGetPmPlan(machineId);
+    if (!plan.pmStartDate) return '—';
+    const start = new Date(plan.pmStartDate);
+    const freq  = parseInt(plan.pmFreq) || 3;
+    const now   = new Date();
+    let next = new Date(start);
+    while (next <= now) {
+        next.setMonth(next.getMonth() + freq);
+    }
+    return next.toISOString().slice(0,10);
+}
+function clPmDateKey(machineId, year, month) {
+    return machineId + '_' + year + '-' + String(month + 1).padStart(2,'0');
+}
+function clGetPmDatesForMonth(machineId, year, month) {
+    return _clPmDates[clPmDateKey(machineId, year, month)] || [];
+}
+async function clFetch(params) {
+    const url = new URL(GAS_URL);
+    Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+    const r = await fetch(url.toString());
+    return r.json();
+}
+async function clPost(body) {
+    const res = await fetch(GAS_URL, {
+        method:'POST',
+        body: JSON.stringify({ ...body, pw: sessionPw || '' }),
+    });
+    return res.json();
+}
+
+// ---- HUB ----
+function initClHub() {
+    clFillFacSelect('cl-hub-fac', '');
+    clFillAreaSelect('cl-hub-area', '', '');
+    loadClHubRecent();
+}
+function clHubFacChange() {
+    const fac = document.getElementById('cl-hub-fac')?.value || '';
+    clFillAreaSelect('cl-hub-area', fac, '');
+}
+async function loadClHubRecent() {
+    const el = document.getElementById('cl-hub-recent');
+    if (!el) return;
+    el.innerHTML = '<p class="text-gray-400 text-center py-4">กำลังโหลด...</p>';
+    try {
+        const data = await clFetch({ action:'getChecklists', factory:'', area:'', type:'', month:'', year:'' });
+        _clChecklists = (data.rows || []).slice(0, 10);
+        renderClHubRecent();
+    } catch(e) {
+        el.innerHTML = '<p class="text-red-400 text-center py-4">โหลดข้อมูลล้มเหลว</p>';
+    }
+}
+function renderClHubRecent() {
+    const el = document.getElementById('cl-hub-recent');
+    if (!el) return;
+    if (!_clChecklists.length) { el.innerHTML = '<p class="text-gray-400 text-center py-4">ยังไม่มี Checklist</p>'; return; }
+    const rows = _clChecklists.map(r => `
+        <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick='openClDetail(${JSON.stringify(r)})'>
+            <td class="px-3 py-2 font-mono text-xs text-gray-500">${r.tracking||'—'}</td>
+            <td class="px-3 py-2 text-xs">${r.type==='pm'?'🔧 PM':'📋 Daily'}</td>
+            <td class="px-3 py-2 text-xs">${r.date||'—'}</td>
+            <td class="px-3 py-2 text-xs">${r.machineName||r.machineId||'—'}</td>
+            <td class="px-3 py-2">${clResultBadge(r.overallResult)}</td>
+        </tr>`).join('');
+    el.innerHTML = `<table class="w-full text-sm"><thead><tr class="bg-gray-50"><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">Tracking</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">ประเภท</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">วันที่</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">เครื่องจักร</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">ผล</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ---- FORM ----
+function goClForm(type) {
+    const fac  = document.getElementById('cl-hub-fac')?.value  || '';
+    const area = document.getElementById('cl-hub-area')?.value || '';
+    switchTab('cl-form');
+    // set defaults
+    document.getElementById('clf-type').value = type;
+    document.getElementById('clf-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('clf-shift').value = 'เช้า';
+    clFillFacSelect('clf-fac', fac);
+    clfFacChange(area);
+    document.getElementById('clf-inspector').value = '';
+    document.getElementById('clf-remark').value = '';
+    clfRenderItems();
+}
+function clfTypeChange() { clfRenderItems(); }
+function clfFacChange(preselArea) {
+    const fac = document.getElementById('clf-fac')?.value || '';
+    const area = preselArea || '';
+    clFillAreaSelect('clf-area', fac, area);
+    document.getElementById('clf-area').innerHTML = '<option value="">-- เลือก Area --</option>';
+    clAreaOptions(fac).forEach(a => {
+        const o = document.createElement('option');
+        o.value = o.textContent = a;
+        if (a === area) o.selected = true;
+        document.getElementById('clf-area').appendChild(o);
+    });
+    clfAreaChange();
+}
+function clfAreaChange() {
+    const fac  = document.getElementById('clf-fac')?.value  || '';
+    const area = document.getElementById('clf-area')?.value || '';
+    clFillMachineSelect('clf-machine', fac, area, '');
+    clfRenderItems();
+}
+function clfMachineChange() { clfRenderItems(); }
+function clfGetItems() {
+    const type      = document.getElementById('clf-type')?.value || 'daily';
+    const machineId = document.getElementById('clf-machine')?.value || '';
+    if (type === 'daily') {
+        const custom = clGetDailyItems(machineId);
+        return (custom || CL_DAILY_DEFAULT).map(i => ({ ...i }));
+    } else {
+        // PM: flatten tree
+        const items = [];
+        CL_PM_DEFAULT.forEach(cat => {
+            cat.items.forEach(label => {
+                items.push({ id: 'pm_' + label.replace(/\s+/g,'_'), label: `[${cat.sub}] ${label}` });
+            });
+        });
+        return items;
+    }
+}
+function clfRenderItems() {
+    const tbody = document.getElementById('clf-items-body');
+    const machineId = document.getElementById('clf-machine')?.value || '';
+    if (!machineId) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-8">กรุณาเลือกเครื่องจักรและประเภทการตรวจสอบ</td></tr>';
+        clfUpdateProgress();
+        return;
+    }
+    const items = clfGetItems();
+    tbody.innerHTML = items.map((item, idx) => `
+        <tr class="border-b border-gray-100">
+            <td class="px-4 py-2.5 text-gray-400 text-xs">${idx+1}</td>
+            <td class="px-4 py-2.5 text-sm">${item.label}</td>
+            ${['ok','ng','fix','na'].map(v => `
+            <td class="text-center px-2 py-2.5">
+                <input type="radio" name="clf_item_${item.id}" value="${v}" onchange="clfUpdateProgress()"
+                    class="w-4 h-4 cursor-pointer accent-${v==='ok'?'green':v==='ng'?'red':v==='fix'?'yellow':'gray'}-500">
+            </td>`).join('')}
+        </tr>`).join('');
+    clfUpdateProgress();
+}
+function clfUpdateProgress() {
+    const items = clfGetItems();
+    const answered = items.filter(i => document.querySelector(`input[name="clf_item_${i.id}"]:checked`)).length;
+    const total    = items.length;
+    const pct      = total ? Math.round(answered/total*100) : 0;
+    const bar  = document.getElementById('clf-progress-bar');
+    const text = document.getElementById('clf-progress-text');
+    const badge = document.getElementById('clf-result-badge');
+    if (bar)  bar.style.width = pct + '%';
+    if (text) text.textContent = `${answered} / ${total}`;
+    if (badge) {
+        const ngCount  = items.filter(i => {const r=document.querySelector(`input[name="clf_item_${i.id}"]:checked`);return r&&r.value==='ng';}).length;
+        const fixCount = items.filter(i => {const r=document.querySelector(`input[name="clf_item_${i.id}"]:checked`);return r&&r.value==='fix';}).length;
+        let result = answered === total ? (ngCount>0?'FAIL':fixCount>0?'FIX':'PASS') : '—';
+        if (result === 'PASS') { badge.className='text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-700'; badge.textContent='✅ PASS'; }
+        else if (result === 'FAIL') { badge.className='text-xs font-bold px-3 py-1 rounded-full bg-red-100 text-red-700'; badge.textContent='❌ FAIL'; }
+        else if (result === 'FIX') { badge.className='text-xs font-bold px-3 py-1 rounded-full bg-yellow-100 text-yellow-700'; badge.textContent='🔧 FIX'; }
+        else { badge.className='text-xs font-bold px-3 py-1 rounded-full bg-gray-100 text-gray-500'; badge.textContent='—'; }
+    }
+}
+async function saveChecklistForm() {
+    const machineId = document.getElementById('clf-machine')?.value || '';
+    const fac       = document.getElementById('clf-fac')?.value || '';
+    const area      = document.getElementById('clf-area')?.value || '';
+    const inspector = (document.getElementById('clf-inspector')?.value || '').trim();
+    const type      = document.getElementById('clf-type')?.value || 'daily';
+    const date      = document.getElementById('clf-date')?.value || '';
+    const shift     = document.getElementById('clf-shift')?.value || '';
+    const remark    = document.getElementById('clf-remark')?.value || '';
+    if (!machineId) { showToast('กรุณาเลือกเครื่องจักร', 'warn'); return; }
+    if (!inspector) { showToast('กรุณากรอกชื่อผู้ตรวจสอบ', 'warn'); return; }
+    if (!sessionPw) { showToast('กรุณาเข้าสู่ระบบก่อนบันทึก', 'warn'); return; }
+    const items = clfGetItems();
+    const answered = items.filter(i => document.querySelector(`input[name="clf_item_${i.id}"]:checked`));
+    if (answered.length < items.length) { showToast('กรุณาตอบรายการให้ครบทุกข้อ', 'warn'); return; }
+    const resultsArr = items.map(i => {
+        const r = document.querySelector(`input[name="clf_item_${i.id}"]:checked`);
+        return { id: i.id, label: i.label, result: r ? r.value : 'na' };
+    });
+    const machine = machineMaster.find(m => (m.id||m.machineId||m.machine_id||'') === machineId) || {};
+    const machineName = machine.name || machine.machineName || machineId;
+    const btn = document.getElementById('clf-save-btn');
+    btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+    try {
+        const res = await clPost({
+            action:'saveChecklist', type, date, shift, factory:fac, area, machineId, machineName, inspector, remark,
+            resultsJSON: JSON.stringify(resultsArr),
+        });
+        if (res.success) {
+            showToast(`✅ บันทึกสำเร็จ — ${res.tracking}`, 'success');
+            switchTab('cl-hub');
+        } else {
+            showToast('บันทึกล้มเหลว: ' + (res.error||'unknown'), 'error');
+        }
+    } catch(e) {
+        showToast('เชื่อมต่อ GAS ล้มเหลว', 'error');
+    } finally {
+        btn.disabled = false; btn.textContent = '💾 บันทึก Checklist';
+    }
+}
+
+// ---- LIST ----
+function initClList() {
+    const now = new Date();
+    const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    document.getElementById('cll-month').value = ym;
+    clFillFacSelect('cll-fac', '');
+    cllFacChange();
+}
+function cllFacChange() {
+    const fac = document.getElementById('cll-fac')?.value || '';
+    clFillAreaSelect('cll-area', fac, '');
+}
+async function loadClList() {
+    const tbody = document.getElementById('cll-body');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">กำลังโหลด...</td></tr>';
+    const fac   = document.getElementById('cll-fac')?.value || '';
+    const area  = document.getElementById('cll-area')?.value || '';
+    const type  = document.getElementById('cll-type')?.value || '';
+    const month = document.getElementById('cll-month')?.value || '';
+    const [year, mon] = month ? month.split('-') : ['', ''];
+    try {
+        const data = await clFetch({ action:'getChecklists', factory:fac, area, type, month:mon||'', year:year||'' });
+        const rows = data.rows || [];
+        if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบข้อมูล</td></tr>'; return; }
+        tbody.innerHTML = rows.map(r => `
+            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                <td class="px-4 py-2 font-mono text-xs text-gray-500">${r.tracking||'—'}</td>
+                <td class="px-3 py-2 text-xs">${r.type==='pm'?'🔧 PM':'📋 Daily'}</td>
+                <td class="px-3 py-2 text-xs">${r.date||'—'}</td>
+                <td class="px-3 py-2 text-xs">${r.machineName||r.machineId||'—'}</td>
+                <td class="px-3 py-2 text-xs">${r.inspector||'—'}</td>
+                <td class="px-3 py-2 text-center">${clResultBadge(r.overallResult)}</td>
+                <td class="px-3 py-2 text-center"><button onclick='openClDetail(${JSON.stringify(r)})' class="text-xs text-blue-500 hover:underline">ดู</button></td>
+            </tr>`).join('');
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-red-400 py-8">โหลดข้อมูลล้มเหลว</td></tr>';
+    }
+}
+
+// ---- DETAIL MODAL ----
+function openClDetail(r) {
+    const m = document.getElementById('modal-cl-detail');
+    if (!m) return;
+    document.getElementById('mcd-title').textContent = '📋 ' + (r.type==='pm'?'PM Checklist':'Daily Checklist');
+    document.getElementById('mcd-tracking').textContent = r.tracking || '';
+    document.getElementById('mcd-date').textContent     = r.date || '—';
+    document.getElementById('mcd-shift').textContent    = r.shift || '—';
+    document.getElementById('mcd-type').textContent     = r.type==='pm'?'PM':'Daily';
+    document.getElementById('mcd-machine').textContent  = r.machineName || r.machineId || '—';
+    document.getElementById('mcd-inspector').textContent= r.inspector || '—';
+    document.getElementById('mcd-result').innerHTML     = clResultBadge(r.overallResult);
+    document.getElementById('mcd-ok-count').textContent  = `✅ OK: ${r.ok||0}`;
+    document.getElementById('mcd-ng-count').textContent  = `❌ NG: ${r.ng||0}`;
+    document.getElementById('mcd-fix-count').textContent = `🔧 FIX: ${r.fix||0}`;
+    document.getElementById('mcd-na-count').textContent  = `— N/A: ${r.na||0}`;
+    const items = typeof r.resultsJSON === 'string' ? JSON.parse(r.resultsJSON||'[]') : (r.results||[]);
+    const tbody = document.getElementById('mcd-items-body');
+    tbody.innerHTML = items.map(i => {
+        const color = i.result==='ok'?'text-green-600':i.result==='ng'?'text-red-600':i.result==='fix'?'text-yellow-600':'text-gray-400';
+        return `<tr class="border border-gray-100"><td class="px-3 py-1.5 text-xs">${i.label||i.id}</td><td class="px-3 py-1.5 text-center text-xs font-bold ${color}">${(i.result||'—').toUpperCase()}</td></tr>`;
+    }).join('') || '<tr><td colspan="2" class="text-center text-gray-400 py-4">ไม่มีข้อมูลรายการ</td></tr>';
+    const remWrap = document.getElementById('mcd-remark-wrap');
+    if (r.remark) { document.getElementById('mcd-remark').textContent = r.remark; remWrap.classList.remove('hidden'); }
+    else remWrap.classList.add('hidden');
+    m.classList.remove('hidden');
+}
+
+// ---- SUMMARY ----
+function initClSummary() {
+    const cy = new Date().getFullYear();
+    const ys = document.getElementById('cls-year');
+    if (ys && !ys.children.length) {
+        for (let y = cy+1; y >= cy-3; y--) {
+            const o = document.createElement('option');
+            o.value = o.textContent = y;
+            if (y === cy) o.selected = true;
+            ys.appendChild(o);
+        }
+    }
+    clFillFacSelect('cls-fac', '');
+    loadClSummary();
+}
+async function loadClSummary() {
+    const fac   = document.getElementById('cls-fac')?.value  || '';
+    const year  = document.getElementById('cls-year')?.value  || String(new Date().getFullYear());
+    const month = document.getElementById('cls-month')?.value || '';
+    try {
+        const data = await clFetch({ action:'getChecklists', factory:fac, area:'', type:'', month, year });
+        const rows = data.rows || [];
+        renderClSummary(rows);
+    } catch(e) {
+        showToast('โหลดข้อมูล summary ล้มเหลว', 'error');
+    }
+}
+function renderClSummary(rows) {
+    const totalItems = rows.reduce((s,r) => s + (parseInt(r.ok)||0) + (parseInt(r.ng)||0) + (parseInt(r.fix)||0) + (parseInt(r.na)||0), 0);
+    const totalOk    = rows.reduce((s,r) => s + (parseInt(r.ok)||0), 0);
+    const totalNg    = rows.reduce((s,r) => s + (parseInt(r.ng)||0), 0);
+    const totalFix   = rows.reduce((s,r) => s + (parseInt(r.fix)||0), 0);
+    const passed     = rows.filter(r => r.overallResult === 'PASS').length;
+    const compliance = rows.length ? Math.round(passed/rows.length*100) : 0;
+    document.getElementById('cls-kpi-compliance').textContent = compliance + '%';
+    document.getElementById('cls-kpi-total').textContent      = totalItems.toLocaleString();
+    document.getElementById('cls-kpi-ng').textContent         = totalNg.toLocaleString();
+    document.getElementById('cls-kpi-fix').textContent        = totalFix.toLocaleString();
+    // Monthly breakdown
+    const byMonth = {};
+    rows.forEach(r => {
+        const ym = (r.date||'').slice(0,7);
+        if (!byMonth[ym]) byMonth[ym] = { pass:0, fail:0, fix:0 };
+        if (r.overallResult === 'PASS') byMonth[ym].pass++;
+        else if (r.overallResult === 'FAIL') byMonth[ym].fail++;
+        else byMonth[ym].fix++;
+    });
+    const months = Object.keys(byMonth).sort();
+    // chart
+    const canvas = document.getElementById('cls-chart');
+    if (canvas) {
+        if (_clChartObj) { _clChartObj.destroy(); _clChartObj = null; }
+        if (months.length && window.Chart) {
+            _clChartObj = new window.Chart(canvas.getContext('2d'), {
+                type:'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        { label:'PASS', data: months.map(m=>byMonth[m].pass), backgroundColor:'#27ae60' },
+                        { label:'FIX',  data: months.map(m=>byMonth[m].fix),  backgroundColor:'#e67e22' },
+                        { label:'FAIL', data: months.map(m=>byMonth[m].fail), backgroundColor:'#c0392b' },
+                    ]
+                },
+                options:{ responsive:true, plugins:{ legend:{ position:'bottom' } }, scales:{ x:{stacked:true}, y:{stacked:true} } }
+            });
+        } else {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+        }
+    }
+    // monthly table
+    const tbl = document.getElementById('cls-monthly-table');
+    if (!months.length) { tbl.innerHTML = '<p class="text-gray-400 text-center py-4">ยังไม่มีข้อมูล</p>'; return; }
+    tbl.innerHTML = `<table class="w-full text-xs border-collapse">
+        <thead><tr class="bg-gray-50"><th class="text-left px-2 py-1.5 border border-gray-200">เดือน</th><th class="text-center px-2 py-1.5 border border-gray-200 text-green-600">PASS</th><th class="text-center px-2 py-1.5 border border-gray-200 text-yellow-600">FIX</th><th class="text-center px-2 py-1.5 border border-gray-200 text-red-600">FAIL</th><th class="text-center px-2 py-1.5 border border-gray-200">Compliance</th></tr></thead>
+        <tbody>${months.map(m => {
+            const t = byMonth[m].pass + byMonth[m].fail + byMonth[m].fix;
+            const c = t ? Math.round(byMonth[m].pass/t*100) : 0;
+            return `<tr class="border-b border-gray-100"><td class="px-2 py-1.5 border border-gray-100">${m}</td><td class="text-center px-2 py-1.5 border border-gray-100 text-green-600">${byMonth[m].pass}</td><td class="text-center px-2 py-1.5 border border-gray-100 text-yellow-600">${byMonth[m].fix}</td><td class="text-center px-2 py-1.5 border border-gray-100 text-red-600">${byMonth[m].fail}</td><td class="text-center px-2 py-1.5 border border-gray-100 font-bold">${c}%</td></tr>`;
+        }).join('')}</tbody></table>`;
+}
+
+// ---- CALENDAR ----
+function initClCalendar() {
+    _clCalYear  = new Date().getFullYear();
+    _clCalMonth = new Date().getMonth();
+    clFillFacSelect('clcal-fac', '');
+    updateClCalLabel();
+    renderClCalendar();
+}
+function clCalFacChange() {
+    const fac = document.getElementById('clcal-fac')?.value || '';
+    const sel = document.getElementById('clcal-machine');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- เครื่องจักร --</option>';
+    clMachinesFor(fac, '').forEach(m => {
+        const o = document.createElement('option');
+        o.value = m.id || m.machineId || m.machine_id || '';
+        o.textContent = m.name || m.machineName || o.value;
+        sel.appendChild(o);
+    });
+    _clCalMachineId = '';
+    renderClCalendar();
+}
+function clCalShift(delta) {
+    _clCalMonth += delta;
+    if (_clCalMonth < 0) { _clCalMonth = 11; _clCalYear--; }
+    if (_clCalMonth > 11) { _clCalMonth = 0;  _clCalYear++; }
+    updateClCalLabel();
+    renderClCalendar();
+}
+function updateClCalLabel() {
+    const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    const el = document.getElementById('clcal-label');
+    if (el) el.textContent = thMonths[_clCalMonth] + ' ' + (_clCalYear + 543);
+}
+async function renderClCalendar() {
+    const machineId = document.getElementById('clcal-machine')?.value || '';
+    _clCalMachineId = machineId;
+    const setBtn = document.getElementById('clcal-set-btn');
+    if (setBtn) setBtn.classList.toggle('hidden', !machineId || userRole === 'user');
+    const grid = document.getElementById('clcal-grid');
+    if (!grid) return;
+    // Load checklist data for this month
+    const ym    = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}`;
+    let checkMap = {}; // date -> overallResult
+    if (machineId) {
+        try {
+            const data = await clFetch({ action:'getChecklists', factory:'', area:'', type:'', month:String(_clCalMonth+1).padStart(2,'0'), year:String(_clCalYear) });
+            (data.rows||[]).filter(r => r.machineId === machineId).forEach(r => { checkMap[r.date] = r.overallResult; });
+        } catch(e) {}
+        // load pm dates
+        try {
+            const pd = await clFetch({ action:'getPmDates', monthKey: ym });
+            const key = clPmDateKey(machineId, _clCalYear, _clCalMonth);
+            _clPmDates[key] = pd[key] || [];
+        } catch(e) {}
+    }
+    const pmDays = new Set(clGetPmDatesForMonth(machineId, _clCalYear, _clCalMonth).map(d => parseInt(d)));
+    const firstDay = new Date(_clCalYear, _clCalMonth, 1).getDay();
+    const daysInMonth = new Date(_clCalYear, _clCalMonth+1, 0).getDate();
+    let html = '';
+    for (let i = 0; i < firstDay; i++) html += '<div></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const result  = checkMap[dateStr];
+        const isPmDay = pmDays.has(d);
+        const isToday = dateStr === new Date().toISOString().slice(0,10);
+        let dotColor  = '';
+        if (result === 'PASS') dotColor = 'bg-green-400';
+        else if (result === 'FAIL') dotColor = 'bg-red-400';
+        else if (result === 'FIX') dotColor = 'bg-yellow-400';
+        let pmDot = isPmDay ? (result ? 'bg-blue-400' : 'bg-orange-400') : '';
+        html += `<div class="relative flex flex-col items-center justify-start rounded-lg p-1 min-h-[2.5rem] cursor-pointer hover:bg-gray-50 ${isToday?'ring-2 ring-green-400 bg-green-50':''}" onclick="clCalClickDay(${d})">
+            <span class="text-xs ${isToday?'font-bold text-green-700':''}">${d}</span>
+            <div class="flex gap-0.5 mt-0.5">
+                ${dotColor?`<span class="w-2 h-2 rounded-full ${dotColor}"></span>`:''}
+                ${pmDot?`<span class="w-2 h-2 rounded-full ${pmDot}"></span>`:''}
+            </div>
+        </div>`;
+    }
+    grid.innerHTML = html;
+}
+function clCalClickDay(day) {
+    const machineId = _clCalMachineId;
+    const dateStr = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    showToast(`${dateStr}${machineId?' — '+machineId:''}`, 'info');
+}
+function openClSetDates() {
+    const machineId = _clCalMachineId;
+    if (!machineId) { showToast('กรุณาเลือกเครื่องจักรก่อน', 'warn'); return; }
+    _clSetDatesMachineId = machineId;
+    _clSetDatesYear  = _clCalYear;
+    _clSetDatesMonth = _clCalMonth;
+    const existing = new Set(clGetPmDatesForMonth(machineId, _clCalYear, _clCalMonth).map(d => parseInt(d)));
+    const daysInMonth = new Date(_clCalYear, _clCalMonth+1, 0).getDate();
+    const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    document.getElementById('mcsd-info').textContent = `กำหนดวัน PM: ${machineId} — ${thMonths[_clCalMonth]} ${_clCalYear+543}`;
+    const grid = document.getElementById('mcsd-days');
+    let html = '';
+    for (let d = 1; d <= daysInMonth; d++) {
+        const sel = existing.has(d);
+        html += `<label class="flex items-center justify-center rounded-lg p-1.5 cursor-pointer border ${sel?'border-blue-400 bg-blue-50':'border-gray-200'} hover:bg-blue-50 transition-colors">
+            <input type="checkbox" value="${d}" ${sel?'checked':''} class="hidden mcsd-day-cb" onchange="this.closest('label').className=this.checked?'flex items-center justify-center rounded-lg p-1.5 cursor-pointer border border-blue-400 bg-blue-50 hover:bg-blue-50 transition-colors':'flex items-center justify-center rounded-lg p-1.5 cursor-pointer border border-gray-200 hover:bg-blue-50 transition-colors'">
+            <span class="text-sm font-bold">${d}</span>
+        </label>`;
+    }
+    grid.innerHTML = html;
+    document.getElementById('modal-cl-set-dates').classList.remove('hidden');
+}
+async function saveClPmDates() {
+    const days = [...document.querySelectorAll('.mcsd-day-cb:checked')].map(cb => cb.value);
+    const key  = clPmDateKey(_clSetDatesMachineId, _clSetDatesYear, _clSetDatesMonth);
+    _clPmDates[key] = days.map(d => parseInt(d));
+    try {
+        await clPost({ action:'savePmDates', machineId:_clSetDatesMachineId, monthKey:`${_clSetDatesYear}-${String(_clSetDatesMonth+1).padStart(2,'0')}`, days });
+        showToast('บันทึกวัน PM เรียบร้อย', 'success');
+    } catch(e) {
+        showToast('บันทึกล้มเหลว', 'error');
+    }
+    document.getElementById('modal-cl-set-dates').classList.add('hidden');
+    renderClCalendar();
+}
+
+// ---- SCHEDULE ----
+function initClSchedule() {
+    clFillFacSelect('clsc-fac', '');
+    clScFacChange();
+    clScTab('daily');
+}
+function clScFacChange() {
+    const fac = document.getElementById('clsc-fac')?.value || '';
+    clFillAreaSelect('clsc-area', fac, '');
+    loadClSchedule();
+}
+function clScTab(tab) {
+    _clScCurrentTab = tab;
+    document.getElementById('clsc-daily-view').classList.toggle('hidden', tab !== 'daily');
+    document.getElementById('clsc-pm-view').classList.toggle('hidden', tab !== 'pm');
+    document.getElementById('clsc-tab-daily').className = tab==='daily' ? 'mms-btn mms-btn-green' : 'mms-btn';
+    document.getElementById('clsc-tab-pm').className    = tab==='pm'    ? 'mms-btn mms-btn-green' : 'mms-btn';
+    loadClSchedule();
+}
+async function loadClSchedule() {
+    const fac  = document.getElementById('clsc-fac')?.value  || '';
+    const area = document.getElementById('clsc-area')?.value || '';
+    const machines = clMachinesFor(fac, area);
+    if (_clScCurrentTab === 'daily') renderClScDaily(machines);
+    else await renderClScPm(machines);
+}
+function renderClScDaily(machines) {
+    const tbody = document.getElementById('clsc-daily-body');
+    if (!tbody) return;
+    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
+    tbody.innerHTML = machines.map(m => {
+        const id = m.id || m.machineId || m.machine_id || '';
+        const custom = clGetDailyItems(id);
+        return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+            <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
+            <td class="px-4 py-2.5 text-center text-sm">${custom ? custom.length : '—'}</td>
+            <td class="px-4 py-2.5 text-center text-sm">${CL_DAILY_DEFAULT.length}</td>
+            <td class="px-4 py-2.5 text-center">
+                <button onclick="openClDailyEditor('${id}')" class="text-xs text-green-600 hover:underline">✏️ แก้ไข</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+async function renderClScPm(machines) {
+    const tbody = document.getElementById('clsc-pm-body');
+    if (!tbody) return;
+    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
+    // load pm plans from GAS (or use cached)
+    const fac  = document.getElementById('clsc-fac')?.value || '';
+    const area = document.getElementById('clsc-area')?.value || '';
+    try {
+        const data = await clFetch({ action:'getPmPlans', factory:fac, area });
+        (data.rows||[]).forEach(r => { _clPmPlans[r.machineId] = r; });
+    } catch(e) {}
+    tbody.innerHTML = machines.map(m => {
+        const id   = m.id || m.machineId || m.machine_id || '';
+        const plan = clGetPmPlan(id);
+        const next = clNextPmDate(id);
+        return `<tr class="border-b border-gray-100 hover:bg-gray-50" data-machine-id="${id}">
+            <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
+            <td class="px-3 py-2.5 text-center">
+                <input type="checkbox" class="pm-daily-enabled w-4 h-4" ${plan.dailyEnabled?'checked':''}>
+            </td>
+            <td class="px-3 py-2.5 text-center">
+                <input type="number" min="1" max="24" value="${plan.pmFreq||3}" class="pm-freq w-16 border border-gray-200 rounded px-2 py-1 text-sm text-center">
+            </td>
+            <td class="px-3 py-2.5">
+                <input type="date" value="${plan.pmStartDate||''}" class="pm-start border border-gray-200 rounded px-2 py-1 text-sm">
+            </td>
+            <td class="px-3 py-2.5 text-center text-xs text-gray-600">${next}</td>
+        </tr>`;
+    }).join('');
+}
+async function saveAllPmPlans() {
+    const fac  = document.getElementById('clsc-fac')?.value  || '';
+    const area = document.getElementById('clsc-area')?.value || '';
+    const plans = [];
+    document.querySelectorAll('#clsc-pm-body tr[data-machine-id]').forEach(row => {
+        const id = row.dataset.machineId;
+        plans.push({
+            machineId: id,
+            factory: fac, area,
+            dailyEnabled: row.querySelector('.pm-daily-enabled')?.checked ?? true,
+            pmFreq:       parseInt(row.querySelector('.pm-freq')?.value) || 3,
+            pmStartDate:  row.querySelector('.pm-start')?.value || '',
+        });
+    });
+    if (!plans.length) return;
+    try {
+        const res = await clPost({ action:'savePmPlans', plans });
+        if (res.success) { showToast('บันทึกแผน PM เรียบร้อย', 'success'); plans.forEach(p => { _clPmPlans[p.machineId] = p; }); }
+        else showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error');
+    } catch(e) { showToast('เชื่อมต่อ GAS ล้มเหลว', 'error'); }
+}
+
+// ---- DAILY ITEMS EDITOR ----
+function openClDailyEditor(machineId) {
+    _clMcdeDachineId = machineId;
+    const machine = machineId ? machineMaster.find(m => (m.id||m.machineId||m.machine_id||'') === machineId) : null;
+    document.getElementById('mcde-machine-name').textContent = machine ? (machine.name||machine.machineName||machineId) : 'ทุกเครื่องจักร (Default)';
+    // default items display
+    document.getElementById('mcde-default-items').innerHTML = CL_DAILY_DEFAULT.map(i => `<div class="px-2 py-1 bg-gray-50 rounded">${i.label}</div>`).join('');
+    // custom items
+    const custom = machineId ? (clGetDailyItems(machineId) || []) : [];
+    mcdeRenderItems(custom);
+    document.getElementById('modal-cl-daily-editor').classList.remove('hidden');
+}
+function mcdeRenderItems(items) {
+    const container = document.getElementById('mcde-custom-items');
+    container.innerHTML = items.map((item, idx) => `
+        <div class="flex gap-2 items-center">
+            <input type="text" value="${item.label||''}" data-idx="${idx}" class="mcde-item-input flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-400">
+            <button onclick="mcdeRemoveItem(${idx})" class="text-red-400 hover:text-red-600 text-lg font-bold">✕</button>
+        </div>`).join('');
+}
+function mcdeAddItem() {
+    const inputs = [...document.querySelectorAll('.mcde-item-input')];
+    const items  = inputs.map((inp, i) => ({ id: 'c' + i, label: inp.value }));
+    items.push({ id: 'c' + items.length, label: '' });
+    mcdeRenderItems(items);
+}
+function mcdeRemoveItem(idx) {
+    const inputs = [...document.querySelectorAll('.mcde-item-input')];
+    const items  = inputs.map((inp, i) => ({ id: 'c' + i, label: inp.value })).filter((_,i) => i !== idx);
+    mcdeRenderItems(items);
+}
+function saveClDailyItems() {
+    const items = [...document.querySelectorAll('.mcde-item-input')]
+        .map((inp, i) => ({ id: 'c' + i, label: inp.value.trim() }))
+        .filter(i => i.label);
+    if (_clMcdeDachineId) {
+        clSetDailyItems(_clMcdeDachineId, items);
+        showToast('บันทึกรายการตรวจสอบเรียบร้อย', 'success');
+    }
+    document.getElementById('modal-cl-daily-editor').classList.add('hidden');
+    loadClSchedule();
+}
 </script>
 </body>
 </html>

@@ -157,6 +157,96 @@ function doPost(e) {
       return jsonOut({ success: true, action: 'cancelled' });
     }
 
+    // ---- SAVE Checklist record ----
+    if (data.action === 'saveChecklist') {
+      const role = ROLE_PW[(data.pw || '').trim()];
+      if (!role) return jsonOut({ success: false, error: 'ต้องเข้าสู่ระบบก่อน' });
+      let sh = ss.getSheetByName('_Checklists');
+      if (!sh) {
+        sh = ss.insertSheet('_Checklists');
+        const hdr = ['tracking','type','date','shift','factory','area','machineId','machineName','inspector','remark','ok','ng','fix','na','overallResult','resultsJSON','createdAt'];
+        const hr = sh.getRange(1, 1, 1, hdr.length);
+        hr.setValues([hdr]);
+        hr.setBackground('#16a085').setFontColor('#fff').setFontWeight('bold');
+        sh.setFrozenRows(1);
+      }
+      const lock2 = LockService.getScriptLock();
+      try { lock2.waitLock(10000); } catch(e) {}
+      const seq2 = Math.max(0, sh.getLastRow() - 1) + 1;
+      const ym2 = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyyMM');
+      const tracking = 'CL-' + factoryToCHB(data.factory) + '-' + ym2 + '-' + String(seq2).padStart(3,'0');
+      sh.appendRow([
+        tracking, data.type||'', data.date||'', data.shift||'',
+        data.factory||'', data.area||'', data.machineId||'', data.machineName||'',
+        data.inspector||'', data.remark||'',
+        Number(data.ok)||0, Number(data.ng)||0, Number(data.fix)||0, Number(data.na)||0,
+        data.overallResult||'', JSON.stringify(data.results||[]),
+        Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss'),
+      ]);
+      SpreadsheetApp.flush();
+      try { lock2.releaseLock(); } catch(e) {}
+      writeLog(ss, tracking, 'บันทึก Checklist ' + (data.type||''), data.inspector, data.overallResult);
+      return jsonOut({ success: true, tracking });
+    }
+
+    // ---- SAVE PM Plans (engineer+admin) ----
+    if (data.action === 'savePmPlans') {
+      const role = ROLE_PW[(data.pw || '').trim()];
+      if (role !== 'engineer' && role !== 'admin')
+        return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin' });
+      let sh = ss.getSheetByName('_PmPlans');
+      if (sh && sh.getLastRow() > 1) {
+        let bak = ss.getSheetByName('_PmPlans_bak') || ss.insertSheet('_PmPlans_bak');
+        bak.clearContents();
+        const cur = sh.getDataRange().getValues();
+        bak.getRange(1, 1, cur.length, cur[0].length).setValues(cur);
+      }
+      if (!sh) sh = ss.insertSheet('_PmPlans');
+      sh.clearContents();
+      const hdr = ['machineId','machineName','factory','area','pmFreq','pmStartDate','pmItemsJSON','lastEditedBy','lastEditedAt'];
+      const hr = sh.getRange(1, 1, 1, hdr.length);
+      hr.setValues([hdr]);
+      hr.setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
+      sh.setFrozenRows(1);
+      const plans = (data.plans || []);
+      if (plans.length) {
+        const rows = plans.map(p => [
+          p.machineId||'', p.machineName||'', p.factory||'', p.area||'',
+          Number(p.pmFreq)||3, p.pmStartDate||'', JSON.stringify(p.pmItems||[]),
+          p.lastEditedBy||'', p.lastEditedAt||'',
+        ]);
+        sh.getRange(2, 1, rows.length, hdr.length).setValues(rows);
+      }
+      writeLog(ss, '-', 'บันทึกแผน PM (' + plans.length + ' เครื่อง)', data.editedBy||'', '');
+      return jsonOut({ success: true, count: plans.length });
+    }
+
+    // ---- SAVE PM Specific Dates ----
+    if (data.action === 'savePmDates') {
+      const role = ROLE_PW[(data.pw || '').trim()];
+      if (!role) return jsonOut({ success: false, error: 'ต้องเข้าสู่ระบบก่อน' });
+      let sh = ss.getSheetByName('_PmDates');
+      if (!sh) {
+        sh = ss.insertSheet('_PmDates');
+        const hr = sh.getRange(1, 1, 1, 2);
+        hr.setValues([['key','date']]);
+        hr.setBackground('#8e44ad').setFontColor('#fff').setFontWeight('bold');
+        sh.setFrozenRows(1);
+      }
+      // upsert: โหลดของเดิม แล้วแทนที่/เพิ่ม
+      const existing = {};
+      if (sh.getLastRow() > 1) {
+        sh.getRange(2, 1, sh.getLastRow()-1, 2).getValues().forEach(r => { if(r[0]) existing[r[0]] = r[1]; });
+      }
+      const updates = data.dates || {}; // { key: date }
+      Object.assign(existing, updates);
+      sh.clearContents();
+      sh.getRange(1,1,1,2).setValues([['key','date']]);
+      const rows = Object.entries(existing).map(([k,v]) => [k, v]);
+      if (rows.length) sh.getRange(2, 1, rows.length, 2).setValues(rows);
+      return jsonOut({ success: true, count: rows.length });
+    }
+
     // ---- DELETE row (Admin เท่านั้น — เช็ครหัสฝั่ง server) ----
     if (data.action === 'delete') {
       if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
@@ -369,6 +459,15 @@ function doGet(e) {
     if (action === 'getAll') {
       return doGetAll(factory, area, status, month, machineId);
     }
+    if (action === 'getChecklists') {
+      return doGetChecklists(factory, area, e.parameter.type||'', month, e.parameter.year||'');
+    }
+    if (action === 'getPmPlans') {
+      return doGetPmPlans(factory, area);
+    }
+    if (action === 'getPmDates') {
+      return doGetPmDates(e.parameter.monthKey||'');
+    }
     return jsonOut({ success: false, error: 'Unknown action' });
 
   } catch (err) {
@@ -504,6 +603,70 @@ function doGetMachines() {
     rows.push({ id: String(r[0]).trim(), name: r[1] || '', factory: r[2] || '', area: r[3] || '', line: r[4] || '', editedBy: r[5] || '', editedAt: r[6] || '' });
   }
   return jsonOut({ success: true, data: rows });
+}
+
+function doGetChecklists(factory, area, type, month, year) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('_Checklists');
+  if (!sh || sh.getLastRow() < 2) return jsonOut({ success: true, data: [] });
+  const data = sh.getDataRange().getValues();
+  const rows = [];
+  for (let i = 1; i < data.length; i++) {
+    const r = data[i];
+    if (!r[0]) continue;
+    if (factory && r[4] !== factory) continue;
+    if (area    && r[5] !== area)    continue;
+    if (type    && r[1] !== type)    continue;
+    if (month   && !String(r[2]).startsWith(month)) continue;
+    if (year    && !String(r[2]).startsWith(year))  continue;
+    let results = [];
+    try { results = JSON.parse(r[15]||'[]'); } catch(e) {}
+    rows.push({
+      id: r[0], type: r[1], date: r[2], shift: r[3], factory: r[4], area: r[5],
+      machine: r[6], machineName: r[7], inspector: r[8], remark: r[9],
+      ok: Number(r[10])||0, ng: Number(r[11])||0, fix: Number(r[12])||0, na: Number(r[13])||0,
+      overallResult: r[14], results, createdAt: r[16],
+    });
+  }
+  rows.reverse();
+  return jsonOut({ success: true, data: rows });
+}
+
+function doGetPmPlans(factory, area) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('_PmPlans');
+  if (!sh || sh.getLastRow() < 2) return jsonOut({ success: true, data: [] });
+  const data = sh.getDataRange().getValues();
+  const rows = [];
+  for (let i = 1; i < data.length; i++) {
+    const r = data[i];
+    if (!r[0]) continue;
+    if (factory && r[2] !== factory) continue;
+    if (area    && r[3] !== area)    continue;
+    let pmItems = [];
+    try { pmItems = JSON.parse(r[6]||'[]'); } catch(e) {}
+    rows.push({
+      machineId: r[0], machineName: r[1], factory: r[2], area: r[3],
+      pmFreq: Number(r[4])||3, pmStartDate: r[5]||'', pmItems,
+      lastEditedBy: r[7]||'', lastEditedAt: r[8]||'',
+    });
+  }
+  return jsonOut({ success: true, data: rows });
+}
+
+function doGetPmDates(monthKey) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('_PmDates');
+  if (!sh || sh.getLastRow() < 2) return jsonOut({ success: true, data: {} });
+  const data = sh.getDataRange().getValues();
+  const out = {};
+  for (let i = 1; i < data.length; i++) {
+    const r = data[i];
+    if (!r[0]) continue;
+    if (monthKey && !String(r[0]).endsWith('_' + monthKey)) continue;
+    out[r[0]] = r[1];
+  }
+  return jsonOut({ success: true, data: out });
 }
 
 function jsonOut(obj) {

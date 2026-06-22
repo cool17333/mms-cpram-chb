@@ -363,6 +363,24 @@
         </div>
     </div>
 
+    <!-- Log Card (Admin only) -->
+    <div id="hub-card-log" class="hidden mt-5">
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">🔐 เครื่องมือ Admin</p>
+        <div class="mms-card p-6 cursor-pointer" style="border-top:5px solid #6c757d" onclick="goLog()">
+            <div class="flex items-start gap-4">
+                <div class="text-3xl">📋</div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <h2 class="text-base font-bold" style="color:var(--mms-text)">Log ระบบทั้งหมด</h2>
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Admin</span>
+                    </div>
+                    <p class="text-sm mb-4" style="color:var(--mms-text-sub)">ประวัติการบันทึกและแก้ไขทุกรายการในระบบ แยกตาม Breakdown / ทะเบียนเครื่องจักร</p>
+                    <button class="mms-btn text-sm" style="background:#343a40;color:#fff" onclick="event.stopPropagation();goLog()">📋 ดู Log ระบบ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Quick stats bar -->
     <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
@@ -442,6 +460,130 @@
 </div>
 
 </div><!-- end panel-bd-hub -->
+
+<!-- ==================== PANEL: LOG VIEWER ==================== -->
+<div id="panel-log" class="tab-panel">
+<div class="max-w-5xl mx-auto px-4 md:px-8 py-6">
+
+    <!-- Tab switcher -->
+    <div class="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5 w-fit">
+        <button id="log-tab-bd" onclick="switchLogTab('bd')"
+            class="log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all bg-white text-gray-800 shadow-sm">
+            🚨 Breakdown
+        </button>
+        <button id="log-tab-machines" onclick="switchLogTab('machines')"
+            class="log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all text-gray-500 hover:text-gray-800">
+            🗂️ ทะเบียนเครื่องจักร
+        </button>
+    </div>
+
+    <!-- ── BREAKDOWN LOG ── -->
+    <div id="log-panel-bd">
+        <!-- Filter bar -->
+        <div class="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">ค้นหา</label>
+                    <input id="log-bd-search" type="text" placeholder="Tracking / ผู้ดำเนินการ / สถานะ..."
+                        oninput="renderBdLog()"
+                        class="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 w-64 transition-colors">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">การกระทำ</label>
+                    <select id="log-bd-action" onchange="renderBdLog()"
+                        class="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 transition-colors">
+                        <option value="">ทั้งหมด</option>
+                        <option value="create">สร้าง</option>
+                        <option value="accept">รับงาน</option>
+                        <option value="update">อัปเดต</option>
+                        <option value="close">ปิดงาน</option>
+                        <option value="cancel">ยกเลิก</option>
+                        <option value="delete">ลบ</option>
+                    </select>
+                </div>
+                <div class="ml-auto flex items-end gap-2">
+                    <button onclick="loadAllLog()" class="mms-btn text-sm" style="background:#f0f2f5;color:var(--mms-text)">🔄 รีเฟรช</button>
+                    <span id="log-bd-count" class="text-xs text-gray-400 font-medium self-center"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
+                            <th class="px-4 py-2.5 text-left w-36">เวลา</th>
+                            <th class="px-4 py-2.5 text-left w-28">Tracking</th>
+                            <th class="px-4 py-2.5 text-left">การกระทำ</th>
+                            <th class="px-4 py-2.5 text-left">ผู้ดำเนินการ</th>
+                            <th class="px-4 py-2.5 text-left">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-bd-tbody"></tbody>
+                </table>
+            </div>
+            <div id="log-bd-empty" class="hidden text-center py-12 text-gray-400">
+                <p class="text-3xl mb-2">📋</p>
+                <p class="text-sm">ยังไม่มีประวัติการดำเนินการ</p>
+            </div>
+            <div id="log-bd-loading" class="text-center py-10 text-gray-400 text-sm animate-pulse">⏳ กำลังโหลด...</div>
+        </div>
+    </div>
+
+    <!-- ── MACHINE REGISTRY LOG ── -->
+    <div id="log-panel-machines" class="hidden">
+        <!-- Filter bar -->
+        <div class="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">ค้นหา</label>
+                    <input id="log-mc-search" type="text" placeholder="รหัส / ชื่อ / ผู้แก้ไข..."
+                        oninput="renderMcLog()"
+                        class="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 w-64 transition-colors">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">โรงงาน</label>
+                    <select id="log-mc-factory" onchange="renderMcLog()"
+                        class="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 transition-colors">
+                        <option value="">ทั้งหมด</option>
+                        <option value="โรงงาน 1">โรงงาน 1</option>
+                        <option value="โรงงาน 2">โรงงาน 2</option>
+                    </select>
+                </div>
+                <div class="ml-auto flex items-end gap-2">
+                    <span id="log-mc-count" class="text-xs text-gray-400 font-medium self-center"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
+                            <th class="px-4 py-2.5 text-left">รหัสเครื่องจักร</th>
+                            <th class="px-4 py-2.5 text-left">ชื่อเครื่องจักร</th>
+                            <th class="px-4 py-2.5 text-left">โรงงาน</th>
+                            <th class="px-4 py-2.5 text-left">พื้นที่</th>
+                            <th class="px-4 py-2.5 text-left">ผู้แก้ไข</th>
+                            <th class="px-4 py-2.5 text-left">แก้ไขเมื่อ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-mc-tbody"></tbody>
+                </table>
+            </div>
+            <div id="log-mc-empty" class="hidden text-center py-12 text-gray-400">
+                <p class="text-3xl mb-2">🗂️</p>
+                <p class="text-sm">ยังไม่มีประวัติการแก้ไขเครื่องจักร</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+</div><!-- end panel-log -->
 
 <!-- ==================== TAB 1: FORM ==================== -->
 <div id="panel-form" class="tab-panel p-4 md:p-8">
@@ -1381,6 +1523,8 @@ function applyRole() {
     if (urlInput) urlInput.disabled = !isAdmin;
     document.getElementById('btn-save-url')?.classList.toggle('hidden', !isAdmin);
     document.getElementById('url-lock-hint')?.classList.toggle('hidden', isAdmin);
+    // Log card — Admin only
+    document.getElementById('hub-card-log')?.classList.toggle('hidden', !isAdmin);
     if (_lastRecords.length) applyRecordFilter();   // re-render ปุ่มตาม role
 }
 
@@ -1761,6 +1905,7 @@ const PAGE_TITLE = {
     summary:   '📊 สรุปข้อมูล Breakdown',
     machines:  '🗂️ ระบบทะเบียนเครื่องจักร',
     checklist: '✅ ระบบ Check list',
+    log:       '📋 Log ระบบ (Admin)',
 };
 
 // โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
@@ -2115,6 +2260,161 @@ function goBdHub() {
 
 function goChecklist() {
     showToast('โมดูล Check list กำลังพัฒนา — เร็วๆ นี้!', 'info');
+}
+
+// ============================================================
+// LOG VIEWER (Admin)
+// ============================================================
+let _allBdLog = [];      // raw BD log rows from GAS
+let _logMcData = [];     // machine list with editedBy
+let _logCurrentTab = 'bd';
+
+function goLog() {
+    if (userRole !== 'admin') { showToast('⚠️ ต้องเป็น Admin เท่านั้น', 'error'); return; }
+    switchTab('log');
+    switchLogTab('bd');
+    loadAllLog();
+}
+
+function switchLogTab(tab) {
+    _logCurrentTab = tab;
+    document.getElementById('log-panel-bd').classList.toggle('hidden', tab !== 'bd');
+    document.getElementById('log-panel-machines').classList.toggle('hidden', tab !== 'machines');
+    // Tab button styling
+    document.getElementById('log-tab-bd').className =
+        'log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all ' +
+        (tab === 'bd' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-800');
+    document.getElementById('log-tab-machines').className =
+        'log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all ' +
+        (tab === 'machines' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-800');
+    if (tab === 'machines') renderMcLog();
+}
+
+async function loadAllLog() {
+    if (!GAS_URL) return;
+    // Load BD log
+    setVisible('log-bd-loading', true);
+    setVisible('log-bd-empty', false);
+    document.getElementById('log-bd-tbody').innerHTML = '';
+    try {
+        const res  = await fetch(`${GAS_URL}?action=getLog`);
+        const json = await res.json();
+        _allBdLog  = json.data || [];
+    } catch (e) {
+        showToast('❌ โหลด Log ไม่สำเร็จ: ' + e.message, 'error');
+        _allBdLog = [];
+    }
+    setVisible('log-bd-loading', false);
+    renderBdLog();
+
+    // Load machine list for machine tab
+    if (!machineMaster.length) {
+        try {
+            const res  = await fetch(`${GAS_URL}?action=getMachines`);
+            const json = await res.json();
+            machineMaster = (json.data || []).map(m => ({
+                id: m.id||'', name: m.name||'', factory: m.factory||'', area: m.area||'',
+                line: m.line||'', editedBy: m.editedBy||'', editedAt: m.editedAt||''
+            }));
+        } catch (_) {}
+    }
+    _logMcData = machineMaster.filter(m => m.editedBy);
+    if (_logCurrentTab === 'machines') renderMcLog();
+}
+
+const ACTION_LABELS = {
+    create: { label: 'สร้าง',   cls: 'bg-blue-100 text-blue-700' },
+    accept: { label: 'รับงาน',  cls: 'bg-orange-100 text-orange-700' },
+    update: { label: 'อัปเดต', cls: 'bg-yellow-100 text-yellow-700' },
+    close:  { label: 'ปิดงาน',  cls: 'bg-green-100 text-green-700' },
+    cancel: { label: 'ยกเลิก',  cls: 'bg-red-100 text-red-600' },
+    delete: { label: 'ลบ',      cls: 'bg-gray-200 text-gray-600' },
+};
+
+function renderBdLog() {
+    const q     = (document.getElementById('log-bd-search')?.value || '').trim().toLowerCase();
+    const act   = (document.getElementById('log-bd-action')?.value || '').toLowerCase();
+    const tbody = document.getElementById('log-bd-tbody');
+    const emptyEl = document.getElementById('log-bd-empty');
+
+    const rows = _allBdLog.filter(r => {
+        const matchAct = !act || String(r.action||'').toLowerCase().includes(act);
+        const matchQ   = !q  ||
+            String(r.tracking||'').toLowerCase().includes(q) ||
+            String(r.byName||'').toLowerCase().includes(q)   ||
+            String(r.status||'').toLowerCase().includes(q)   ||
+            String(r.action||'').toLowerCase().includes(q);
+        return matchAct && matchQ;
+    });
+
+    document.getElementById('log-bd-count').textContent = `${rows.length} / ${_allBdLog.length} รายการ`;
+
+    if (!rows.length) {
+        tbody.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+        return;
+    }
+    emptyEl.classList.add('hidden');
+
+    tbody.innerHTML = rows.map(r => {
+        const actKey = String(r.action||'').toLowerCase();
+        const actInfo = ACTION_LABELS[actKey] || { label: r.action||'—', cls: 'bg-gray-100 text-gray-600' };
+        const timeStr = r.time ? String(r.time).replace('T', ' ').slice(0, 16) : '—';
+        return `<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+            <td class="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">${timeStr}</td>
+            <td class="px-4 py-2.5"><span class="text-xs font-bold text-blue-600">${r.tracking||'—'}</span></td>
+            <td class="px-4 py-2.5"><span class="inline-block text-xs font-bold px-2 py-0.5 rounded-full ${actInfo.cls}">${actInfo.label}</span></td>
+            <td class="px-4 py-2.5 text-sm text-gray-700">${r.byName||'—'}</td>
+            <td class="px-4 py-2.5 text-xs text-gray-500">${r.status||'—'}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderMcLog() {
+    const q       = (document.getElementById('log-mc-search')?.value || '').trim().toLowerCase();
+    const factory = document.getElementById('log-mc-factory')?.value || '';
+    const tbody   = document.getElementById('log-mc-tbody');
+    const emptyEl = document.getElementById('log-mc-empty');
+
+    // Sort: most recently edited first
+    const sorted = [..._logMcData].sort((a, b) => {
+        if (!a.editedAt && !b.editedAt) return 0;
+        if (!a.editedAt) return 1;
+        if (!b.editedAt) return -1;
+        return b.editedAt.localeCompare(a.editedAt);
+    });
+
+    const rows = sorted.filter(m => {
+        const matchFac = !factory || m.factory === factory;
+        const matchQ   = !q ||
+            String(m.id||'').toLowerCase().includes(q) ||
+            String(m.name||'').toLowerCase().includes(q) ||
+            String(m.editedBy||'').toLowerCase().includes(q);
+        return matchFac && matchQ;
+    });
+
+    document.getElementById('log-mc-count').textContent = `${rows.length} / ${_logMcData.length} รายการ`;
+
+    if (!rows.length) {
+        tbody.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+        return;
+    }
+    emptyEl.classList.add('hidden');
+
+    tbody.innerHTML = rows.map(m => {
+        const dateStr = m.editedAt
+            ? new Date(m.editedAt).toLocaleString('th-TH', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
+            : '—';
+        return `<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+            <td class="px-4 py-2.5"><span class="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded">${m.id||'—'}</span></td>
+            <td class="px-4 py-2.5 text-sm font-medium text-gray-800">${m.name||'—'}</td>
+            <td class="px-4 py-2.5 text-xs text-gray-600">${m.factory||'—'}</td>
+            <td class="px-4 py-2.5 text-xs text-gray-600">${m.area||'—'}</td>
+            <td class="px-4 py-2.5 text-sm text-gray-700 font-medium">${m.editedBy||'—'}</td>
+            <td class="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">${dateStr}</td>
+        </tr>`;
+    }).join('');
 }
 
 // ============================================================

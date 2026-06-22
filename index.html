@@ -4820,7 +4820,17 @@ async function loadClHubRecent() {
     el.innerHTML = '<p class="text-gray-400 text-center py-4">กำลังโหลด...</p>';
     try {
         const data = await clFetch({ action:'getChecklists', factory:'', area:'', type:'', month:'', year:'' });
-        _clChecklists = (data.rows || []).slice(0, 10);
+        const all = data.rows || [];
+        _clChecklists = all.slice(0, 10);
+        // update hub stats
+        const today = new Date().toISOString().slice(0,10);
+        const ym    = today.slice(0,7);
+        const todayCt = all.filter(r => r.date === today).length;
+        const monthCt = all.filter(r => (r.date||'').startsWith(ym)).length;
+        const stToday = document.getElementById('cl-hub-stat-today');
+        const stMonth = document.getElementById('cl-hub-stat-month');
+        if (stToday) stToday.textContent = `📋 วันนี้: ${todayCt}`;
+        if (stMonth) stMonth.textContent = `📊 เดือนนี้: ${monthCt}`;
         renderClHubRecent();
     } catch(e) {
         el.innerHTML = '<p class="text-red-400 text-center py-4">โหลดข้อมูลล้มเหลว</p>';
@@ -4858,15 +4868,16 @@ function goClForm(type) {
 }
 function clfTypeChange() { clfRenderItems(); }
 function clfFacChange(preselArea) {
-    const fac = document.getElementById('clf-fac')?.value || '';
+    const fac  = document.getElementById('clf-fac')?.value || '';
     const area = preselArea || '';
-    clFillAreaSelect('clf-area', fac, area);
-    document.getElementById('clf-area').innerHTML = '<option value="">-- เลือก Area --</option>';
+    const el   = document.getElementById('clf-area');
+    if (!el) return;
+    el.innerHTML = '<option value="">-- เลือก Area --</option>';
     clAreaOptions(fac).forEach(a => {
         const o = document.createElement('option');
         o.value = o.textContent = a;
         if (a === area) o.selected = true;
-        document.getElementById('clf-area').appendChild(o);
+        el.appendChild(o);
     });
     clfAreaChange();
 }

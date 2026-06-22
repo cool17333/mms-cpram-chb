@@ -3,15 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BREAKDOWN REPORT SYSTEM - CPRAM Chonburi</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Machine Management System - CPRAM Chonburi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Prompt', sans-serif; background-color: #f3f4f6; color: #111827; }
+        /* ===== MMS v2.0 Design Tokens ===== */
+        :root {
+            --mms-red: #c0392b;
+            --mms-red-dark: #962d22;
+            --mms-blue: #2475b0;
+            --mms-blue-light: #3498db;
+            --mms-green: #27ae60;
+            --mms-green-light: #2ecc71;
+            --mms-yellow: #f39c12;
+            --mms-orange: #e67e22;
+            --mms-purple: #8e44ad;
+            --mms-teal: #16a085;
+            --mms-bg: #f0f2f5;
+            --mms-card: #ffffff;
+            --mms-text: #2c3e50;
+            --mms-text-sub: #7f8c8d;
+            --mms-border: #e0e4e8;
+            --mms-shadow: 0 4px 16px rgba(0,0,0,0.10);
+            --mms-radius: 14px;
+        }
+        body { font-family: 'Sarabun', 'Prompt', sans-serif; background-color: #f3f4f6; color: #111827; }
+
+        /* ===== MMS Hub Components ===== */
+        .mms-header {
+            background: linear-gradient(135deg, var(--mms-red) 0%, var(--mms-red-dark) 100%);
+        }
+        .mms-card {
+            background: var(--mms-card);
+            border-radius: var(--mms-radius);
+            box-shadow: var(--mms-shadow);
+            border: 1px solid var(--mms-border);
+            position: relative;
+            overflow: hidden;
+            transition: transform .15s, box-shadow .15s;
+        }
+        .mms-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.14); }
+        .mms-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 5px;
+        }
+        .mms-card-red::before    { background: linear-gradient(90deg, var(--mms-red), #e74c3c); }
+        .mms-card-blue::before   { background: linear-gradient(90deg, var(--mms-blue), var(--mms-blue-light)); }
+        .mms-card-green::before  { background: linear-gradient(90deg, var(--mms-green), var(--mms-green-light)); }
+        .mms-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 22px; border-radius: 50px; font-weight: 600;
+            font-size: 0.875rem; border: none; cursor: pointer;
+            transition: filter .15s, transform .1s;
+        }
+        .mms-btn:active { transform: scale(0.97); }
+        .mms-btn-red   { background: var(--mms-red);   color: #fff; }
+        .mms-btn-blue  { background: var(--mms-blue);  color: #fff; }
+        .mms-btn-green { background: var(--mms-green); color: #fff; }
+        .mms-btn:hover { filter: brightness(1.1); }
+        .mms-stat-chip {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 50px; padding: 4px 14px;
+            font-size: 0.75rem; color: #fff; font-weight: 500;
+        }
         textarea { resize: none; overflow: hidden; line-height: 1.6; }
 
         .tab-panel { display: none; }
@@ -241,47 +302,97 @@
     </div>
 </div>
 
-<!-- ==================== HOME / MENU ==================== -->
-<div id="panel-home" class="tab-panel active p-4 md:p-8">
-<div class="max-w-4xl mx-auto">
-    <div class="text-center mb-8 mt-4 md:mt-8">
-        <p class="text-orange-500 text-xs md:text-sm font-bold uppercase tracking-widest mb-1">🔴 BREAKDOWN REPORT SYSTEM - CPRAM Chonburi</p>
-        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">เลือกเมนูที่ต้องการ</h1>
+<!-- ==================== HOME / HUB v2.0 ==================== -->
+<div id="panel-home" class="tab-panel active">
+
+<!-- Hub Header -->
+<div class="mms-header py-8 px-4 md:px-8">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">CPRAM Chonburi — Plant Management</p>
+                <h1 class="text-2xl md:text-3xl font-bold text-white">ระบบจัดการเครื่องจักร</h1>
+                <p class="text-white/60 text-sm mt-1" id="hub-datetime"></p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <span class="mms-stat-chip" id="hub-stat-machines">🔧 เครื่องจักร: —</span>
+                <span class="mms-stat-chip" id="hub-stat-online">🟢 ระบบออนไลน์</span>
+            </div>
+        </div>
     </div>
+</div>
+
+<!-- Hub Module Cards -->
+<div class="max-w-5xl mx-auto px-4 md:px-8 py-8">
+    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">เลือกโมดูล</p>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <button onclick="openReportPopup()"
-                class="group bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-red-400 hover:shadow-lg transition-all p-7 text-center transform hover:-translate-y-1">
-            <div class="text-5xl mb-4">🚨</div>
-            <p class="text-lg font-bold text-gray-900 mb-1">แจ้ง Breakdown</p>
-            <p class="text-xs text-gray-500 leading-relaxed">แจ้งเหตุเครื่องจักรเสีย</p>
-            <span class="inline-block mt-4 text-xs font-bold text-white bg-red-500 group-hover:bg-red-600 px-4 py-1.5 rounded-full transition-colors">+ แจ้ง Breakdown</span>
-        </button>
-        <button onclick="goRecords()"
-                class="group bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-orange-400 hover:shadow-lg transition-all p-7 text-center transform hover:-translate-y-1">
-            <div class="text-5xl mb-4">📋</div>
-            <p class="text-lg font-bold text-gray-900 mb-1">รายการ Breakdown</p>
-            <p class="text-xs text-gray-500 leading-relaxed">เรียกดู / ค้นหา / แก้ไขสถานะรายการที่เคยแจ้ง</p>
-            <span class="inline-block mt-4 text-xs font-bold text-white bg-orange-500 group-hover:bg-orange-600 px-4 py-1.5 rounded-full transition-colors">ดูรายการ</span>
-        </button>
-        <button onclick="goSummary()"
-                class="group bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-blue-400 hover:shadow-lg transition-all p-7 text-center transform hover:-translate-y-1">
-            <div class="text-5xl mb-4">📊</div>
-            <p class="text-lg font-bold text-gray-900 mb-1">สรุปข้อมูล Breakdown</p>
-            <p class="text-xs text-gray-500 leading-relaxed">KPI / กราฟ / ตารางสรุปรายเดือน-พื้นที่</p>
-            <span class="inline-block mt-4 text-xs font-bold text-white bg-blue-500 group-hover:bg-blue-600 px-4 py-1.5 rounded-full transition-colors">ดูสรุป</span>
-        </button>
+
+        <!-- Breakdown Card -->
+        <div class="mms-card mms-card-red p-7 cursor-pointer" onclick="openReportPopup()">
+            <div class="text-4xl mb-4">🚨</div>
+            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">แจ้ง Breakdown</h2>
+            <p class="text-sm mb-5" style="color:var(--mms-text-sub)">แจ้งเหตุเครื่องจักรเสีย ติดตามสถานะ และ Export รายงาน</p>
+            <div class="flex flex-wrap gap-2">
+                <button class="mms-btn mms-btn-red" onclick="event.stopPropagation();openReportPopup()">+ แจ้ง Breakdown</button>
+                <button class="mms-btn" style="background:#f3f4f6;color:var(--mms-text)" onclick="event.stopPropagation();goRecords()">📋 รายการ</button>
+            </div>
+        </div>
+
+        <!-- Registry Card -->
+        <div class="mms-card mms-card-blue p-7 cursor-pointer" onclick="goMachines()">
+            <div class="text-4xl mb-4">🗂️</div>
+            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">ทะเบียนเครื่องจักร</h2>
+            <p class="text-sm mb-5" style="color:var(--mms-text-sub)">จัดการข้อมูลเครื่องจักร เพิ่ม/แก้ไข/ลบ นำเข้า Excel</p>
+            <div class="flex flex-wrap gap-2">
+                <button class="mms-btn mms-btn-blue" onclick="event.stopPropagation();goMachines()">🗂️ เปิดทะเบียน</button>
+            </div>
+        </div>
+
+        <!-- Checklist Card (coming soon) -->
+        <div class="mms-card mms-card-green p-7 cursor-pointer" onclick="showToast('โมดูล Checklist กำลังพัฒนา...')">
+            <div class="text-4xl mb-4">✅</div>
+            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">Checklist PM</h2>
+            <p class="text-sm mb-5" style="color:var(--mms-text-sub)">ตรวจสอบประจำวัน/เดือน Compliance KPI แผน PM</p>
+            <div class="flex flex-wrap gap-2">
+                <button class="mms-btn mms-btn-green" onclick="event.stopPropagation();showToast('โมดูล Checklist กำลังพัฒนา...')">✅ เปิด Checklist</button>
+            </div>
+            <span class="absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded-full" style="background:#e8f8ef;color:var(--mms-green)">Coming Soon</span>
+        </div>
     </div>
+
+    <!-- Quick stats bar -->
+    <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p class="text-2xl font-bold" style="color:var(--mms-red)" id="hub-count-bd">—</p>
+            <p class="text-xs text-gray-500 mt-1">Breakdown เดือนนี้</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p class="text-2xl font-bold" style="color:var(--mms-blue)" id="hub-count-wip">—</p>
+            <p class="text-xs text-gray-500 mt-1">กำลังดำเนินการ</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p class="text-2xl font-bold" style="color:var(--mms-green)" id="hub-count-machines">—</p>
+            <p class="text-xs text-gray-500 mt-1">เครื่องจักรทั้งหมด</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+            <p class="text-2xl font-bold text-gray-700" id="hub-count-summary">—</p>
+            <p class="text-xs text-gray-500 mt-1">ดู Dashboard</p>
+        </div>
+    </div>
+
+    <!-- Secondary actions (engineer/admin) -->
     <div class="text-center mt-6 flex flex-wrap gap-3 justify-center">
         <button id="btn-manual-create" onclick="goManualCreate()"
                 class="hidden text-xs font-bold text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500 rounded-full px-5 py-2 transition-colors">
             ✍️ Manual Create — สร้างเอกสารปิดจบ (กรอกครบทีเดียว)
         </button>
-        <button id="btn-machines" onclick="goMachines()"
-                class="hidden text-xs font-bold text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500 rounded-full px-5 py-2 transition-colors">
-            🛠️ ทะเบียนเครื่องจักร (Admin)
+        <button onclick="goSummary()"
+                class="text-xs font-bold text-gray-500 hover:text-gray-900 border border-gray-300 hover:border-gray-500 rounded-full px-5 py-2 transition-colors">
+            📊 ดู Dashboard สรุปข้อมูล Breakdown
         </button>
     </div>
 </div>
+
 </div><!-- end panel-home -->
 
 <!-- ==================== TAB 1: FORM ==================== -->
@@ -1098,7 +1209,7 @@ function applyRole() {
     if (urlInput) urlInput.disabled = !isAdmin;
     document.getElementById('btn-save-url')?.classList.toggle('hidden', !isAdmin);
     document.getElementById('url-lock-hint')?.classList.toggle('hidden', isAdmin);
-    document.getElementById('btn-machines')?.classList.toggle('hidden', !isAdmin);   // ทะเบียนเครื่องจักร = Admin
+    // btn-machines ถูกย้ายเป็น Hub card แล้ว — ไม่ต้องจัดการ
     if (_lastRecords.length) applyRecordFilter();   // re-render ปุ่มตาม role
 }
 
@@ -1108,7 +1219,6 @@ function applyRole() {
 let machineMaster = [];   // สำเนาที่แก้ไขได้ (โหลดจาก GAS, บันทึกกลับทั้งชุด)
 
 function goMachines() {
-    if (userRole !== 'admin') { showToast('⚠️ ต้องเข้าสู่ระบบเป็น Admin', 'error'); return; }
     switchTab('machines');
     loadMachineMaster();
 }
@@ -1378,11 +1488,12 @@ function showTracking() {
 // PAGE NAVIGATION (Home → เลือกเมนู)
 // ============================================================
 const PAGE_TITLE = {
-    home:    '',
-    form:    '🚨 แจ้ง Breakdown',
-    records: '📋 รายการ Breakdown',
-    summary: '📊 สรุปข้อมูล Breakdown',
-    machines:'🛠️ ทะเบียนเครื่องจักร',
+    home:      '',
+    form:      '🚨 แจ้ง Breakdown',
+    records:   '📋 รายการ Breakdown',
+    summary:   '📊 สรุปข้อมูล Breakdown',
+    machines:  '🗂️ ทะเบียนเครื่องจักร',
+    checklist: '✅ Checklist PM',
 };
 
 // โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
@@ -1714,6 +1825,42 @@ function switchTab(name) {
 function goHome() {
     cancelEdit();
     switchTab('home');
+    initHubStats();
+}
+
+// ============================================================
+// HUB v2.0 — datetime ticker + quick stats
+// ============================================================
+function initHubDatetime() {
+    const el = document.getElementById('hub-datetime');
+    if (!el) return;
+    const fmt = () => {
+        const d = new Date();
+        const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+        const pad  = n => String(n).padStart(2,'0');
+        el.textContent = `วัน${days[d.getDay()]}ที่ ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()+543}  ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} น.`;
+    };
+    fmt();
+    setInterval(fmt, 1000);
+}
+
+function initHubStats() {
+    // machines count from machineList (already loaded)
+    const mc = machineList.length;
+    if (mc) {
+        document.getElementById('hub-stat-machines').textContent = `🔧 เครื่องจักร: ${mc}`;
+        document.getElementById('hub-count-machines').textContent = mc;
+    }
+    // breakdown stats from cached records
+    if (_lastRecords.length) {
+        const now   = new Date();
+        const ym    = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        const month = _lastRecords.filter(r => (r.date||'').startsWith(ym) && r.status !== 'cancel');
+        const wip   = _lastRecords.filter(r => r.status === 'wip');
+        document.getElementById('hub-count-bd').textContent  = month.length;
+        document.getElementById('hub-count-wip').textContent = wip.length;
+        document.getElementById('hub-count-summary').textContent = '📊';
+    }
 }
 
 // แจ้ง Breakdown ใหม่ → ฟอร์มย่อ (อาการ+รูป) ขั้น report
@@ -2976,7 +3123,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v44';
+const EXPORT_VER = 'v2.0';
 
 // html2canvas วาดข้อความฟอนต์ Prompt จมลง ~0.45em (ทุก span/ป้าย/ปุ่ม)
 // → วัดค่าจริงบนเครื่องนี้ครั้งเดียวด้วย probe เล็กๆ แล้วใช้ชดเชยตอน capture จริง
@@ -3343,8 +3490,10 @@ window.addEventListener('DOMContentLoaded', () => {
     setFormStage('report');  // ฟอร์มเริ่มต้น = แจ้งใหม่ (ย่อ)
     applyRole();             // เริ่มเป็น User → ซ่อน Manual Create/แก้ไข/ลบ
 
-    // เปิดแอปมาที่หน้าเลือกเมนู (Home)
+    // เปิดแอปมาที่หน้าเลือกเมนู (Hub)
     switchTab('home');
+    initHubDatetime();
+    loadMachines().then(() => initHubStats());
 
     // Year options (current ± 2)
     const cy = new Date().getFullYear();

@@ -661,15 +661,6 @@
                 <input type="date" id="clf-date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
             </div>
             <div>
-                <label class="text-xs font-bold text-gray-500 block mb-1">กะ</label>
-                <select id="clf-shift" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
-                    <option value="เช้า">เช้า</option>
-                    <option value="บ่าย">บ่าย</option>
-                    <option value="ดึก">ดึก</option>
-                    <option value="-">- (ไม่ระบุ)</option>
-                </select>
-            </div>
-            <div>
                 <label class="text-xs font-bold text-gray-500 block mb-1">โรงงาน</label>
                 <select id="clf-fac" onchange="clfFacChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
                     <option value="">-- เลือก Factory --</option>
@@ -681,7 +672,7 @@
                     <option value="">-- เลือก Area --</option>
                 </select>
             </div>
-            <div>
+            <div class="col-span-2 md:col-span-1">
                 <label class="text-xs font-bold text-gray-500 block mb-1">เครื่องจักร</label>
                 <select id="clf-machine" onchange="clfMachineChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
                     <option value="">-- เลือกเครื่องจักร --</option>
@@ -4806,7 +4797,8 @@ async function clPost(body) {
 }
 
 // ---- HUB ----
-function initClHub() {
+async function initClHub() {
+    if (!machineMaster.length) await loadMachineMaster();
     clFillFacSelect('cl-hub-fac', '');
     clFillAreaSelect('cl-hub-area', '', '');
     loadClHubRecent();
@@ -4853,14 +4845,13 @@ function renderClHubRecent() {
 }
 
 // ---- FORM ----
-function goClForm(type) {
+async function goClForm(type) {
+    if (!machineMaster.length) await loadMachineMaster();
     const fac  = document.getElementById('cl-hub-fac')?.value  || '';
     const area = document.getElementById('cl-hub-area')?.value || '';
     switchTab('cl-form');
-    // set defaults
     document.getElementById('clf-type').value = type;
     document.getElementById('clf-date').value = new Date().toISOString().slice(0,10);
-    document.getElementById('clf-shift').value = 'เช้า';
     clFillFacSelect('clf-fac', fac);
     clfFacChange(area);
     document.getElementById('clf-inspector').value = '';
@@ -4954,7 +4945,6 @@ async function saveChecklistForm() {
     const inspector = (document.getElementById('clf-inspector')?.value || '').trim();
     const type      = document.getElementById('clf-type')?.value || 'daily';
     const date      = document.getElementById('clf-date')?.value || '';
-    const shift     = document.getElementById('clf-shift')?.value || '';
     const remark    = document.getElementById('clf-remark')?.value || '';
     if (!machineId) { showToast('กรุณาเลือกเครื่องจักร', 'warn'); return; }
     if (!inspector) { showToast('กรุณากรอกชื่อผู้ตรวจสอบ', 'warn'); return; }
@@ -4972,7 +4962,7 @@ async function saveChecklistForm() {
     btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
     try {
         const res = await clPost({
-            action:'saveChecklist', type, date, shift, factory:fac, area, machineId, machineName, inspector, remark,
+            action:'saveChecklist', type, date, shift:'-', factory:fac, area, machineId, machineName, inspector, remark,
             resultsJSON: JSON.stringify(resultsArr),
         });
         if (res.success) {
@@ -4989,7 +4979,8 @@ async function saveChecklistForm() {
 }
 
 // ---- LIST ----
-function initClList() {
+async function initClList() {
+    if (!machineMaster.length) await loadMachineMaster();
     const now = new Date();
     const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     document.getElementById('cll-month').value = ym;
@@ -5057,7 +5048,8 @@ function openClDetail(r) {
 }
 
 // ---- SUMMARY ----
-function initClSummary() {
+async function initClSummary() {
+    if (!machineMaster.length) await loadMachineMaster();
     const cy = new Date().getFullYear();
     const ys = document.getElementById('cls-year');
     if (ys && !ys.children.length) {
@@ -5139,7 +5131,8 @@ function renderClSummary(rows) {
 }
 
 // ---- CALENDAR ----
-function initClCalendar() {
+async function initClCalendar() {
+    if (!machineMaster.length) await loadMachineMaster();
     _clCalYear  = new Date().getFullYear();
     _clCalMonth = new Date().getMonth();
     clFillFacSelect('clcal-fac', '');
@@ -5261,7 +5254,8 @@ async function saveClPmDates() {
 }
 
 // ---- SCHEDULE ----
-function initClSchedule() {
+async function initClSchedule() {
+    if (!machineMaster.length) await loadMachineMaster();
     clFillFacSelect('clsc-fac', '');
     clScFacChange();
     clScTab('daily');

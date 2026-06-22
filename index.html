@@ -632,8 +632,8 @@
             <p class="text-xs text-gray-500">ดูกำหนด PM รายเดือน</p>
         </div>
         <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid #16a085" onclick="switchTab('cl-schedule')">
-            <div class="text-3xl mb-2">📐</div>
-            <h3 class="font-bold mb-1">แผน / ตาราง PM</h3>
+            <div class="text-3xl mb-2">🔧</div>
+            <h3 class="font-bold mb-1">รายละเอียดตรวจสอบ</h3>
             <p class="text-xs text-gray-500">กำหนดแผน PM &amp; รายการตรวจ</p>
         </div>
     </div>
@@ -884,6 +884,10 @@
                 <option value="">ทั้งหมด</option>
             </select>
         </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">รหัสเครื่องจักร</label>
+            <input id="clsc-search" type="text" placeholder="ค้นหารหัส..." oninput="loadClSchedule()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none w-40">
+        </div>
     </div>
     <div class="flex gap-2 mb-4">
         <button id="clsc-tab-daily" onclick="clScTab('daily')" class="mms-btn mms-btn-green">📋 Daily Items</button>
@@ -893,21 +897,24 @@
         <div class="mms-card overflow-hidden">
             <div class="p-4 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="font-bold text-sm">รายการตรวจสอบประจำวัน</h3>
-                <button onclick="openClDailyEditor(null)" class="mms-btn mms-btn-green text-xs">+ กำหนดรายการ</button>
+                <button onclick="openClItemsEditor('default-daily',null)" class="mms-btn mms-btn-green text-xs">⚙️ ตั้งค่ารายการ Default รายวัน</button>
             </div>
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50 border-b border-gray-200">
-                        <th class="text-left px-4 py-3 font-bold text-gray-600">เครื่องจักร</th>
+                        <th class="text-left px-4 py-3 font-bold text-gray-600">รหัสเครื่องจักร</th>
+                        <th class="text-left px-4 py-3 font-bold text-gray-600">ชื่อเครื่องจักร</th>
                         <th class="text-center px-4 py-3 font-bold text-gray-600">รายการ Custom</th>
                         <th class="text-center px-4 py-3 font-bold text-gray-600">รายการ Default</th>
                         <th class="text-center px-4 py-3 font-bold text-gray-600"></th>
                     </tr>
                 </thead>
                 <tbody id="clsc-daily-body">
-                    <tr><td colspan="4" class="text-center text-gray-400 py-8">เลือก Factory เพื่อดูข้อมูล</td></tr>
+                    <tr><td colspan="5" class="text-center text-gray-400 py-8">เลือก Factory เพื่อดูข้อมูล</td></tr>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
     <div id="clsc-pm-view" class="hidden">
@@ -920,15 +927,17 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="bg-gray-50 border-b border-gray-200">
-                        <th class="text-left px-4 py-3 font-bold text-gray-600">เครื่องจักร</th>
+                        <th class="text-left px-4 py-3 font-bold text-gray-600">รหัสเครื่องจักร</th>
+                        <th class="text-left px-4 py-3 font-bold text-gray-600">ชื่อเครื่องจักร</th>
                         <th class="text-center px-3 py-3 font-bold text-gray-600">Daily</th>
                         <th class="text-center px-3 py-3 font-bold text-gray-600">PM ทุก (เดือน)</th>
                         <th class="text-left px-3 py-3 font-bold text-gray-600">เริ่มต้น PM</th>
                         <th class="text-center px-3 py-3 font-bold text-gray-600">PM ถัดไป</th>
+                        <th class="text-center px-3 py-3 font-bold text-gray-600"></th>
                     </tr>
                 </thead>
                 <tbody id="clsc-pm-body">
-                    <tr><td colspan="5" class="text-center text-gray-400 py-8">เลือก Factory เพื่อดูข้อมูล</td></tr>
+                    <tr><td colspan="7" class="text-center text-gray-400 py-8">เลือก Factory เพื่อดูข้อมูล</td></tr>
                 </tbody>
             </table>
             </div>
@@ -1378,26 +1387,42 @@
     </div>
 </div>
 
-<!-- modal-cl-daily-editor: Edit custom daily items for a machine -->
-<div id="modal-cl-daily-editor" class="modal-bg hidden">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[92vh] flex flex-col">
-        <div class="bg-green-700 px-6 py-4 flex-shrink-0 flex justify-between items-center">
+<!-- modal-cl-items-editor: 3-mode items editor (default-daily / per-machine-daily / per-machine-pm) -->
+<div id="modal-cl-items-editor" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div id="mcie-header" class="px-6 py-4 flex-shrink-0 flex justify-between items-center bg-green-700">
             <div>
-                <h2 class="text-base font-bold text-white">📋 กำหนดรายการตรวจสอบรายวัน</h2>
-                <p id="mcde-machine-name" class="text-xs text-green-200 mt-0.5"></p>
+                <h2 id="mcie-title" class="text-base font-bold text-white">📋 กำหนดรายการตรวจสอบ</h2>
+                <p id="mcie-subtitle" class="text-xs text-green-200 mt-0.5"></p>
             </div>
-            <button onclick="document.getElementById('modal-cl-daily-editor').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
+            <button onclick="document.getElementById('modal-cl-items-editor').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
         </div>
-        <div class="flex-1 overflow-y-auto p-5">
-            <p class="text-xs text-gray-500 mb-3">รายการ Default (ใช้ถ้าไม่มี Custom)</p>
-            <div id="mcde-default-items" class="mb-4 space-y-1 text-sm text-gray-600"></div>
-            <p class="text-xs font-bold text-gray-600 mb-2">รายการ Custom (เฉพาะเครื่องนี้)</p>
-            <div id="mcde-custom-items" class="space-y-2 mb-3"></div>
-            <button onclick="mcdeAddItem()" class="mms-btn text-xs w-full">+ เพิ่มรายการ</button>
+        <!-- flat list view (default-daily / per-machine-daily) -->
+        <div id="mcie-flat-view" class="flex-1 overflow-y-auto p-5">
+            <div id="mcie-ref-section" class="mb-4 hidden">
+                <p class="text-xs text-gray-500 mb-2">รายการ Default (อ้างอิง)</p>
+                <div id="mcie-ref-items" class="space-y-1 text-sm text-gray-500 mb-4"></div>
+            </div>
+            <p class="text-xs font-bold text-gray-700 mb-2" id="mcie-flat-label">รายการตรวจสอบ</p>
+            <div id="mcie-flat-items" class="space-y-2 mb-3"></div>
+            <button onclick="mcieFlatAddItem()" class="mms-btn text-xs w-full">+ เพิ่มรายการ</button>
         </div>
-        <div class="p-4 border-t border-gray-100 flex gap-3 justify-end">
-            <button onclick="document.getElementById('modal-cl-daily-editor').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
-            <button onclick="saveClDailyItems()" class="mms-btn mms-btn-green">💾 บันทึก</button>
+        <!-- PM tree view (per-machine-pm) -->
+        <div id="mcie-tree-view" class="flex-1 overflow-y-auto p-5 hidden">
+            <p class="text-xs text-gray-500 mb-3">กำหนดหัวข้อและรายการตรวจสอบ PM (สามารถมีหัวข้อย่อยได้)</p>
+            <div id="mcie-pm-tree" class="space-y-1 mb-3"></div>
+            <button onclick="mcieAddPmRoot()" class="mms-btn text-xs w-full">+ เพิ่มหัวข้อ</button>
+        </div>
+        <!-- editor name + save footer -->
+        <div class="p-4 border-t border-gray-100 flex-shrink-0">
+            <div class="mb-3">
+                <label class="text-xs font-bold text-gray-600 block mb-1">ชื่อผู้แก้ไข <span class="text-red-500">*</span></label>
+                <input id="mcie-editor-name" type="text" placeholder="ระบุชื่อ..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button onclick="document.getElementById('modal-cl-items-editor').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
+                <button onclick="saveClItemsEditor()" class="mms-btn mms-btn-green">💾 บันทึก</button>
+            </div>
         </div>
     </div>
 </div>
@@ -2450,7 +2475,7 @@ const PAGE_TITLE = {
     'cl-list':      '📁 รายการ Checklist',
     'cl-summary':   '📊 สรุป / KPI',
     'cl-calendar':  '📅 ปฏิทิน PM',
-    'cl-schedule':  '📐 แผน PM',
+    'cl-schedule':  '🔧 รายละเอียดตรวจสอบ',
 };
 
 // โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
@@ -4681,17 +4706,19 @@ const CL_PM_DEFAULT = [
 ];
 
 // In-memory stores (loaded from GAS)
-let _clChecklists = [];   // recent checklists from GAS
-let _clPmPlans    = {};   // { machineId: { dailyEnabled, pmFreq, pmStartDate, pmItemsJSON } }
-let _clPmDates    = {};   // { "machineId_YYYY-MM": [day, day, ...] }
-let _clDailyItems = {};   // { machineId: [{id, label}] } — custom daily items (localStorage)
+let _clChecklists   = [];   // recent checklists from GAS
+let _clPmPlans      = {};   // { machineId: plan } from GAS _PmPlans
+let _clPmDates      = {};   // { "machineId_YYYY-MM": [day, day, ...] }
+let _clDailyDefault = [];   // global default daily items from _DailyDefault sheet
+let _clDailyItems   = {};   // deprecated localStorage cache (kept for compat)
 let _clCalYear    = new Date().getFullYear();
 let _clCalMonth   = new Date().getMonth(); // 0-based
 let _clCalMachineId = '';
 let _clSetDatesMachineId = '';
 let _clSetDatesYear = 0;
 let _clSetDatesMonth = 0;
-let _clMcdeDachineId = '';  // machine id being edited in daily editor
+let _clMcdeMode      = 'default-daily';  // current editor mode
+let _clMcdeMachineId = '';               // machine being edited
 let _clScCurrentTab = 'daily';
 let _clChartObj = null;
 
@@ -4748,33 +4775,24 @@ function clFillMachineSelect(elId, factory, area, selected) {
     });
 }
 function clGetDailyItems(machineId) {
-    // custom items stored in localStorage; fallback to default
-    const key = 'cl_daily_' + machineId;
-    try {
-        const raw = localStorage.getItem(key);
-        if (raw) return JSON.parse(raw);
-    } catch(e) {}
+    // read from DB cache (_clPmPlans); fallback to _clDailyDefault or CL_DAILY_DEFAULT
+    const plan = _clPmPlans[machineId];
+    if (plan && Array.isArray(plan.dailyItems) && plan.dailyItems.length > 0) return plan.dailyItems;
     return null; // null = use default
 }
-function clSetDailyItems(machineId, items) {
-    const key = 'cl_daily_' + machineId;
-    localStorage.setItem(key, JSON.stringify(items));
-    _clDailyItems[machineId] = items;
-}
 function clGetPmPlan(machineId) {
-    return _clPmPlans[machineId] || { dailyEnabled: true, pmFreq: 3, pmStartDate: '2026-01-01' };
+    return _clPmPlans[machineId] || { dailyEnabled: true, pmFreqMonths: 3, pmStartMonth: '' };
 }
 function clNextPmDate(machineId) {
     const plan = clGetPmPlan(machineId);
-    if (!plan.pmStartDate) return '—';
-    const start = new Date(plan.pmStartDate);
-    const freq  = parseInt(plan.pmFreq) || 3;
+    const sm   = plan.pmStartMonth || plan.pmStartDate || '';
+    if (!sm) return '—';
+    const start = new Date(sm + (sm.length === 7 ? '-01' : ''));
+    const freq  = parseInt(plan.pmFreqMonths || plan.pmFreq) || 3;
     const now   = new Date();
     let next = new Date(start);
-    while (next <= now) {
-        next.setMonth(next.getMonth() + freq);
-    }
-    return next.toISOString().slice(0,10);
+    while (next <= now) next.setMonth(next.getMonth() + freq);
+    return next.toISOString().slice(0,7);
 }
 function clPmDateKey(machineId, year, month) {
     return machineId + '_' + year + '-' + String(month + 1).padStart(2,'0');
@@ -4885,9 +4903,25 @@ function clfGetItems() {
     const machineId = document.getElementById('clf-machine')?.value || '';
     if (type === 'daily') {
         const custom = clGetDailyItems(machineId);
-        return (custom || CL_DAILY_DEFAULT).map(i => ({ ...i }));
+        if (custom) return custom.map(i => ({ ...i }));
+        // fallback: _clDailyDefault from DB, then hardcoded CL_DAILY_DEFAULT
+        return (_clDailyDefault.length ? _clDailyDefault : CL_DAILY_DEFAULT).map(i => ({ ...i }));
     } else {
-        // PM: flatten tree
+        // PM: flatten tree from DB cache
+        const plan = _clPmPlans[machineId];
+        if (plan && Array.isArray(plan.pmItems) && plan.pmItems.length > 0) {
+            const items = [];
+            const walk = (node, prefix) => {
+                if (!node.children || !node.children.length) {
+                    items.push({ id: 'pm_' + prefix.replace(/\./g,'_'), label: prefix + ' ' + (node.label||node.text||'') });
+                } else {
+                    node.children.forEach((ch, j) => walk(ch, prefix + '.' + (j+1)));
+                }
+            };
+            plan.pmItems.forEach((n,i) => walk(n, String(i+1)));
+            return items;
+        }
+        // fallback to hardcoded defaults
         const items = [];
         CL_PM_DEFAULT.forEach(cat => {
             cat.items.forEach(label => {
@@ -5263,6 +5297,11 @@ async function saveClPmDates() {
 // ---- SCHEDULE ----
 async function initClSchedule() {
     if (!machineMaster.length) await loadMachineMaster();
+    // pre-load global daily default
+    try {
+        const d = await clFetch({ action:'getDailyDefault' });
+        if (d.success && d.data?.items?.length) _clDailyDefault = d.data.items;
+    } catch(e) {}
     clFillFacSelect('clsc-fac', '');
     clScFacChange();
     clScTab('daily');
@@ -5283,23 +5322,28 @@ function clScTab(tab) {
 async function loadClSchedule() {
     const fac  = document.getElementById('clsc-fac')?.value  || '';
     const area = document.getElementById('clsc-area')?.value || '';
-    const machines = clMachinesFor(fac, area);
+    const search = (document.getElementById('clsc-search')?.value || '').toLowerCase();
+    let machines = clMachinesFor(fac, area);
+    if (search) machines = machines.filter(m => (m.id||m.machineId||'').toLowerCase().includes(search) || (m.name||m.machineName||'').toLowerCase().includes(search));
     if (_clScCurrentTab === 'daily') renderClScDaily(machines);
     else await renderClScPm(machines);
 }
 function renderClScDaily(machines) {
     const tbody = document.getElementById('clsc-daily-body');
     if (!tbody) return;
-    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
+    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
+    const defCount = _clDailyDefault.length || CL_DAILY_DEFAULT.length;
     tbody.innerHTML = machines.map(m => {
-        const id = m.id || m.machineId || m.machine_id || '';
+        const id     = m.id || m.machineId || m.machine_id || '';
         const custom = clGetDailyItems(id);
+        const canEdit = userRole === 'engineer' || userRole === 'admin';
         return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+            <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${id}</td>
             <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
             <td class="px-4 py-2.5 text-center text-sm">${custom ? custom.length : '—'}</td>
-            <td class="px-4 py-2.5 text-center text-sm">${CL_DAILY_DEFAULT.length}</td>
+            <td class="px-4 py-2.5 text-center text-sm">${defCount}</td>
             <td class="px-4 py-2.5 text-center">
-                <button onclick="openClDailyEditor('${id}')" class="text-xs text-green-600 hover:underline">✏️ แก้ไข</button>
+                ${canEdit ? `<button onclick="openClItemsEditor('per-machine-daily','${id}')" class="text-xs text-green-600 hover:underline">✏️ แก้ไข</button>` : ''}
             </td>
         </tr>`;
     }).join('');
@@ -5307,95 +5351,226 @@ function renderClScDaily(machines) {
 async function renderClScPm(machines) {
     const tbody = document.getElementById('clsc-pm-body');
     if (!tbody) return;
-    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
-    // load pm plans from GAS (or use cached)
+    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
     const fac  = document.getElementById('clsc-fac')?.value || '';
     const area = document.getElementById('clsc-area')?.value || '';
     try {
         const data = await clFetch({ action:'getPmPlans', factory:fac, area });
         (data.data||[]).forEach(r => { _clPmPlans[r.machineId] = r; });
     } catch(e) {}
+    const canEdit = userRole === 'engineer' || userRole === 'admin';
     tbody.innerHTML = machines.map(m => {
         const id   = m.id || m.machineId || m.machine_id || '';
         const plan = clGetPmPlan(id);
         const next = clNextPmDate(id);
+        const pmCount = Array.isArray(plan.pmItems) ? plan.pmItems.length : 0;
         return `<tr class="border-b border-gray-100 hover:bg-gray-50" data-machine-id="${id}">
+            <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${id}</td>
             <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
             <td class="px-3 py-2.5 text-center">
                 <input type="checkbox" class="pm-daily-enabled w-4 h-4" ${plan.dailyEnabled?'checked':''}>
             </td>
             <td class="px-3 py-2.5 text-center">
-                <input type="number" min="1" max="24" value="${plan.pmFreq||3}" class="pm-freq w-16 border border-gray-200 rounded px-2 py-1 text-sm text-center">
+                <input type="number" min="1" max="24" value="${plan.pmFreqMonths||3}" class="pm-freq w-16 border border-gray-200 rounded px-2 py-1 text-sm text-center">
             </td>
             <td class="px-3 py-2.5">
-                <input type="date" value="${plan.pmStartDate||''}" class="pm-start border border-gray-200 rounded px-2 py-1 text-sm">
+                <input type="month" value="${plan.pmStartMonth||''}" class="pm-start border border-gray-200 rounded px-2 py-1 text-sm">
             </td>
             <td class="px-3 py-2.5 text-center text-xs text-gray-600">${next}</td>
+            <td class="px-3 py-2.5 text-center">
+                ${canEdit ? `<button onclick="openClItemsEditor('per-machine-pm','${id}')" class="text-xs text-blue-600 hover:underline">✏️ แก้ไขรายการ PM</button>` : (pmCount ? `<span class="text-xs text-gray-400">${pmCount} หัวข้อ</span>` : '')}
+            </td>
         </tr>`;
     }).join('');
 }
 async function saveAllPmPlans() {
+    if (!userRole) { showToast('กรุณาเข้าสู่ระบบก่อน', 'warn'); return; }
     const fac  = document.getElementById('clsc-fac')?.value  || '';
     const area = document.getElementById('clsc-area')?.value || '';
     const plans = [];
     document.querySelectorAll('#clsc-pm-body tr[data-machine-id]').forEach(row => {
         const id = row.dataset.machineId;
+        const m  = machineMaster.find(x => (x.id||x.machineId||'') === id) || {};
         plans.push({
-            machineId: id,
-            factory: fac, area,
+            machineId:    id,
+            machineName:  m.name || m.machineName || '',
+            factory:      fac,
+            area,
             dailyEnabled: row.querySelector('.pm-daily-enabled')?.checked ?? true,
-            pmFreq:       parseInt(row.querySelector('.pm-freq')?.value) || 3,
-            pmStartDate:  row.querySelector('.pm-start')?.value || '',
+            pmFreqMonths: parseInt(row.querySelector('.pm-freq')?.value) || 3,
+            pmStartMonth: row.querySelector('.pm-start')?.value || '',
         });
     });
     if (!plans.length) return;
     try {
         const res = await clPost({ action:'savePmPlans', plans });
-        if (res.success) { showToast('บันทึกแผน PM เรียบร้อย', 'success'); plans.forEach(p => { _clPmPlans[p.machineId] = p; }); }
-        else showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error');
+        if (res.success) {
+            showToast('บันทึกแผน PM เรียบร้อย', 'success');
+            plans.forEach(p => { Object.assign(_clPmPlans[p.machineId] || (_clPmPlans[p.machineId] = {}), p); });
+        } else showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error');
     } catch(e) { showToast('เชื่อมต่อ GAS ล้มเหลว', 'error'); }
 }
 
-// ---- DAILY ITEMS EDITOR ----
-function openClDailyEditor(machineId) {
-    _clMcdeDachineId = machineId;
-    const machine = machineId ? machineMaster.find(m => (m.id||m.machineId||m.machine_id||'') === machineId) : null;
-    document.getElementById('mcde-machine-name').textContent = machine ? (machine.name||machine.machineName||machineId) : 'ทุกเครื่องจักร (Default)';
-    // default items display
-    document.getElementById('mcde-default-items').innerHTML = CL_DAILY_DEFAULT.map(i => `<div class="px-2 py-1 bg-gray-50 rounded">${i.label}</div>`).join('');
-    // custom items
-    const custom = machineId ? (clGetDailyItems(machineId) || []) : [];
-    mcdeRenderItems(custom);
-    document.getElementById('modal-cl-daily-editor').classList.remove('hidden');
+// ---- ITEMS EDITOR (3 modes) ----
+async function openClItemsEditor(mode, machineId) {
+    if (userRole !== 'engineer' && userRole !== 'admin') { showToast('ต้องเป็น Engineer หรือ Admin', 'warn'); return; }
+    _clMcdeMode      = mode;
+    _clMcdeMachineId = machineId || '';
+    const machine    = machineId ? machineMaster.find(m => (m.id||m.machineId||m.machine_id||'') === machineId) : null;
+    const machineName = machine ? (machine.name||machine.machineName||machineId) : '';
+    const hdrEl  = document.getElementById('mcie-header');
+    const titleEl = document.getElementById('mcie-title');
+    const subEl   = document.getElementById('mcie-subtitle');
+    const flatView = document.getElementById('mcie-flat-view');
+    const treeView = document.getElementById('mcie-tree-view');
+    const refSec   = document.getElementById('mcie-ref-section');
+    const flatLbl  = document.getElementById('mcie-flat-label');
+    document.getElementById('mcie-editor-name').value = '';
+
+    if (mode === 'default-daily') {
+        hdrEl.className = 'px-6 py-4 flex-shrink-0 flex justify-between items-center bg-green-700';
+        titleEl.textContent = '⚙️ ตั้งค่ารายการ Default รายวัน';
+        subEl.textContent = 'รายการนี้ใช้กับทุกเครื่องจักรที่ไม่มีรายการ Custom';
+        flatView.classList.remove('hidden'); treeView.classList.add('hidden');
+        refSec.classList.add('hidden');
+        flatLbl.textContent = 'รายการ Default รายวัน';
+        // load from DB
+        try {
+            const d = await clFetch({ action:'getDailyDefault' });
+            _clDailyDefault = (d.data?.items || []);
+        } catch(e) {}
+        mcieFlatRender(_clDailyDefault.length ? _clDailyDefault : CL_DAILY_DEFAULT.slice());
+
+    } else if (mode === 'per-machine-daily') {
+        hdrEl.className = 'px-6 py-4 flex-shrink-0 flex justify-between items-center bg-green-700';
+        titleEl.textContent = '✏️ แก้ไขรายการตรวจสอบรายวัน';
+        subEl.textContent = machineName + ' (' + machineId + ')';
+        flatView.classList.remove('hidden'); treeView.classList.add('hidden');
+        refSec.classList.remove('hidden');
+        flatLbl.textContent = 'รายการ Custom (เฉพาะเครื่องนี้)';
+        // show default as reference
+        const defItems = _clDailyDefault.length ? _clDailyDefault : CL_DAILY_DEFAULT;
+        document.getElementById('mcie-ref-items').innerHTML = defItems.map(i => `<div class="px-2 py-1 bg-gray-50 rounded text-xs">${i.label}</div>`).join('');
+        const custom = clGetDailyItems(machineId) || [];
+        mcieFlatRender(custom);
+
+    } else if (mode === 'per-machine-pm') {
+        hdrEl.className = 'px-6 py-4 flex-shrink-0 flex justify-between items-center bg-blue-700';
+        titleEl.textContent = '🔧 แก้ไขรายการตรวจสอบ PM';
+        subEl.textContent = machineName + ' (' + machineId + ')';
+        flatView.classList.add('hidden'); treeView.classList.remove('hidden');
+        const plan = _clPmPlans[machineId] || {};
+        _clPmTree = Array.isArray(plan.pmItems) && plan.pmItems.length ? plan.pmItems : [_newClPmNode()];
+        renderClPmTree();
+    }
+    document.getElementById('modal-cl-items-editor').classList.remove('hidden');
 }
-function mcdeRenderItems(items) {
-    const container = document.getElementById('mcde-custom-items');
+function mcieFlatRender(items) {
+    const container = document.getElementById('mcie-flat-items');
     container.innerHTML = items.map((item, idx) => `
         <div class="flex gap-2 items-center">
-            <input type="text" value="${item.label||''}" data-idx="${idx}" class="mcde-item-input flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-400">
-            <button onclick="mcdeRemoveItem(${idx})" class="text-red-400 hover:text-red-600 text-lg font-bold">✕</button>
+            <input type="text" value="${(item.label||'').replace(/"/g,'&quot;')}" data-idx="${idx}" class="mcie-flat-input flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-400">
+            <button onclick="mcieFlatRemove(${idx})" class="text-red-400 hover:text-red-600 text-lg font-bold leading-none">✕</button>
         </div>`).join('');
 }
-function mcdeAddItem() {
-    const inputs = [...document.querySelectorAll('.mcde-item-input')];
+function mcieFlatAddItem() {
+    const inputs = [...document.querySelectorAll('.mcie-flat-input')];
     const items  = inputs.map((inp, i) => ({ id: 'c' + i, label: inp.value }));
     items.push({ id: 'c' + items.length, label: '' });
-    mcdeRenderItems(items);
+    mcieFlatRender(items);
+    document.querySelector('.mcie-flat-input:last-of-type')?.focus();
 }
-function mcdeRemoveItem(idx) {
-    const inputs = [...document.querySelectorAll('.mcde-item-input')];
+function mcieFlatRemove(idx) {
+    const inputs = [...document.querySelectorAll('.mcie-flat-input')];
     const items  = inputs.map((inp, i) => ({ id: 'c' + i, label: inp.value })).filter((_,i) => i !== idx);
-    mcdeRenderItems(items);
+    mcieFlatRender(items);
 }
-function saveClDailyItems() {
-    const items = [...document.querySelectorAll('.mcde-item-input')]
+function mcieFlatGetItems() {
+    return [...document.querySelectorAll('.mcie-flat-input')]
         .map((inp, i) => ({ id: 'c' + i, label: inp.value.trim() }))
         .filter(i => i.label);
-    if (_clMcdeDachineId) {
-        clSetDailyItems(_clMcdeDachineId, items);
-        showToast('บันทึกรายการตรวจสอบเรียบร้อย', 'success');
+}
+
+// PM tree (simplified Why-Why without images/coloring)
+let _clPmTree = [];
+function _newClPmNode() { return { label: '', children: [] }; }
+function addClPmRoot()        { _clPmTree.push(_newClPmNode()); renderClPmTree(); }
+function addClPmChild(node)   { node.children.push(_newClPmNode()); renderClPmTree(); }
+function removeClPmNode(node) {
+    const rm = list => { const i = list.indexOf(node); if (i>=0){list.splice(i,1);return true;} return list.some(n=>rm(n.children)); };
+    rm(_clPmTree);
+    if (!_clPmTree.length) _clPmTree.push(_newClPmNode());
+    renderClPmTree();
+}
+function renderClPmTree() {
+    const c = document.getElementById('mcie-pm-tree');
+    if (!c) return;
+    c.innerHTML = '';
+    _clPmTree.forEach((node, i) => c.appendChild(_renderClPmNode(node, String(i+1))));
+}
+function _renderClPmNode(node, label) {
+    const container = document.createElement('div');
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 mb-1.5';
+    row.innerHTML = `
+        <span class="shrink-0 text-xs font-bold px-2 py-1 rounded bg-blue-100 text-blue-700 border border-blue-200" style="white-space:nowrap">${label}</span>
+        <input type="text" class="cl-pm-node-input flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-400" placeholder="ระบุหัวข้อ / รายการ...">
+        <button type="button" onclick="addClPmChild(this.__node)" title="เพิ่มรายการย่อย" class="shrink-0 w-7 h-7 flex items-center justify-center rounded bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 font-bold text-base leading-none">+</button>
+        <button type="button" onclick="removeClPmNode(this.__node)" title="ลบ" class="shrink-0 w-7 h-7 flex items-center justify-center rounded bg-red-50 hover:bg-red-100 text-red-500 border border-red-200">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+        </button>`;
+    const inp = row.querySelector('.cl-pm-node-input');
+    inp.value = node.label || '';
+    inp.addEventListener('input', e => { node.label = e.target.value; });
+    row.querySelector('[title="เพิ่มรายการย่อย"]').__node = node;
+    row.querySelector('[title="ลบ"]').__node = node;
+    container.appendChild(row);
+    if (node.children.length) {
+        const childWrap = document.createElement('div');
+        childWrap.style.cssText = 'margin-left:16px;padding-left:12px;border-left:2px dashed #bfdbfe';
+        node.children.forEach((ch, j) => childWrap.appendChild(_renderClPmNode(ch, label + '.' + (j+1))));
+        container.appendChild(childWrap);
     }
-    document.getElementById('modal-cl-daily-editor').classList.add('hidden');
+    return container;
+}
+function mcieAddPmRoot() { addClPmRoot(); }
+
+async function saveClItemsEditor() {
+    const editorName = document.getElementById('mcie-editor-name')?.value.trim() || '';
+    if (!editorName) { showToast('กรุณาระบุชื่อผู้แก้ไข', 'warn'); return; }
+    if (!userRole || userRole === 'user') { showToast('ต้องเป็น Engineer หรือ Admin', 'warn'); return; }
+    const mode      = _clMcdeMode;
+    const machineId = _clMcdeMachineId;
+
+    try {
+        if (mode === 'default-daily') {
+            const items = mcieFlatGetItems();
+            const res = await clPost({ action:'saveDailyDefault', items, editedBy: editorName });
+            if (!res.success) { showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error'); return; }
+            _clDailyDefault = items;
+            showToast('บันทึก Default รายวันเรียบร้อย', 'success');
+
+        } else if (mode === 'per-machine-daily') {
+            const items = mcieFlatGetItems();
+            const m  = machineMaster.find(x => (x.id||x.machineId||'') === machineId) || {};
+            const res = await clPost({ action:'saveMachineItems', type:'daily', machineId, machineName: m.name||m.machineName||'', factory: m.factory||'', area: m.area||'', items, editedBy: editorName });
+            if (!res.success) { showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error'); return; }
+            if (!_clPmPlans[machineId]) _clPmPlans[machineId] = {};
+            _clPmPlans[machineId].dailyItems = items;
+            showToast('บันทึกรายการ Daily เรียบร้อย', 'success');
+
+        } else if (mode === 'per-machine-pm') {
+            const items = _clPmTree;
+            const m  = machineMaster.find(x => (x.id||x.machineId||'') === machineId) || {};
+            const res = await clPost({ action:'saveMachineItems', type:'pm', machineId, machineName: m.name||m.machineName||'', factory: m.factory||'', area: m.area||'', items, editedBy: editorName });
+            if (!res.success) { showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error'); return; }
+            if (!_clPmPlans[machineId]) _clPmPlans[machineId] = {};
+            _clPmPlans[machineId].pmItems = items;
+            showToast('บันทึกรายการ PM เรียบร้อย', 'success');
+        }
+    } catch(e) { showToast('เชื่อมต่อ GAS ล้มเหลว', 'error'); return; }
+
+    document.getElementById('modal-cl-items-editor').classList.add('hidden');
     loadClSchedule();
 }
 </script>

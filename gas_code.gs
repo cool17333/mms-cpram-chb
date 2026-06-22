@@ -189,36 +189,140 @@ function doPost(e) {
       return jsonOut({ success: true, tracking });
     }
 
-    // ---- SAVE PM Plans (engineer+admin) ----
+    // ---- SAVE PM Plans (engineer+admin) — per-row UPSERT, item cols preserved ----
     if (data.action === 'savePmPlans') {
       const role = ROLE_PW[(data.pw || '').trim()];
       if (role !== 'engineer' && role !== 'admin')
         return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin' });
+      const PM_HDR = ['machineId','machineName','factory','area','dailyEnabled','pmFreqMonths','pmStartMonth','dailyItemsJSON','pmItemsJSON','dailyEditedBy','dailyEditedAt','pmEditedBy','pmEditedAt'];
       let sh = ss.getSheetByName('_PmPlans');
-      if (sh && sh.getLastRow() > 1) {
-        let bak = ss.getSheetByName('_PmPlans_bak') || ss.insertSheet('_PmPlans_bak');
-        bak.clearContents();
-        const cur = sh.getDataRange().getValues();
-        bak.getRange(1, 1, cur.length, cur[0].length).setValues(cur);
+      if (!sh) {
+        sh = ss.insertSheet('_PmPlans');
+        const hr = sh.getRange(1, 1, 1, PM_HDR.length);
+        hr.setValues([PM_HDR]);
+        hr.setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
+        sh.setFrozenRows(1);
       }
-      if (!sh) sh = ss.insertSheet('_PmPlans');
+      // Load existing rows into map keyed by machineId
+      const existing = {};
+      const existingOrder = [];
+      if (sh.getLastRow() > 1) {
+        const cur = sh.getRange(2, 1, sh.getLastRow()-1, Math.max(sh.getLastColumn(), PM_HDR.length)).getValues();
+        cur.forEach(r => {
+          if (!r[0]) return;
+          const id = String(r[0]);
+          existing[id] = r.concat(new Array(PM_HDR.length)).slice(0, PM_HDR.length);
+          existingOrder.push(id);
+        });
+      }
+      const nowStr = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm:ss');
+      const plans = data.plans || [];
+      plans.forEach(p => {
+        const id = String(p.machineId || '').trim();
+        if (!id) return;
+        if (!existing[id]) { existingOrder.push(id); existing[id] = new Array(PM_HDR.length).fill(''); }
+        const prev = existing[id];
+        existing[id] = [
+          id,
+          p.machineName || prev[1] || '',
+          p.factory     || prev[2] || '',
+          p.area        || prev[3] || '',
+          prev[4] !== '' && prev[4] !== undefined ? prev[4] : 1,  // dailyEnabled — preserved
+          Number(p.pmFreqMonths || p.pmFreq) || Number(prev[5]) || 3,
+          p.pmStartMonth || prev[6] || '',
+          prev[7] || '[]',   // dailyItemsJSON — preserved
+          prev[8] || '[]',   // pmItemsJSON — preserved
+          prev[9]  || '',    // dailyEditedBy — preserved
+          prev[10] || '',    // dailyEditedAt — preserved
+          data.editedBy || prev[11] || '',
+          nowStr,
+        ];
+      });
       sh.clearContents();
-      const hdr = ['machineId','machineName','factory','area','pmFreq','pmStartDate','pmItemsJSON','lastEditedBy','lastEditedAt'];
-      const hr = sh.getRange(1, 1, 1, hdr.length);
-      hr.setValues([hdr]);
-      hr.setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
-      sh.setFrozenRows(1);
-      const plans = (data.plans || []);
-      if (plans.length) {
-        const rows = plans.map(p => [
-          p.machineId||'', p.machineName||'', p.factory||'', p.area||'',
-          Number(p.pmFreq)||3, p.pmStartDate||'', JSON.stringify(p.pmItems||[]),
-          p.lastEditedBy||'', p.lastEditedAt||'',
-        ]);
-        sh.getRange(2, 1, rows.length, hdr.length).setValues(rows);
-      }
+      sh.getRange(1, 1, 1, PM_HDR.length).setValues([PM_HDR]);
+      const allRows = existingOrder.map(id => existing[id]).filter(Boolean);
+      if (allRows.length) sh.getRange(2, 1, allRows.length, PM_HDR.length).setValues(allRows);
       writeLog(ss, '-', 'บันทึกแผน PM (' + plans.length + ' เครื่อง)', data.editedBy||'', '');
-      return jsonOut({ success: true, count: plans.length });
+      return jsonOut({ success: true, count: allRows.length });
+    }
+
+    // ---- SAVE Daily Default items (engineer+admin) ----
+    if (data.action === 'saveDailyDefault') {
+      const role = ROLE_PW[(data.pw || '').trim()];
+      if (role !== 'engineer' && role !== 'admin')
+        return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin' });
+      let sh = ss.getSheetByName('_DailyDefault');
+      if (!sh) {
+        sh = ss.insertSheet('_DailyDefault');
+        const hr = sh.getRange(1, 1, 1, 3);
+        hr.setValues([['itemsJSON','editedBy','editedAt']]);
+        hr.setBackground('#27ae60').setFontColor('#fff').setFontWeight('bold');
+        sh.setFrozenRows(1);
+      }
+      const nowStr = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm:ss');
+      sh.clearContents();
+      sh.getRange(1,1,1,3).setValues([['itemsJSON','editedBy','editedAt']]);
+      sh.getRange(2,1,1,3).setValues([[JSON.stringify(data.items||[]), data.editedBy||'', nowStr]]);
+      writeLog(ss, '-', 'แก้ไข Daily Default items', data.editedBy||'', '');
+      return jsonOut({ success: true });
+    }
+
+    // ---- SAVE per-machine items (engineer+admin) ----
+    if (data.action === 'saveMachineItems') {
+      const role = ROLE_PW[(data.pw || '').trim()];
+      if (role !== 'engineer' && role !== 'admin')
+        return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin' });
+      const machineId = String(data.machineId || '').trim();
+      const type = data.type || 'daily'; // 'daily' | 'pm'
+      if (!machineId) return jsonOut({ success: false, error: 'machineId required' });
+      const PM_HDR2 = ['machineId','machineName','factory','area','dailyEnabled','pmFreqMonths','pmStartMonth','dailyItemsJSON','pmItemsJSON','dailyEditedBy','dailyEditedAt','pmEditedBy','pmEditedAt'];
+      let sh = ss.getSheetByName('_PmPlans');
+      if (!sh) {
+        sh = ss.insertSheet('_PmPlans');
+        const hr = sh.getRange(1, 1, 1, PM_HDR2.length);
+        hr.setValues([PM_HDR2]);
+        hr.setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
+        sh.setFrozenRows(1);
+      }
+      const nowStr = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'dd/MM/yyyy HH:mm:ss');
+      let rowIdx = -1;
+      let rowData = new Array(PM_HDR2.length).fill('');
+      if (sh.getLastRow() > 1) {
+        const lastCol = Math.max(sh.getLastColumn(), PM_HDR2.length);
+        const vals = sh.getRange(2, 1, sh.getLastRow()-1, lastCol).getValues();
+        for (let i = 0; i < vals.length; i++) {
+          if (String(vals[i][0]) === machineId) {
+            rowIdx = i + 2;
+            rowData = vals[i].concat(new Array(PM_HDR2.length)).slice(0, PM_HDR2.length);
+            break;
+          }
+        }
+      }
+      rowData[0] = machineId;
+      if (data.machineName) rowData[1] = data.machineName;
+      if (data.factory)     rowData[2] = data.factory;
+      if (data.area)        rowData[3] = data.area;
+      if (type === 'daily') {
+        rowData[4] = data.dailyEnabled !== undefined ? (data.dailyEnabled ? 1 : 0) : (rowData[4] !== '' ? rowData[4] : 1);
+        rowData[7] = JSON.stringify(data.items || []);
+        rowData[9]  = data.editedBy || '';
+        rowData[10] = nowStr;
+      } else {
+        rowData[8]  = JSON.stringify(data.items || []);
+        rowData[11] = data.editedBy || '';
+        rowData[12] = nowStr;
+      }
+      if (rowIdx > 0) {
+        sh.getRange(rowIdx, 1, 1, PM_HDR2.length).setValues([rowData]);
+      } else {
+        if (!rowData[5]) rowData[5] = 3;
+        if (!rowData[7]) rowData[7] = '[]';
+        if (!rowData[8]) rowData[8] = '[]';
+        sh.appendRow(rowData);
+      }
+      SpreadsheetApp.flush();
+      writeLog(ss, '-', 'แก้ไข ' + (type === 'daily' ? 'Daily' : 'PM') + ' items — ' + machineId, data.editedBy||'', '');
+      return jsonOut({ success: true });
     }
 
     // ---- SAVE PM Specific Dates ----
@@ -468,6 +572,9 @@ function doGet(e) {
     if (action === 'getPmDates') {
       return doGetPmDates(e.parameter.monthKey||'');
     }
+    if (action === 'getDailyDefault') {
+      return doGetDailyDefault();
+    }
     return jsonOut({ success: false, error: 'Unknown action' });
 
   } catch (err) {
@@ -636,22 +743,38 @@ function doGetPmPlans(factory, area) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sh = ss.getSheetByName('_PmPlans');
   if (!sh || sh.getLastRow() < 2) return jsonOut({ success: true, data: [] });
-  const data = sh.getDataRange().getValues();
+  const lastCol = Math.max(sh.getLastColumn(), 13);
+  const data = sh.getRange(1, 1, sh.getLastRow(), lastCol).getValues();
   const rows = [];
   for (let i = 1; i < data.length; i++) {
     const r = data[i];
     if (!r[0]) continue;
     if (factory && r[2] !== factory) continue;
     if (area    && r[3] !== area)    continue;
-    let pmItems = [];
-    try { pmItems = JSON.parse(r[6]||'[]'); } catch(e) {}
+    let dailyItems = [], pmItems = [];
+    try { dailyItems = JSON.parse(r[7]||'[]'); } catch(e) {}
+    try { pmItems    = JSON.parse(r[8]||'[]'); } catch(e) {}
     rows.push({
       machineId: r[0], machineName: r[1], factory: r[2], area: r[3],
-      pmFreq: Number(r[4])||3, pmStartDate: r[5]||'', pmItems,
-      lastEditedBy: r[7]||'', lastEditedAt: r[8]||'',
+      dailyEnabled: r[4] !== 0 && r[4] !== '0' && r[4] !== false,
+      pmFreqMonths: Number(r[5]) || 3,
+      pmStartMonth: r[6] || '',
+      dailyItems, pmItems,
+      dailyEditedBy: r[9]||'', dailyEditedAt: r[10]||'',
+      pmEditedBy: r[11]||'', pmEditedAt: r[12]||'',
     });
   }
   return jsonOut({ success: true, data: rows });
+}
+
+function doGetDailyDefault() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sh = ss.getSheetByName('_DailyDefault');
+  if (!sh || sh.getLastRow() < 2) return jsonOut({ success: true, data: { items: [], editedBy: '', editedAt: '' } });
+  const r = sh.getRange(2, 1, 1, 3).getValues()[0];
+  let items = [];
+  try { items = JSON.parse(r[0]||'[]'); } catch(e) {}
+  return jsonOut({ success: true, data: { items, editedBy: r[1]||'', editedAt: r[2]||'' } });
 }
 
 function doGetPmDates(monthKey) {

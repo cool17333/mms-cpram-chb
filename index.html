@@ -718,6 +718,53 @@
     </div>
 </div>
 
+<!-- ==================== MACHINE ADD/EDIT MODAL ==================== -->
+<div id="modal-mc" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h2 id="modal-mc-title" class="text-base font-bold mb-4 flex items-center gap-2">➕ เพิ่มเครื่องจักร</h2>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">รหัสเครื่องจักร <span class="text-red-500">*</span></label>
+                <input id="mc-id" type="text" placeholder="เช่น MC-F1-001"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition-colors">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">ชื่อเครื่องจักร <span class="text-red-500">*</span></label>
+                <input id="mc-name" type="text" placeholder="ชื่อเครื่องจักร"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition-colors">
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mb-5">
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">โรงงาน <span class="text-red-500">*</span></label>
+                <select id="mc-factory" onchange="mcUpdateArea()"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition-colors">
+                    <option value="">-- เลือก --</option>
+                    <option value="โรงงาน 1">โรงงาน 1</option>
+                    <option value="โรงงาน 2">โรงงาน 2</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">พื้นที่ <span class="text-red-500">*</span></label>
+                <select id="mc-area"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition-colors">
+                    <option value="">-- เลือกโรงงานก่อน --</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">Line</label>
+                <input id="mc-line" type="text" placeholder="Line 1"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 transition-colors">
+            </div>
+        </div>
+        <input type="hidden" id="mc-edit-idx" value="-1">
+        <div class="flex gap-3 justify-end">
+            <button onclick="closeMcModal()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900">ยกเลิก</button>
+            <button onclick="machSaveModal()" class="mms-btn mms-btn-blue text-sm">💾 บันทึก</button>
+        </div>
+    </div>
+</div>
+
 <!-- ==================== ACCEPT JOB MODAL ==================== -->
 <div id="accept-modal" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -1080,81 +1127,144 @@
 </div><!-- end panel-summary -->
 
 <!-- ==================== MACHINE REGISTRY (Admin) ==================== -->
-<div id="panel-machines" class="tab-panel p-4 md:p-8">
-<div class="max-w-6xl mx-auto">
+<div id="panel-machines" class="tab-panel">
+<div class="max-w-5xl mx-auto px-4 md:px-8 py-6">
 
-    <!-- IMPORT CARD -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-6">
-        <p class="text-sm font-bold text-gray-800 mb-1">📥 นำเข้าจาก Excel (แยกไฟล์ตามพื้นที่)</p>
-        <p class="text-xs text-gray-400 mb-3">เลือกโรงงาน+พื้นที่ของไฟล์ → เลือกไฟล์ → จับคู่คอลัมน์ → ตรวจสอบ → ยืนยันนำเข้า</p>
-        <div class="flex flex-wrap gap-3 items-end">
-            <div>
-                <label class="text-xs font-bold text-gray-500 block mb-1">โรงงาน (ของไฟล์นี้)</label>
-                <select id="imp-factory" onchange="impUpdateArea()" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500">
-                    <option value="">-- เลือก --</option><option value="1">โรงงาน 1</option><option value="2">โรงงาน 2</option>
-                </select>
+    <!-- Filter + Action bar -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <p class="text-xs font-bold uppercase tracking-widest text-gray-400">🔎 กรองข้อมูล</p>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="machOpenAdd()" class="mms-btn mms-btn-blue text-sm">➕ เพิ่มเครื่องจักร</button>
+                <button onclick="machOpenImport()" class="mms-btn text-sm" style="background:#f0f2f5;color:var(--mms-text)">📥 นำเข้า Excel</button>
+                <button onclick="restoreMachines()" class="mms-btn text-sm" style="background:#fef3cd;color:#9a6c00">↩️ กู้คืนสำรอง</button>
             </div>
-            <div>
-                <label class="text-xs font-bold text-gray-500 block mb-1">พื้นที่ (ของไฟล์นี้)</label>
-                <select id="imp-area" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500">
-                    <option value="">-- เลือกโรงงานก่อน --</option>
-                </select>
-            </div>
-            <label class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-orange-500 text-white font-bold rounded-lg text-sm cursor-pointer transition-colors">
-                📋 เลือกไฟล์ Excel
-                <input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="impReadFile(this)">
-            </label>
         </div>
-
-        <!-- COLUMN MAPPING + PREVIEW -->
-        <div id="imp-map" class="hidden mt-4 pt-4 border-t border-gray-200">
-            <p class="text-xs font-bold text-gray-600 mb-2">จับคู่คอลัมน์</p>
-            <div class="flex flex-wrap gap-3 mb-3">
-                <div><label class="text-xs text-gray-500 block mb-1">รหัสเครื่องจักร <span class="text-red-500">*</span></label><select id="imp-col-id"  onchange="impPreview()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"></select></div>
-                <div><label class="text-xs text-gray-500 block mb-1">ชื่อเครื่องจักร <span class="text-red-500">*</span></label><select id="imp-col-name" onchange="impPreview()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"></select></div>
-                <div><label class="text-xs text-gray-500 block mb-1">Line ผลิต</label><select id="imp-col-line" onchange="impPreview()" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"></select></div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">โรงงาน</label>
+                <select id="mach-f-factory" onchange="machUpdateFilterArea();renderMachTable()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400 transition-colors">
+                    <option value="">ทุกโรงงาน</option><option value="โรงงาน 1">โรงงาน 1</option><option value="โรงงาน 2">โรงงาน 2</option>
+                </select>
             </div>
-            <p class="text-xs text-gray-500 mb-2">ข้อมูลที่จะนำเข้า: <span id="imp-count" class="font-bold text-gray-800"></span></p>
-            <div class="overflow-x-auto max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
-                <table class="w-full text-xs"><thead class="bg-gray-100 sticky top-0"><tr>
-                    <th class="px-3 py-2 text-left">รหัส</th><th class="px-3 py-2 text-left">ชื่อ</th><th class="px-3 py-2 text-left">Line</th>
-                </tr></thead><tbody id="imp-preview-body"></tbody></table>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">พื้นที่</label>
+                <select id="mach-f-area" onchange="renderMachTable()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400 transition-colors">
+                    <option value="">ทุกพื้นที่</option>
+                </select>
             </div>
-            <div class="flex gap-3 justify-end mt-3">
-                <button onclick="impCancel()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900">ยกเลิก</button>
-                <button id="imp-confirm" onclick="impConfirm()" class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg text-sm">✅ ยืนยันนำเข้า</button>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">ค้นหา</label>
+                <input id="mach-f-search" type="text" placeholder="รหัส / ชื่อเครื่องจักร..." oninput="renderMachTable()"
+                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400 transition-colors">
             </div>
         </div>
     </div>
 
-    <!-- REGISTRY TABLE -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="bg-[#18181b] px-5 py-4 flex flex-wrap items-center gap-3">
-            <p class="text-white font-bold text-sm uppercase tracking-wide mr-auto">🛠️ ทะเบียนเครื่องจักร</p>
-            <select id="mach-f-factory" onchange="machUpdateFilterArea();renderMachTable()" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs outline-none">
-                <option value="">ทุกโรงงาน</option><option value="โรงงาน 1">โรงงาน 1</option><option value="โรงงาน 2">โรงงาน 2</option>
-            </select>
-            <select id="mach-f-area" onchange="renderMachTable()" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs outline-none"><option value="">ทุกพื้นที่</option></select>
-            <span id="mach-count" class="text-gray-400 text-xs font-bold"></span>
+    <!-- Table card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-5">
+        <div class="px-5 py-3 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
+            <span class="font-bold text-sm text-gray-800">🏭 รายการเครื่องจักรทั้งหมด</span>
+            <div class="flex items-center gap-3">
+                <span id="mach-count" class="text-xs text-gray-500 font-medium"></span>
+                <button onclick="saveMachines()" class="mms-btn mms-btn-green text-sm">💾 บันทึกทั้งหมด</button>
+            </div>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead><tr class="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
-                    <th class="px-3 py-2 text-left">รหัสเครื่องจักร</th><th class="px-3 py-2 text-left">ชื่อเครื่องจักร</th>
-                    <th class="px-3 py-2 text-left">โรงงาน</th><th class="px-3 py-2 text-left">พื้นที่</th>
-                    <th class="px-3 py-2 text-left">Line</th><th class="px-3 py-2 w-10"></th>
+                    <th class="px-4 py-2.5 text-center w-10">#</th>
+                    <th class="px-4 py-2.5 text-left">รหัสเครื่องจักร</th>
+                    <th class="px-4 py-2.5 text-left">ชื่อเครื่องจักร</th>
+                    <th class="px-4 py-2.5 text-left">โรงงาน</th>
+                    <th class="px-4 py-2.5 text-left">พื้นที่</th>
+                    <th class="px-4 py-2.5 text-left">Line</th>
+                    <th class="px-4 py-2.5 w-24"></th>
                 </tr></thead>
                 <tbody id="mach-tbody"></tbody>
             </table>
         </div>
-        <div class="px-5 py-3 flex flex-wrap gap-3 justify-between items-center border-t border-gray-200 bg-gray-50">
-            <div class="flex gap-2">
-                <button onclick="machAddRow()" class="text-xs font-bold px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 transition-colors">+ เพิ่มเครื่องจักร</button>
-                <button onclick="restoreMachines()" class="text-xs font-bold px-4 py-2 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-700 transition-colors">↩️ กู้คืนสำรอง</button>
-            </div>
-            <button onclick="saveMachines()" class="text-sm font-bold px-6 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors">💾 บันทึกทั้งหมด</button>
+        <div id="mach-empty" class="hidden text-center py-12 text-gray-400">
+            <p class="text-4xl mb-3">🏭</p>
+            <p class="text-sm">ยังไม่มีเครื่องจักรในทะเบียน<br>
+            <span class="text-xs">กด "เพิ่มเครื่องจักร" หรือ "นำเข้า Excel" เพื่อเริ่มต้น</span></p>
         </div>
     </div>
+
+    <!-- Import panel (accordion) -->
+    <div id="reg-import-panel" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-5">
+        <div class="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+            <span class="font-bold text-sm text-gray-800">📥 นำเข้าจาก Excel (แยกไฟล์ตามพื้นที่)</span>
+            <button onclick="machCloseImport()" class="text-gray-400 hover:text-gray-700 text-lg leading-none">✕</button>
+        </div>
+        <div class="p-5">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2.5 text-xs text-blue-700 mb-4">
+                💡 เลือกโรงงาน+พื้นที่ → เลือกไฟล์ → จับคู่คอลัมน์ → ตรวจสอบ → ยืนยันนำเข้า
+            </div>
+            <!-- Step 1 -->
+            <div class="flex items-start gap-3 mb-5">
+                <div class="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold mt-0.5" style="background:var(--mms-red)">1</div>
+                <div class="flex-1">
+                    <p class="text-sm font-bold mb-2">เลือกโรงงาน + พื้นที่ของไฟล์นี้</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="text-xs text-gray-500 block mb-1">โรงงาน <span class="text-red-500">*</span></label>
+                            <select id="imp-factory" onchange="impUpdateArea()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400">
+                                <option value="">-- เลือก --</option><option value="1">โรงงาน 1</option><option value="2">โรงงาน 2</option>
+                            </select></div>
+                        <div><label class="text-xs text-gray-500 block mb-1">พื้นที่ <span class="text-red-500">*</span></label>
+                            <select id="imp-area" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400">
+                                <option value="">-- เลือกโรงงานก่อน --</option>
+                            </select></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Step 2 -->
+            <div class="flex items-start gap-3 mb-5">
+                <div class="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold mt-0.5" style="background:var(--mms-red)">2</div>
+                <div class="flex-1">
+                    <p class="text-sm font-bold mb-2">เลือกไฟล์ Excel (.xlsx / .csv)</p>
+                    <label class="block border-2 border-dashed border-gray-300 rounded-lg p-5 text-center cursor-pointer hover:border-red-400 hover:bg-red-50 transition-colors">
+                        <p class="text-2xl mb-1">📋</p>
+                        <p id="imp-file-label" class="text-sm text-gray-500">คลิกเพื่อเลือกไฟล์ Excel หรือ CSV</p>
+                        <input type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="impReadFile(this)">
+                    </label>
+                </div>
+            </div>
+            <!-- Step 3+4 (shown after file loaded) -->
+            <div id="imp-map" class="hidden">
+                <div class="flex items-start gap-3 mb-5">
+                    <div class="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold mt-0.5" style="background:var(--mms-red)">3</div>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold mb-2">จับคู่คอลัมน์</p>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div><label class="text-xs text-gray-500 block mb-1">รหัสเครื่องจักร *</label><select id="imp-col-id" onchange="impPreview()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
+                            <div><label class="text-xs text-gray-500 block mb-1">ชื่อเครื่องจักร *</label><select id="imp-col-name" onchange="impPreview()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
+                            <div><label class="text-xs text-gray-500 block mb-1">Line ผลิต</label><select id="imp-col-line" onchange="impPreview()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></select></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold mt-0.5" style="background:var(--mms-red)">4</div>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold mb-2">ตรวจสอบข้อมูล — <span id="imp-count" class="font-bold" style="color:var(--mms-red)"></span></p>
+                        <div class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg mb-4">
+                            <table class="w-full text-xs">
+                                <thead class="bg-gray-50 sticky top-0 border-b border-gray-200"><tr>
+                                    <th class="px-3 py-2 text-left">รหัส</th><th class="px-3 py-2 text-left">ชื่อ</th><th class="px-3 py-2 text-left">Line</th>
+                                </tr></thead>
+                                <tbody id="imp-preview-body"></tbody>
+                            </table>
+                        </div>
+                        <div class="flex gap-3 justify-end">
+                            <button onclick="impCancel()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-900 border border-gray-300 rounded-lg transition-colors">ยกเลิก</button>
+                            <button onclick="impConfirm()" class="mms-btn mms-btn-green text-sm">✅ ยืนยันนำเข้า</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="mach-loading" class="hidden text-center py-10 text-gray-400 font-bold animate-pulse">⏳ กำลังโหลด...</div>
 </div>
 </div><!-- end panel-machines -->
@@ -1297,47 +1407,116 @@ const AREA_OPTS = (fac) => (/2/.test(fac) ? AREA_MAP['2'] : /1/.test(fac) ? AREA
 function renderMachTable() {
     const ff = document.getElementById('mach-f-factory').value;
     const fa = document.getElementById('mach-f-area').value;
+    const fq = (document.getElementById('mach-f-search')?.value || '').trim().toLowerCase();
     const tb = document.getElementById('mach-tbody');
+    const emptyEl = document.getElementById('mach-empty');
     const rows = machineMaster
         .map((m, i) => ({ m, i }))
-        .filter(({m}) => (!ff || m.factory === ff) && (!fa || m.area === fa));
-    document.getElementById('mach-count').textContent = `${rows.length} เครื่อง`;
-    const inp = (idx, k, val) => `<input value="${String(val).replace(/"/g,'&quot;')}" oninput="machineMaster[${idx}].${k}=this.value"
-        class="w-full border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-500">`;
-    tb.innerHTML = rows.length ? rows.map(({m, i}) => {
-        const areaOpts = ['', ...AREA_OPTS(m.factory)];
-        return `<tr class="border-b border-gray-100">
-            <td class="px-3 py-1.5">${inp(i,'id',m.id)}</td>
-            <td class="px-3 py-1.5">${inp(i,'name',m.name)}</td>
-            <td class="px-3 py-1.5">
-                <select onchange="machineMaster[${i}].factory=this.value;machineMaster[${i}].area='';renderMachTable()" class="w-full border border-gray-200 rounded px-2 py-1 text-xs">
-                    <option value="" ${!m.factory?'selected':''}>--</option>
-                    <option ${m.factory==='โรงงาน 1'?'selected':''}>โรงงาน 1</option>
-                    <option ${m.factory==='โรงงาน 2'?'selected':''}>โรงงาน 2</option>
-                </select>
-            </td>
-            <td class="px-3 py-1.5">
-                <select onchange="machineMaster[${i}].area=this.value" class="w-full border border-gray-200 rounded px-2 py-1 text-xs">
-                    ${areaOpts.map(a=>`<option ${a===m.area?'selected':''}>${a||'--'}</option>`).join('')}
-                </select>
-            </td>
-            <td class="px-3 py-1.5">${inp(i,'line',m.line)}</td>
-            <td class="px-3 py-1.5 text-center"><button onclick="machDeleteRow(${i})" class="text-gray-300 hover:text-red-500 font-bold text-lg leading-none">×</button></td>
-        </tr>`;
-    }).join('') : '<tr><td colspan="6" class="text-center text-gray-400 py-8 text-sm">ไม่มีข้อมูล — กด "เพิ่มเครื่องจักร" หรือ นำเข้า Excel</td></tr>';
+        .filter(({m}) => (!ff || m.factory === ff) && (!fa || m.area === fa) &&
+            (!fq || String(m.id||'').toLowerCase().includes(fq) || String(m.name||'').toLowerCase().includes(fq)));
+    document.getElementById('mach-count').textContent = `${rows.length} / ${machineMaster.length} เครื่อง`;
+    if (!rows.length) {
+        tb.innerHTML = '';
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+    }
+    if (emptyEl) emptyEl.classList.add('hidden');
+    tb.innerHTML = rows.map(({m, i}, seq) => `<tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+        <td class="px-4 py-2.5 text-center text-xs text-gray-400">${seq+1}</td>
+        <td class="px-4 py-2.5"><span class="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded">${m.id||'—'}</span></td>
+        <td class="px-4 py-2.5 text-sm font-medium text-gray-800">${m.name||'—'}</td>
+        <td class="px-4 py-2.5 text-xs text-gray-600">${m.factory||'—'}</td>
+        <td class="px-4 py-2.5 text-xs text-gray-600">${m.area||'—'}</td>
+        <td class="px-4 py-2.5 text-xs text-gray-600">${m.line||'—'}</td>
+        <td class="px-4 py-2.5">
+            <div class="flex gap-1.5 justify-end">
+                <button onclick="machOpenEdit(${i})" title="แก้ไข"
+                    class="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">✏️</button>
+                <button onclick="machDeleteRow(${i})" title="ลบ"
+                    class="px-2.5 py-1 text-xs font-bold bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors">🗑️</button>
+            </div>
+        </td>
+    </tr>`).join('');
 }
 
-function machAddRow() {
-    const f = document.getElementById('mach-f-factory').value;
-    const a = document.getElementById('mach-f-area').value;
-    machineMaster.unshift({ id:'', name:'', factory:f||'', area:a||'', line:'' });
+// ---------- Machine Modal (Add / Edit) ----------
+function machOpenAdd() {
+    document.getElementById('modal-mc-title').textContent = '➕ เพิ่มเครื่องจักร';
+    document.getElementById('mc-id').value = '';
+    document.getElementById('mc-name').value = '';
+    document.getElementById('mc-factory').value = '';
+    document.getElementById('mc-line').value = '';
+    document.getElementById('mc-edit-idx').value = '-1';
+    mcUpdateArea('');
+    document.getElementById('modal-mc').classList.remove('hidden');
+    setTimeout(() => document.getElementById('mc-id').focus(), 50);
+}
+
+function machOpenEdit(i) {
+    const m = machineMaster[i];
+    document.getElementById('modal-mc-title').textContent = '✏️ แก้ไขเครื่องจักร';
+    document.getElementById('mc-id').value = m.id || '';
+    document.getElementById('mc-name').value = m.name || '';
+    document.getElementById('mc-factory').value = m.factory || '';
+    document.getElementById('mc-line').value = m.line || '';
+    document.getElementById('mc-edit-idx').value = String(i);
+    mcUpdateArea(m.area || '');
+    document.getElementById('modal-mc').classList.remove('hidden');
+}
+
+function mcUpdateArea(keepVal) {
+    const f = document.getElementById('mc-factory').value;
+    const sel = document.getElementById('mc-area');
+    const cur = keepVal !== undefined ? keepVal : sel.value;
+    const areas = f === 'โรงงาน 1' ? (AREA_MAP['1']||[]) : f === 'โรงงาน 2' ? (AREA_MAP['2']||[]) : [];
+    sel.innerHTML = '<option value="">-- เลือกพื้นที่ --</option>' +
+        areas.map(a => `<option ${a===cur?'selected':''}>${a}</option>`).join('');
+}
+
+function machSaveModal() {
+    const id   = document.getElementById('mc-id').value.trim();
+    const name = document.getElementById('mc-name').value.trim();
+    const fac  = document.getElementById('mc-factory').value;
+    const area = document.getElementById('mc-area').value;
+    const line = document.getElementById('mc-line').value.trim();
+    if (!id)   { showToast('⚠️ กรุณาระบุรหัสเครื่องจักร', 'error'); return; }
+    if (!name) { showToast('⚠️ กรุณาระบุชื่อเครื่องจักร', 'error'); return; }
+    if (!fac)  { showToast('⚠️ กรุณาเลือกโรงงาน', 'error'); return; }
+    if (!area) { showToast('⚠️ กรุณาเลือกพื้นที่', 'error'); return; }
+    const idx = parseInt(document.getElementById('mc-edit-idx').value, 10);
+    const rec = { id, name, factory: fac, area, line };
+    if (idx >= 0) {
+        Object.assign(machineMaster[idx], rec);
+    } else {
+        const dup = machineMaster.findIndex(m => String(m.id).toLowerCase() === id.toLowerCase());
+        if (dup >= 0) { showToast(`⚠️ รหัส "${id}" มีอยู่แล้ว`, 'error'); return; }
+        machineMaster.unshift(rec);
+    }
+    closeMcModal();
     renderMachTable();
+    showToast(idx >= 0 ? '✅ แก้ไขแล้ว — กด "บันทึกทั้งหมด" เพื่อยืนยัน' : '✅ เพิ่มแล้ว — กด "บันทึกทั้งหมด" เพื่อยืนยัน', 'success');
+}
+
+function closeMcModal() {
+    document.getElementById('modal-mc').classList.add('hidden');
+}
+
+// ---------- Import panel toggle ----------
+function machOpenImport() {
+    document.getElementById('reg-import-panel').classList.remove('hidden');
+    document.getElementById('reg-import-panel').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function machCloseImport() {
+    document.getElementById('reg-import-panel').classList.add('hidden');
+    impCancel();
 }
 
 function machDeleteRow(i) {
-    if (!confirm(`ลบ ${machineMaster[i].id || ''} ${machineMaster[i].name || ''}?`)) return;
+    const m = machineMaster[i];
+    if (!confirm(`ลบ "${m.id || ''} — ${m.name || ''}" ออกจากทะเบียน?`)) return;
     machineMaster.splice(i, 1);
     renderMachTable();
+    showToast('🗑️ ลบแล้ว — กด "บันทึกทั้งหมด" เพื่อยืนยัน', 'info');
 }
 
 async function saveMachines() {
@@ -1390,6 +1569,8 @@ async function impReadFile(input) {
         document.getElementById('imp-col-id').innerHTML   = opts(gId>=0?gId:0);
         document.getElementById('imp-col-name').innerHTML = opts(gName>=0?gName:1);
         document.getElementById('imp-col-line').innerHTML = '<option value="-1">— ไม่มี —</option>' + head.map((h,i)=>`<option value="${i}" ${i===gLine?'selected':''}>${String(h).replace(/"/g,'&quot;')}</option>`).join('');
+        const lbl = document.getElementById('imp-file-label');
+        if (lbl) lbl.textContent = `📄 ${file.name} (${_impRows.length-1} แถว)`;
         document.getElementById('imp-map').classList.remove('hidden');
         impPreview();
     } catch (e) { showToast('❌ อ่านไฟล์ไม่ได้: ' + e.message, 'error'); }
@@ -1420,6 +1601,8 @@ function impPreview() {
 function impCancel() {
     document.getElementById('imp-map').classList.add('hidden');
     _impRows = [];
+    const lbl = document.getElementById('imp-file-label');
+    if (lbl) lbl.textContent = 'คลิกเพื่อเลือกไฟล์ Excel หรือ CSV';
 }
 
 function impConfirm() {

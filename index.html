@@ -4813,7 +4813,7 @@ async function loadClHubRecent() {
     el.innerHTML = '<p class="text-gray-400 text-center py-4">กำลังโหลด...</p>';
     try {
         const data = await clFetch({ action:'getChecklists', factory:'', area:'', type:'', month:'', year:'' });
-        const all = data.rows || [];
+        const all = data.data || [];
         _clChecklists = all.slice(0, 10);
         // update hub stats
         const today = new Date().toISOString().slice(0,10);
@@ -4835,10 +4835,10 @@ function renderClHubRecent() {
     if (!_clChecklists.length) { el.innerHTML = '<p class="text-gray-400 text-center py-4">ยังไม่มี Checklist</p>'; return; }
     const rows = _clChecklists.map(r => `
         <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick='openClDetail(${JSON.stringify(r)})'>
-            <td class="px-3 py-2 font-mono text-xs text-gray-500">${r.tracking||'—'}</td>
+            <td class="px-3 py-2 font-mono text-xs text-gray-500">${r.id||'—'}</td>
             <td class="px-3 py-2 text-xs">${r.type==='pm'?'🔧 PM':'📋 Daily'}</td>
             <td class="px-3 py-2 text-xs">${r.date||'—'}</td>
-            <td class="px-3 py-2 text-xs">${r.machineName||r.machineId||'—'}</td>
+            <td class="px-3 py-2 text-xs">${r.machineName||r.machine||'—'}</td>
             <td class="px-3 py-2">${clResultBadge(r.overallResult)}</td>
         </tr>`).join('');
     el.innerHTML = `<table class="w-full text-sm"><thead><tr class="bg-gray-50"><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">Tracking</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">ประเภท</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">วันที่</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">เครื่องจักร</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">ผล</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -4956,14 +4956,19 @@ async function saveChecklistForm() {
         const r = document.querySelector(`input[name="clf_item_${i.id}"]:checked`);
         return { id: i.id, label: i.label, result: r ? r.value : 'na' };
     });
-    const machine = machineMaster.find(m => (m.id||m.machineId||m.machine_id||'') === machineId) || {};
-    const machineName = machine.name || machine.machineName || machineId;
+    const machine = machineMaster.find(m => m.id === machineId) || {};
+    const machineName = machine.name || machineId;
+    const ok  = resultsArr.filter(r => r.result === 'ok').length;
+    const ng  = resultsArr.filter(r => r.result === 'ng').length;
+    const fix = resultsArr.filter(r => r.result === 'fix').length;
+    const na  = resultsArr.filter(r => r.result === 'na').length;
+    const overallResult = ng > 0 ? 'FAIL' : fix > 0 ? 'FIX' : 'PASS';
     const btn = document.getElementById('clf-save-btn');
     btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
     try {
         const res = await clPost({
             action:'saveChecklist', type, date, shift:'-', factory:fac, area, machineId, machineName, inspector, remark,
-            resultsJSON: JSON.stringify(resultsArr),
+            results: resultsArr, ok, ng, fix, na, overallResult,
         });
         if (res.success) {
             showToast(`✅ บันทึกสำเร็จ — ${res.tracking}`, 'success');
@@ -5002,14 +5007,14 @@ async function loadClList() {
     const [year, mon] = month ? month.split('-') : ['', ''];
     try {
         const data = await clFetch({ action:'getChecklists', factory:fac, area, type, month:mon||'', year:year||'' });
-        const rows = data.rows || [];
+        const rows = data.data || [];
         if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบข้อมูล</td></tr>'; return; }
         tbody.innerHTML = rows.map(r => `
             <tr class="border-b border-gray-100 hover:bg-gray-50">
-                <td class="px-4 py-2 font-mono text-xs text-gray-500">${r.tracking||'—'}</td>
+                <td class="px-4 py-2 font-mono text-xs text-gray-500">${r.id||'—'}</td>
                 <td class="px-3 py-2 text-xs">${r.type==='pm'?'🔧 PM':'📋 Daily'}</td>
                 <td class="px-3 py-2 text-xs">${r.date||'—'}</td>
-                <td class="px-3 py-2 text-xs">${r.machineName||r.machineId||'—'}</td>
+                <td class="px-3 py-2 text-xs">${r.machineName||r.machine||'—'}</td>
                 <td class="px-3 py-2 text-xs">${r.inspector||'—'}</td>
                 <td class="px-3 py-2 text-center">${clResultBadge(r.overallResult)}</td>
                 <td class="px-3 py-2 text-center"><button onclick='openClDetail(${JSON.stringify(r)})' class="text-xs text-blue-500 hover:underline">ดู</button></td>
@@ -5024,18 +5029,18 @@ function openClDetail(r) {
     const m = document.getElementById('modal-cl-detail');
     if (!m) return;
     document.getElementById('mcd-title').textContent = '📋 ' + (r.type==='pm'?'PM Checklist':'Daily Checklist');
-    document.getElementById('mcd-tracking').textContent = r.tracking || '';
+    document.getElementById('mcd-tracking').textContent = r.id || '';
     document.getElementById('mcd-date').textContent     = r.date || '—';
     document.getElementById('mcd-shift').textContent    = r.shift || '—';
     document.getElementById('mcd-type').textContent     = r.type==='pm'?'PM':'Daily';
-    document.getElementById('mcd-machine').textContent  = r.machineName || r.machineId || '—';
+    document.getElementById('mcd-machine').textContent  = r.machineName || r.machine || '—';
     document.getElementById('mcd-inspector').textContent= r.inspector || '—';
     document.getElementById('mcd-result').innerHTML     = clResultBadge(r.overallResult);
     document.getElementById('mcd-ok-count').textContent  = `✅ OK: ${r.ok||0}`;
     document.getElementById('mcd-ng-count').textContent  = `❌ NG: ${r.ng||0}`;
     document.getElementById('mcd-fix-count').textContent = `🔧 FIX: ${r.fix||0}`;
     document.getElementById('mcd-na-count').textContent  = `— N/A: ${r.na||0}`;
-    const items = typeof r.resultsJSON === 'string' ? JSON.parse(r.resultsJSON||'[]') : (r.results||[]);
+    const items = Array.isArray(r.results) ? r.results : [];
     const tbody = document.getElementById('mcd-items-body');
     tbody.innerHTML = items.map(i => {
         const color = i.result==='ok'?'text-green-600':i.result==='ng'?'text-red-600':i.result==='fix'?'text-yellow-600':'text-gray-400';
@@ -5069,7 +5074,7 @@ async function loadClSummary() {
     const month = document.getElementById('cls-month')?.value || '';
     try {
         const data = await clFetch({ action:'getChecklists', factory:fac, area:'', type:'', month, year });
-        const rows = data.rows || [];
+        const rows = data.data || [];
         renderClSummary(rows);
     } catch(e) {
         showToast('โหลดข้อมูล summary ล้มเหลว', 'error');
@@ -5178,13 +5183,14 @@ async function renderClCalendar() {
     if (machineId) {
         try {
             const data = await clFetch({ action:'getChecklists', factory:'', area:'', type:'', month:String(_clCalMonth+1).padStart(2,'0'), year:String(_clCalYear) });
-            (data.rows||[]).filter(r => r.machineId === machineId).forEach(r => { checkMap[r.date] = r.overallResult; });
+            (data.data||[]).filter(r => r.machine === machineId).forEach(r => { checkMap[r.date] = r.overallResult; });
         } catch(e) {}
         // load pm dates
         try {
             const pd = await clFetch({ action:'getPmDates', monthKey: ym });
             const key = clPmDateKey(machineId, _clCalYear, _clCalMonth);
-            _clPmDates[key] = pd[key] || [];
+            const val = (pd.data||{})[key] || '';
+            _clPmDates[key] = val ? String(val).split(',').map(Number).filter(Boolean) : [];
         } catch(e) {}
     }
     const pmDays = new Set(clGetPmDatesForMonth(machineId, _clCalYear, _clCalMonth).map(d => parseInt(d)));
@@ -5240,12 +5246,13 @@ function openClSetDates() {
     document.getElementById('modal-cl-set-dates').classList.remove('hidden');
 }
 async function saveClPmDates() {
-    const days = [...document.querySelectorAll('.mcsd-day-cb:checked')].map(cb => cb.value);
+    const days = [...document.querySelectorAll('.mcsd-day-cb:checked')].map(cb => parseInt(cb.value));
     const key  = clPmDateKey(_clSetDatesMachineId, _clSetDatesYear, _clSetDatesMonth);
-    _clPmDates[key] = days.map(d => parseInt(d));
+    _clPmDates[key] = days;
     try {
-        await clPost({ action:'savePmDates', machineId:_clSetDatesMachineId, monthKey:`${_clSetDatesYear}-${String(_clSetDatesMonth+1).padStart(2,'0')}`, days });
-        showToast('บันทึกวัน PM เรียบร้อย', 'success');
+        const res = await clPost({ action:'savePmDates', dates: { [key]: days.join(',') } });
+        if (res.success) showToast('บันทึกวัน PM เรียบร้อย', 'success');
+        else showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error');
     } catch(e) {
         showToast('บันทึกล้มเหลว', 'error');
     }
@@ -5306,7 +5313,7 @@ async function renderClScPm(machines) {
     const area = document.getElementById('clsc-area')?.value || '';
     try {
         const data = await clFetch({ action:'getPmPlans', factory:fac, area });
-        (data.rows||[]).forEach(r => { _clPmPlans[r.machineId] = r; });
+        (data.data||[]).forEach(r => { _clPmPlans[r.machineId] = r; });
     } catch(e) {}
     tbody.innerHTML = machines.map(m => {
         const id   = m.id || m.machineId || m.machine_id || '';

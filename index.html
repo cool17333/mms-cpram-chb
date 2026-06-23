@@ -649,6 +649,10 @@
             class="log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all text-gray-500 hover:text-gray-800">
             🗂️ ทะเบียนเครื่องจักร
         </button>
+        <button id="log-tab-cl" onclick="switchLogTab('cl')"
+            class="log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all text-gray-500 hover:text-gray-800">
+            ✅ Checklist
+        </button>
     </div>
 
     <!-- ── BREAKDOWN LOG ── -->
@@ -756,6 +760,38 @@
         </div>
     </div>
 
+    <!-- ── CHECKLIST LOG ── -->
+    <div id="log-panel-cl" class="hidden">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">ค้นหา</label>
+                    <input id="log-cl-search" type="text" placeholder="การกระทำ / ผู้ดำเนินการ..."
+                        oninput="renderClLog()"
+                        class="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 w-64 transition-colors">
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="text-left px-4 py-3 text-xs font-bold text-gray-500">เวลา</th>
+                            <th class="text-left px-4 py-3 text-xs font-bold text-gray-500">การกระทำ</th>
+                            <th class="text-left px-4 py-3 text-xs font-bold text-gray-500">ผู้ดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-cl-tbody"></tbody>
+                </table>
+            </div>
+            <div id="log-cl-empty" class="hidden text-center py-12 text-gray-400">
+                <p class="text-3xl mb-2">✅</p>
+                <p class="text-sm">ยังไม่มี Log Checklist</p>
+            </div>
+        </div>
+    </div>
+
 </div>
 </div><!-- end panel-log -->
 
@@ -826,10 +862,8 @@
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
             <div>
                 <label class="text-xs font-bold text-gray-500 block mb-1">ประเภท</label>
-                <select id="clf-type" onchange="clfTypeChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
-                    <option value="daily">📋 รายวัน (Daily)</option>
-                    <option value="pm">🔧 PM (Preventive)</option>
-                </select>
+                <input type="hidden" id="clf-type" value="daily">
+                <span id="clf-type-label" class="inline-block px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-700">✅ ตรวจประจำวัน</span>
             </div>
             <div>
                 <label class="text-xs font-bold text-gray-500 block mb-1">วันที่</label>
@@ -1016,15 +1050,24 @@
         <select id="clcal-fac" onchange="clCalFacChange()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
             <option value="">-- Factory --</option>
         </select>
-        <select id="clcal-machine" onchange="renderClCalendar()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
-            <option value="">-- เครื่องจักร --</option>
+        <select id="clcal-area" onchange="renderClCalendar()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+            <option value="">ทุก Area</option>
         </select>
         <div class="flex items-center gap-2 ml-auto">
             <button onclick="clCalShift(-1)" class="mms-btn px-3">◀</button>
             <span id="clcal-label" class="font-bold text-sm min-w-[7rem] text-center">—</span>
             <button onclick="clCalShift(1)" class="mms-btn px-3">▶</button>
         </div>
-        <button id="clcal-set-btn" onclick="openClSetDates()" class="mms-btn mms-btn-blue hidden">📅 กำหนดวัน PM</button>
+    </div>
+    <div class="mms-card p-4 mb-3 flex flex-wrap gap-3 items-center justify-between" id="clcal-pm-bar">
+        <div class="text-sm text-gray-600">
+            <span class="font-bold text-blue-600" id="clcal-set-count">—</span>
+            <span class="text-gray-400 ml-1">เครื่องกำหนดวันแล้ว</span>
+            <span class="mx-2 text-gray-300">|</span>
+            <span class="font-bold text-orange-500" id="clcal-unset-count">—</span>
+            <span class="text-gray-400 ml-1">ยังไม่กำหนด</span>
+        </div>
+        <button onclick="openClSetDates()" class="mms-btn mms-btn-blue text-sm" id="clcal-set-btn">📅 กำหนดวัน PM เดือนนี้</button>
     </div>
     <div class="mms-card p-4">
         <div class="grid grid-cols-7 gap-1 mb-2">
@@ -1038,8 +1081,6 @@
         </div>
         <div id="clcal-grid" class="grid grid-cols-7 gap-1"></div>
         <div class="flex flex-wrap gap-4 mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500">
-            <span><span class="inline-block w-3 h-3 rounded-full bg-green-400 mr-1 align-middle"></span>Checklist OK</span>
-            <span><span class="inline-block w-3 h-3 rounded-full bg-red-400 mr-1 align-middle"></span>มี NG</span>
             <span><span class="inline-block w-3 h-3 rounded-full bg-orange-400 mr-1 align-middle"></span>PM กำหนด</span>
             <span><span class="inline-block w-3 h-3 rounded-full bg-blue-400 mr-1 align-middle"></span>PM ทำแล้ว</span>
         </div>
@@ -1292,8 +1333,10 @@
                 <label class="text-gray-900 font-bold flex items-center mb-2 text-sm uppercase tracking-wide">
                     <span class="mr-2 text-orange-500 text-xl">⚠️</span> ปัญหาที่พบ (PROBLEM)
                 </label>
-                <textarea id="inp-problem" class="w-full text-gray-700 bg-transparent outline-none auto-resize text-sm font-medium mt-1" rows="3"
+                <div id="problem-locked" class="hidden mb-2 space-y-1"></div>
+                <textarea id="inp-problem-new" class="w-full text-gray-700 bg-transparent outline-none auto-resize text-sm font-medium mt-1" rows="3"
                           placeholder="ระบุรายละเอียดปัญหาที่พบ..."></textarea>
+                <input type="hidden" id="inp-problem">
             </div>
             <div class="border border-gray-300 rounded-xl p-5 shadow-sm bg-white transition-all flex-1">
                 <div class="flex items-center justify-between mb-3">
@@ -1517,6 +1560,25 @@
     </div>
 </div>
 
+<!-- ==================== DELETE MACHINE CONFIRM MODAL ==================== -->
+<div id="modal-mach-del" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div class="bg-red-500 px-6 py-4">
+            <h2 class="text-base font-bold text-white">🗑️ ยืนยันลบเครื่องจักร</h2>
+        </div>
+        <div class="p-6">
+            <p id="mach-del-desc" class="text-sm text-gray-700 mb-4"></p>
+            <label class="text-xs font-bold text-gray-500 block mb-1">ชื่อผู้ลบ <span class="text-red-500">*</span></label>
+            <input id="mach-del-by" type="text" placeholder="กรอกชื่อ-นามสกุลผู้ดำเนินการ"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-500 mb-4">
+            <div class="flex gap-3">
+                <button onclick="closeMachDelModal()" class="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm">ยกเลิก</button>
+                <button onclick="confirmMachDelete()" class="flex-1 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm">🗑️ ยืนยันลบ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ==================== ACCEPT JOB MODAL ==================== -->
 <div id="accept-modal" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -1525,6 +1587,7 @@
             <p id="accept-tracking-display" class="text-xs text-orange-100 font-mono mt-0.5"></p>
         </div>
         <div class="p-6">
+        <div id="accept-detail" class="mb-4"></div>
         <label class="text-xs font-bold text-gray-500 block mb-1">ชื่อผู้รับงาน <span class="text-red-500">*</span></label>
         <input id="accept-byname" type="text" placeholder="กรอกชื่อ-นามสกุลผู้รับงาน"
                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 transition-colors mb-4">
@@ -1654,20 +1717,37 @@
     </div>
 </div>
 
-<!-- modal-cl-set-dates: Set specific PM dates for a machine+month -->
+<!-- modal-cl-day: machines due on a selected PM day -->
+<div id="modal-cl-day" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden max-h-[85vh] flex flex-col">
+        <div class="bg-blue-600 px-6 py-4 flex-shrink-0 flex justify-between items-center">
+            <h2 id="mcd-title" class="text-base font-bold text-white">📅 —</h2>
+            <button onclick="document.getElementById('modal-cl-day').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4">
+            <p class="text-xs text-gray-500 mb-3">เครื่องจักรที่กำหนด PM วันนี้</p>
+            <div id="mcd-list" class="space-y-2"></div>
+        </div>
+    </div>
+</div>
+
+<!-- modal-cl-set-dates: Set PM dates for all machines in factory (factory-wide) -->
 <div id="modal-cl-set-dates" class="modal-bg hidden">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="bg-blue-600 px-6 py-4 flex justify-between items-center">
-            <h2 class="text-base font-bold text-white">📅 กำหนดวัน PM</h2>
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="bg-blue-600 px-6 py-4 flex-shrink-0 flex justify-between items-center">
+            <div>
+                <h2 class="text-base font-bold text-white">📅 กำหนดวัน PM เดือนนี้</h2>
+                <p id="mcsd-info" class="text-xs text-blue-200 mt-0.5"></p>
+            </div>
             <button onclick="document.getElementById('modal-cl-set-dates').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
         </div>
-        <div class="p-6">
-            <p id="mcsd-info" class="text-sm text-gray-600 mb-4"></p>
-            <div id="mcsd-days" class="grid grid-cols-7 gap-1 mb-5"></div>
-            <div class="flex gap-3 justify-end">
-                <button onclick="document.getElementById('modal-cl-set-dates').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
-                <button onclick="saveClPmDates()" class="mms-btn mms-btn-blue">💾 บันทึก</button>
-            </div>
+        <div class="flex-1 overflow-y-auto p-4">
+            <p class="text-xs text-gray-500 mb-3">ระบุวันที่ (ตัวเลขคั่นด้วยลูกน้ำ เช่น 5,12,20) หรือเว้นว่างถ้ายังไม่กำหนด</p>
+            <div id="mcsd-machine-list" class="space-y-2"></div>
+        </div>
+        <div class="p-4 border-t border-gray-100 flex-shrink-0 flex gap-3 justify-end">
+            <button onclick="document.getElementById('modal-cl-set-dates').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
+            <button onclick="saveClPmDates()" class="mms-btn mms-btn-blue">💾 บันทึกทั้งหมด</button>
         </div>
     </div>
 </div>
@@ -1711,6 +1791,13 @@
                     <input id="mcie-pm-start" type="month" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
                 </div>
             </div>
+        </div>
+        <!-- daily merge toggle (per-machine-daily only) -->
+        <div id="mcie-daily-merge-wrap" class="hidden px-5 py-2.5 border-t border-gray-100 flex-shrink-0">
+            <label class="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700">
+                <input type="checkbox" id="mcie-daily-merge" class="w-4 h-4 rounded accent-green-600">
+                รวมรายการ Default เข้ากับรายการ Custom
+            </label>
         </div>
         <!-- editor name + save footer -->
         <div class="p-4 border-t border-gray-100 flex-shrink-0">
@@ -2099,7 +2186,6 @@
                     </select>
                     <label class="text-xs text-gray-400 font-medium">รายการ</label>
                 </div>
-                <button onclick="saveMachines()" class="mms-btn mms-btn-green text-sm">💾 บันทึกทั้งหมด</button>
             </div>
         </div>
         <div class="overflow-x-auto">
@@ -2435,7 +2521,7 @@ function renderMachTable() {
                 <button onclick="machOpenEdit(${i})" title="แก้ไข"
                     class="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">✏️ แก้ไข</button>
                 <button onclick="machDeleteRow(${i})" title="ลบ"
-                    class="px-2.5 py-1 text-xs font-bold bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors">🗑️</button>
+                    class="px-2.5 py-1 text-xs font-bold bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors">🗑️ ลบ</button>
             </div>
         </td>
     </tr>`;
@@ -2513,7 +2599,7 @@ function mcUpdateArea(keepVal) {
         areas.map(a => `<option ${a===cur?'selected':''}>${a}</option>`).join('');
 }
 
-function machSaveModal() {
+async function machSaveModal() {
     const id       = document.getElementById('mc-id').value.trim();
     const name     = document.getElementById('mc-name').value.trim();
     const fac      = document.getElementById('mc-factory').value;
@@ -2525,18 +2611,24 @@ function machSaveModal() {
     if (!fac)      { showToast('⚠️ กรุณาเลือกโรงงาน', 'error'); return; }
     if (!area)     { showToast('⚠️ กรุณาเลือกพื้นที่', 'error'); return; }
     if (!editedBy) { showToast('⚠️ กรุณาระบุชื่อผู้แก้ไข', 'error'); return; }
+    if (userRole !== 'admin') { showToast('⚠️ ต้องเป็น Admin', 'error'); return; }
+    if (!GAS_URL)  { showToast('⚠️ ตั้งค่า URL ก่อน', 'error'); return; }
     const idx = parseInt(document.getElementById('mc-edit-idx').value, 10);
-    const rec = { id, name, factory: fac, area, line, editedBy, editedAt: new Date().toISOString() };
-    if (idx >= 0) {
-        Object.assign(machineMaster[idx], rec);
-    } else {
-        const dup = machineMaster.findIndex(m => String(m.id).toLowerCase() === id.toLowerCase());
-        if (dup >= 0) { showToast(`⚠️ รหัส "${id}" มีอยู่แล้ว`, 'error'); return; }
-        machineMaster.unshift(rec);
-    }
-    closeMcModal();
-    renderMachTable();
-    showToast(idx >= 0 ? '✅ แก้ไขแล้ว — กด "บันทึกทั้งหมด" เพื่อยืนยัน' : '✅ เพิ่มแล้ว — กด "บันทึกทั้งหมด" เพื่อยืนยัน', 'success');
+    const rec = { id, name, factory: fac, area, line };
+    showLoading('กำลังบันทึก…');
+    try {
+        const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+            body: JSON.stringify({ action:'upsertMachine', pw: sessionPw, machine: rec, byName: editedBy }) });
+        const json = await res.json();
+        if (!json.success) { showToast('❌ บันทึกล้มเหลว: ' + (json.error||''), 'error'); return; }
+        const full = { ...rec, editedBy, editedAt: new Date().toISOString() };
+        if (idx >= 0) Object.assign(machineMaster[idx], full);
+        else { const dup = machineMaster.findIndex(m => String(m.id).toLowerCase() === id.toLowerCase());
+               if (dup >= 0) Object.assign(machineMaster[dup], full); else machineMaster.unshift(full); }
+        closeMcModal(); renderMachTable();
+        showToast('✅ บันทึกเครื่องจักรแล้ว', 'success');
+    } catch(e) { showToast('❌ เกิดข้อผิดพลาด: ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 function closeMcModal() {
@@ -2553,12 +2645,38 @@ function machCloseImport() {
     impCancel();
 }
 
+let _machDelIdx = -1;
 function machDeleteRow(i) {
     const m = machineMaster[i];
-    if (!confirm(`ลบ "${m.id || ''} — ${m.name || ''}" ออกจากทะเบียน?`)) return;
-    machineMaster.splice(i, 1);
-    renderMachTable();
-    showToast('🗑️ ลบแล้ว — กด "บันทึกทั้งหมด" เพื่อยืนยัน', 'info');
+    if (!m) return;
+    _machDelIdx = i;
+    document.getElementById('mach-del-desc').textContent =
+        `คุณกำลังจะลบเครื่องจักร "${m.id || ''} — ${m.name || ''}" ออกจากทะเบียน ข้อมูลนี้จะถูกลบถาวรและไม่สามารถกู้คืนได้`;
+    document.getElementById('mach-del-by').value = '';
+    document.getElementById('modal-mach-del').classList.remove('hidden');
+}
+function closeMachDelModal() {
+    document.getElementById('modal-mach-del').classList.add('hidden');
+    _machDelIdx = -1;
+}
+async function confirmMachDelete() {
+    const byName = document.getElementById('mach-del-by').value.trim();
+    if (!byName) { showToast('⚠️ กรุณาระบุชื่อผู้ดำเนินการ', 'error'); return; }
+    if (userRole !== 'admin') { showToast('⚠️ ต้องเป็น Admin', 'error'); return; }
+    const m = machineMaster[_machDelIdx];
+    if (!m) { closeMachDelModal(); return; }
+    showLoading('กำลังลบ…');
+    try {
+        const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+            body: JSON.stringify({ action:'deleteMachineRow', pw: sessionPw, machineId: m.id, byName }) });
+        const json = await res.json();
+        if (!json.success) { showToast('❌ ลบล้มเหลว: ' + (json.error||''), 'error'); return; }
+        machineMaster.splice(_machDelIdx, 1);
+        closeMachDelModal();
+        renderMachTable();
+        showToast('🗑️ ลบเครื่องจักรแล้ว', 'success');
+    } catch(e) { showToast('❌ เกิดข้อผิดพลาด: ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 async function saveMachines() {
@@ -2921,6 +3039,16 @@ function acceptRecord(item) {
     document.getElementById('accept-tracking-display').textContent =
         (item.tracking || '') + (item.machineName ? ' — ' + item.machineName : '');
     document.getElementById('accept-byname').value = '';
+    const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    document.getElementById('accept-detail').innerHTML = `
+      <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm space-y-1.5">
+        <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">เครื่องจักร</span><span class="col-span-2 font-bold">${esc(item.machineName)} <span class="text-gray-400 font-normal text-xs">${esc(item.machineId)}</span></span></div>
+        <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">โรงงาน/พื้นที่</span><span class="col-span-2">${esc(item.factory)} / ${esc(item.area)}</span></div>
+        <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">เวลาเริ่ม</span><span class="col-span-2">${esc((item.bdStart||'').replace('T',' '))||'—'}</span></div>
+        <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">ประเภท</span><span class="col-span-2">${esc(item.bdType)||'—'}</span></div>
+        <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">ปัญหาที่พบ</span><span class="col-span-2 text-gray-800 whitespace-pre-line">${esc(item.problem)||'—'}</span></div>
+        ${item.device?`<div class="grid grid-cols-3 gap-1"><span class="text-gray-500">อุปกรณ์</span><span class="col-span-2">${esc(item.device)}</span></div>`:''}
+      </div>`;
     document.getElementById('accept-modal').classList.remove('hidden');
 }
 
@@ -3236,14 +3364,41 @@ function switchLogTab(tab) {
     _logCurrentTab = tab;
     document.getElementById('log-panel-bd').classList.toggle('hidden', tab !== 'bd');
     document.getElementById('log-panel-machines').classList.toggle('hidden', tab !== 'machines');
-    // Tab button styling
-    document.getElementById('log-tab-bd').className =
-        'log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all ' +
-        (tab === 'bd' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-800');
-    document.getElementById('log-tab-machines').className =
-        'log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all ' +
-        (tab === 'machines' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-800');
+    document.getElementById('log-panel-cl').classList.toggle('hidden', tab !== 'cl');
+    ['bd','machines','cl'].forEach(t => {
+        const btn = document.getElementById('log-tab-' + t);
+        if (btn) btn.className = 'log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all ' +
+            (tab === t ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-800');
+    });
     if (tab === 'machines') renderMcLog();
+    if (tab === 'cl') renderClLog();
+}
+const CL_LOG_KEYS = ['Checklist','Daily','PM items','แผน PM','Copy','Default'];
+function isClLog(row) {
+    const act = String(Array.isArray(row) ? (row[2]||'') : (row.action||row[2]||''));
+    return CL_LOG_KEYS.some(k => act.includes(k));
+}
+function renderClLog() {
+    const q = (document.getElementById('log-cl-search')?.value || '').toLowerCase();
+    const tbody = document.getElementById('log-cl-tbody');
+    const empty = document.getElementById('log-cl-empty');
+    if (!tbody) return;
+    const rows = (_allBdLog || []).filter(r => isClLog(r)).filter(r => {
+        if (!q) return true;
+        const line = (Array.isArray(r) ? r.join(' ') : Object.values(r).join(' ')).toLowerCase();
+        return line.includes(q);
+    });
+    empty.classList.toggle('hidden', rows.length > 0);
+    tbody.innerHTML = rows.map(r => {
+        const time = Array.isArray(r) ? r[0] : (r.time||r[0]||'');
+        const act  = Array.isArray(r) ? r[2] : (r.action||r[2]||'');
+        const by   = Array.isArray(r) ? r[3] : (r.byName||r[3]||'');
+        return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+            <td class="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">${time}</td>
+            <td class="px-4 py-2.5 text-sm">${act}</td>
+            <td class="px-4 py-2.5 text-sm text-gray-600">${by}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="3" class="text-center py-8 text-gray-400 text-sm">ไม่พบรายการ</td></tr>';
 }
 
 async function loadAllLog() {
@@ -3453,10 +3608,35 @@ function goSummary() {
 
 function clearEditState() { editMode = false; editRowIndex = null; editSheetName = null; }
 
+// ---- ปัญหาที่พบ: locked lines + new entry ----
+let _problemLocked = '';
+function renderProblemLocked() {
+    const box = document.getElementById('problem-locked');
+    if (!box) return;
+    if (!_problemLocked) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    box.classList.remove('hidden');
+    box.innerHTML = _problemLocked.split('\n').filter(Boolean).map(line =>
+        `<div class="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 select-none whitespace-pre-wrap">${line.replace(/</g,'&lt;')}</div>`
+    ).join('');
+}
+function problemStageLabel() {
+    if (formStage === 'report')  return 'แจ้ง Breakdown';
+    if (formStage === 'manual')  return 'สร้างเอกสาร';
+    if (formStage === 'whyedit') return 'แก้ไข Why-Why';
+    return 'แก้ไขเอกสาร';
+}
+function composeProblem(byName) {
+    const fresh = (document.getElementById('inp-problem-new')?.value || '').trim();
+    const line  = fresh ? `${fresh} *${byName||'ไม่ระบุ'} - ${problemStageLabel()}` : '';
+    return [_problemLocked, line].filter(Boolean).join('\n');
+}
+
 // ล้างค่าฟิลด์ทั้งหมดให้เป็นฟอร์มเปล่า
 function resetFormFields() {
-    ['machine-name','inp-machine-id','inp-line','inp-problem','inp-corrective','inp-preventive']
+    ['machine-name','inp-machine-id','inp-line','inp-corrective','inp-preventive']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    _problemLocked = ''; renderProblemLocked();
+    const pn = document.getElementById('inp-problem-new'); if (pn) pn.value = '';
     setBdStartLocked(false);
     setDT('bd-start', ''); setDT('bd-end', '');
     const fSel = document.getElementById('factory-select'); if (fSel) fSel.value = '';
@@ -4093,7 +4273,8 @@ function showAddDataConfirm() {
     if (!d.machineName) { showToast('⚠️ กรุณาระบุชื่อเครื่องจักร', 'error'); return; }
     if (!d.factory)     { showToast('⚠️ กรุณาเลือกโรงงาน', 'error'); return; }
     if (!d.bdStart)     { showToast('⚠️ กรุณาระบุเวลาเริ่ม Breakdown', 'error'); return; }
-    if (formMode === 'report' && !d.problem) { showToast('⚠️ กรุณาระบุอาการ (ปัญหาที่พบ)', 'error'); return; }
+    const freshProblem = (document.getElementById('inp-problem-new')?.value || '').trim();
+    if (formStage === 'report' && !freshProblem) { showToast('⚠️ กรุณาระบุอาการ (ปัญหาที่พบ)', 'error'); return; }
     if (formStage === 'manual' && !d.eventType) { showToast('⚠️ กรุณาเลือกประเภทเหตุการณ์ (Breakdown/Adjustment)', 'error'); return; }
 
     const h  = Math.floor(d.downtimeMin / 60);
@@ -4156,6 +4337,7 @@ async function confirmAddData() {
 
     const isEdit = !!(editMode && editRowIndex);
     const data = { ...collectFormData(), byName, action: isEdit ? 'update' : 'create' };
+    data.problem = composeProblem(byName);
 
     try {
         if (isEdit) {
@@ -4229,7 +4411,8 @@ function openEditMode(item, stage = 'edit') {
     set('inp-line',       item.line);
     setDT('bd-start',     item.bdStart);
     setDT('bd-end',       item.bdEnd);
-    set('inp-problem',    item.problem);
+    _problemLocked = item.problem || ''; renderProblemLocked();
+    const pn = document.getElementById('inp-problem-new'); if (pn) pn.value = '';
     set('inp-corrective', item.corrective);
     set('inp-preventive', item.preventive);
 
@@ -4937,8 +5120,19 @@ async function exportPDF(fmt = 'portrait') {
         const mainCanvas = await _captureNode(document.getElementById('report-content'), CAP_W);
 
         if (isPNG) {
-            // ===== PNG — ฟอร์ม + gallery รวม canvas เดียว (เดิม) =====
-            _download(mainCanvas.toDataURL('image/png'), `BD_${name}.png`);
+            // ===== PNG — 16:9 (1920×1080) พอดีสไลด์ PowerPoint =====
+            const fitTo16x9 = (src) => {
+                const W = 1920, H = 1080;
+                const out = document.createElement('canvas');
+                out.width = W; out.height = H;
+                const g = out.getContext('2d');
+                g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+                const s = Math.min(W / src.width, H / src.height);
+                const dw = src.width * s, dh = src.height * s;
+                g.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
+                return out;
+            };
+            _download(fitTo16x9(mainCanvas).toDataURL('image/png'), `BD_${name}.png`);
             if (withGallery) {
                 buildGallery('png');
                 const gal = document.getElementById('photo-gallery');
@@ -4946,7 +5140,7 @@ async function exportPDF(fmt = 'portrait') {
                 const galCanvas = await _captureNode(gal, CAP_W);
                 gal.style.display = 'none';
                 await new Promise(r => setTimeout(r, 400));
-                _download(galCanvas.toDataURL('image/png'), `BD_${name}_รูปภาพ.png`);
+                _download(fitTo16x9(galCanvas).toDataURL('image/png'), `BD_${name}_รูปภาพ.png`);
             }
         } else {
             // ===== PDF — A4 มาตรฐาน =====
@@ -5179,10 +5373,20 @@ function clFillMachineSelect(elId, factory, area, selected) {
     });
 }
 function clGetDailyItems(machineId) {
-    // read from DB cache (_clPmPlans); fallback to _clDailyDefault or CL_DAILY_DEFAULT
     const plan = _clPmPlans[machineId];
     if (plan && Array.isArray(plan.dailyItems) && plan.dailyItems.length > 0) return plan.dailyItems;
-    return null; // null = use default
+    return null;
+}
+function clResolveDailyItems(machineId) {
+    const plan   = _clPmPlans[machineId] || {};
+    const custom = Array.isArray(plan.dailyItems) && plan.dailyItems.length ? plan.dailyItems : null;
+    const def    = _clDailyDefault.length ? _clDailyDefault : CL_DAILY_DEFAULT;
+    if (!custom) return def;
+    if (plan.dailyMergeDefault) {
+        const seen = new Set(custom.map(i => i.id || i.label));
+        return [...def.filter(i => !seen.has(i.id || i.label)), ...custom];
+    }
+    return custom;
 }
 function clGetPmPlan(machineId) {
     return _clPmPlans[machineId] || { dailyEnabled: true, pmFreqMonths: 3, pmStartMonth: '' };
@@ -5267,12 +5471,18 @@ function renderClHubRecent() {
 }
 
 // ---- FORM ----
-async function goClForm(type) {
+async function goClForm(type, prefillFac, prefillArea) {
     if (!machineMaster.length) await loadMachineMaster();
-    const fac  = document.getElementById('cl-hub-fac')?.value  || '';
-    const area = document.getElementById('cl-hub-area')?.value || '';
+    const fac  = prefillFac  || document.getElementById('cl-hub-fac')?.value  || '';
+    const area = prefillArea || document.getElementById('cl-hub-area')?.value || '';
     switchTab('cl-form');
     document.getElementById('clf-type').value = type;
+    const lbl = document.getElementById('clf-type-label');
+    if (lbl) {
+        lbl.textContent = type === 'pm' ? '🔧 PM Checklist' : '✅ ตรวจประจำวัน';
+        lbl.className = 'inline-block px-3 py-1.5 rounded-full text-xs font-bold ' +
+            (type === 'pm' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700');
+    }
     document.getElementById('clf-date').value = new Date().toISOString().slice(0,10);
     clFillFacSelect('clf-fac', fac);
     clfFacChange(area);
@@ -5306,7 +5516,7 @@ function clfGetItems() {
     const type      = document.getElementById('clf-type')?.value || 'daily';
     const machineId = document.getElementById('clf-machine')?.value || '';
     if (type === 'daily') {
-        const custom = clGetDailyItems(machineId);
+        const custom = clResolveDailyItems(machineId);
         if (custom) return custom.map(i => ({ ...i }));
         // fallback: _clDailyDefault from DB, then hardcoded CL_DAILY_DEFAULT
         return (_clDailyDefault.length ? _clDailyDefault : CL_DAILY_DEFAULT).map(i => ({ ...i }));
@@ -5665,27 +5875,32 @@ function renderClSummary(rows) {
 }
 
 // ---- CALENDAR ----
+let _clCalDayMap = {}; // { day: [machineId, ...] }
+let _clCalAllPmDates = {}; // raw getPmDates response for current month
+
 async function initClCalendar() {
     if (!machineMaster.length) await loadMachineMaster();
     _clCalYear  = new Date().getFullYear();
     _clCalMonth = new Date().getMonth();
     clFillFacSelect('clcal-fac', '');
+    clCalFillAreaSelect();
     updateClCalLabel();
     renderClCalendar();
 }
 function clCalFacChange() {
+    clCalFillAreaSelect();
+    renderClCalendar();
+}
+function clCalFillAreaSelect() {
     const fac = document.getElementById('clcal-fac')?.value || '';
-    const sel = document.getElementById('clcal-machine');
+    const sel = document.getElementById('clcal-area');
     if (!sel) return;
-    sel.innerHTML = '<option value="">-- เครื่องจักร --</option>';
-    clMachinesFor(fac, '').forEach(m => {
+    sel.innerHTML = '<option value="">ทุก Area</option>';
+    clAreaOptions(fac).forEach(a => {
         const o = document.createElement('option');
-        o.value = m.id || m.machineId || m.machine_id || '';
-        o.textContent = m.name || m.machineName || o.value;
+        o.value = o.textContent = a;
         sel.appendChild(o);
     });
-    _clCalMachineId = '';
-    renderClCalendar();
 }
 function clCalShift(delta) {
     _clCalMonth += delta;
@@ -5700,91 +5915,162 @@ function updateClCalLabel() {
     if (el) el.textContent = thMonths[_clCalMonth] + ' ' + (_clCalYear + 543);
 }
 async function renderClCalendar() {
-    const machineId = document.getElementById('clcal-machine')?.value || '';
-    _clCalMachineId = machineId;
-    const setBtn = document.getElementById('clcal-set-btn');
-    if (setBtn) setBtn.classList.toggle('hidden', !machineId || userRole === 'user');
+    const fac  = document.getElementById('clcal-fac')?.value  || '';
+    const area = document.getElementById('clcal-area')?.value || '';
+    const machines = clMachinesFor(fac, area);
     const grid = document.getElementById('clcal-grid');
     if (!grid) return;
-    // Load checklist data for this month
-    const ym    = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}`;
-    let checkMap = {}; // date -> overallResult
-    if (machineId) {
-        try {
-            const data = await clFetch({ action:'getChecklists', factory:'', area:'', type:'', month:String(_clCalMonth+1).padStart(2,'0'), year:String(_clCalYear) });
-            (data.data||[]).filter(r => r.machine === machineId).forEach(r => { checkMap[r.date] = r.overallResult; });
-        } catch(e) {}
-        // load pm dates
-        try {
-            const pd = await clFetch({ action:'getPmDates', monthKey: ym });
-            const key = clPmDateKey(machineId, _clCalYear, _clCalMonth);
-            const val = (pd.data||{})[key] || '';
-            _clPmDates[key] = val ? String(val).split(',').map(Number).filter(Boolean) : [];
-        } catch(e) {}
-    }
-    const pmDays = new Set(clGetPmDatesForMonth(machineId, _clCalYear, _clCalMonth).map(d => parseInt(d)));
-    const firstDay = new Date(_clCalYear, _clCalMonth, 1).getDay();
+    const ym = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}`;
+
+    // load PM dates for whole month
+    try {
+        const pd = await clFetch({ action:'getPmDates', monthKey: ym });
+        _clCalAllPmDates = pd.data || {};
+    } catch(e) { _clCalAllPmDates = {}; }
+
+    // build dayMap: day -> [machineId,...]
+    _clCalDayMap = {};
+    machines.forEach(m => {
+        const id  = m.id || m.machineId || m.machine_id || '';
+        const key = clPmDateKey(id, _clCalYear, _clCalMonth);
+        const val = _clCalAllPmDates[key] || '';
+        String(val).split(',').map(Number).filter(Boolean).forEach(d => {
+            (_clCalDayMap[d] = _clCalDayMap[d] || []).push(id);
+        });
+    });
+
+    // update count badge
+    const setMachines   = new Set(Object.values(_clCalDayMap).flat());
+    const totalMachines = machines.length;
+    const setCnt   = setMachines.size;
+    const unsetCnt = Math.max(0, totalMachines - setCnt);
+    const setCntEl   = document.getElementById('clcal-set-count');
+    const unsetCntEl = document.getElementById('clcal-unset-count');
+    if (setCntEl)   setCntEl.textContent   = setCnt;
+    if (unsetCntEl) unsetCntEl.textContent = unsetCnt;
+
+    // hide set-btn for users
+    const setBtn = document.getElementById('clcal-set-btn');
+    if (setBtn) setBtn.classList.toggle('hidden', userRole === 'user');
+
+    // render calendar
+    const firstDay    = new Date(_clCalYear, _clCalMonth, 1).getDay();
     const daysInMonth = new Date(_clCalYear, _clCalMonth+1, 0).getDate();
+    const todayStr    = new Date().toISOString().slice(0,10);
     let html = '';
     for (let i = 0; i < firstDay; i++) html += '<div></div>';
     for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const result  = checkMap[dateStr];
-        const isPmDay = pmDays.has(d);
-        const isToday = dateStr === new Date().toISOString().slice(0,10);
-        let dotColor  = '';
-        if (result === 'PASS') dotColor = 'bg-green-400';
-        else if (result === 'FAIL') dotColor = 'bg-red-400';
-        else if (result === 'FIX') dotColor = 'bg-yellow-400';
-        let pmDot = isPmDay ? (result ? 'bg-blue-400' : 'bg-orange-400') : '';
-        html += `<div class="relative flex flex-col items-center justify-start rounded-lg p-1 min-h-[2.5rem] cursor-pointer hover:bg-gray-50 ${isToday?'ring-2 ring-green-400 bg-green-50':''}" onclick="clCalClickDay(${d})">
+        const dateStr  = `${ym}-${String(d).padStart(2,'0')}`;
+        const isToday  = dateStr === todayStr;
+        const pmIds    = _clCalDayMap[d] || [];
+        const hasPm    = pmIds.length > 0;
+        const pmDot    = hasPm ? 'bg-orange-400' : '';
+        html += `<div class="relative flex flex-col items-center justify-start rounded-lg p-1 min-h-[2.5rem] cursor-pointer hover:bg-blue-50 ${isToday?'ring-2 ring-green-400 bg-green-50':''}" onclick="clCalClickDay(${d})">
             <span class="text-xs ${isToday?'font-bold text-green-700':''}">${d}</span>
-            <div class="flex gap-0.5 mt-0.5">
-                ${dotColor?`<span class="w-2 h-2 rounded-full ${dotColor}"></span>`:''}
-                ${pmDot?`<span class="w-2 h-2 rounded-full ${pmDot}"></span>`:''}
-            </div>
+            ${hasPm ? `<span class="text-[9px] font-bold text-orange-600 leading-none">${pmIds.length}</span>` : ''}
+            <div class="flex gap-0.5 mt-0.5">${pmDot?`<span class="w-2 h-2 rounded-full ${pmDot}"></span>`:''}</div>
         </div>`;
     }
     grid.innerHTML = html;
 }
 function clCalClickDay(day) {
-    const machineId = _clCalMachineId;
-    const dateStr = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    showToast(`${dateStr}${machineId?' — '+machineId:''}`, 'info');
+    const ids = _clCalDayMap[day] || [];
+    const ym  = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}`;
+    const dateStr = `${ym}-${String(day).padStart(2,'0')}`;
+    const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    document.getElementById('mcd-title').textContent = `📅 ${day} ${thMonths[_clCalMonth]} ${_clCalYear+543}`;
+    const list = document.getElementById('mcd-list');
+    if (!ids.length) {
+        list.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">ไม่มีเครื่องจักรที่กำหนด PM วันนี้</p>';
+    } else {
+        list.innerHTML = ids.map(id => {
+            const m    = machineMaster.find(x => (x.id||x.machineId||x.machine_id||'') === id) || {};
+            const name = m.name || m.machineName || id;
+            return `<div class="flex items-center justify-between bg-blue-50 rounded-xl px-4 py-2.5 gap-3">
+                <div>
+                    <p class="text-sm font-bold text-gray-800">${name}</p>
+                    <p class="text-xs text-gray-500">${id}</p>
+                </div>
+                <button onclick="clCalGoPm('${id}','${dateStr}')" class="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap">🔧 บันทึก PM</button>
+            </div>`;
+        }).join('');
+    }
+    document.getElementById('modal-cl-day').classList.remove('hidden');
+}
+function clCalGoPm(machineId, dateStr) {
+    document.getElementById('modal-cl-day').classList.add('hidden');
+    const m    = machineMaster.find(x => (x.id||x.machineId||x.machine_id||'') === machineId) || {};
+    const fac  = m.factory || '';
+    const area = m.area    || '';
+    goClForm('pm', fac, area);
+    // prefill after goClForm sets up the form
+    setTimeout(() => {
+        document.getElementById('clf-date').value = dateStr;
+        // fill machine select
+        const msel = document.getElementById('clf-machine');
+        if (msel) { msel.value = machineId; clfMachineChange(); }
+    }, 100);
 }
 function openClSetDates() {
-    const machineId = _clCalMachineId;
-    if (!machineId) { showToast('กรุณาเลือกเครื่องจักรก่อน', 'warn'); return; }
-    _clSetDatesMachineId = machineId;
-    _clSetDatesYear  = _clCalYear;
-    _clSetDatesMonth = _clCalMonth;
-    const existing = new Set(clGetPmDatesForMonth(machineId, _clCalYear, _clCalMonth).map(d => parseInt(d)));
-    const daysInMonth = new Date(_clCalYear, _clCalMonth+1, 0).getDate();
+    if (userRole === 'user') return;
+    const fac  = document.getElementById('clcal-fac')?.value  || '';
+    const area = document.getElementById('clcal-area')?.value || '';
+    const machines = clMachinesFor(fac, area);
+    const ym = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}`;
     const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-    document.getElementById('mcsd-info').textContent = `กำหนดวัน PM: ${machineId} — ${thMonths[_clCalMonth]} ${_clCalYear+543}`;
-    const grid = document.getElementById('mcsd-days');
-    let html = '';
-    for (let d = 1; d <= daysInMonth; d++) {
-        const sel = existing.has(d);
-        html += `<label class="flex items-center justify-center rounded-lg p-1.5 cursor-pointer border ${sel?'border-blue-400 bg-blue-50':'border-gray-200'} hover:bg-blue-50 transition-colors">
-            <input type="checkbox" value="${d}" ${sel?'checked':''} class="hidden mcsd-day-cb" onchange="this.closest('label').className=this.checked?'flex items-center justify-center rounded-lg p-1.5 cursor-pointer border border-blue-400 bg-blue-50 hover:bg-blue-50 transition-colors':'flex items-center justify-center rounded-lg p-1.5 cursor-pointer border border-gray-200 hover:bg-blue-50 transition-colors'">
-            <span class="text-sm font-bold">${d}</span>
-        </label>`;
-    }
-    grid.innerHTML = html;
+    document.getElementById('mcsd-info').textContent = `${thMonths[_clCalMonth]} ${_clCalYear+543} — ${machines.length} เครื่องจักร`;
+    const listEl = document.getElementById('mcsd-machine-list');
+    listEl.innerHTML = machines.map(m => {
+        const id   = m.id || m.machineId || m.machine_id || '';
+        const name = m.name || m.machineName || id;
+        const key  = clPmDateKey(id, _clCalYear, _clCalMonth);
+        const existing = String(_clCalAllPmDates[key] || '');
+        const hasDate  = existing.trim() !== '';
+        return `<div class="flex items-center gap-3 p-3 rounded-xl border ${hasDate?'border-blue-200 bg-blue-50':'border-gray-200 bg-gray-50'}">
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-gray-800 truncate">${name}</p>
+                <p class="text-xs text-gray-500">${id}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                ${hasDate ? '<span class="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">กำหนดแล้ว</span>' : '<span class="text-[10px] text-gray-400">ยังไม่กำหนด</span>'}
+                <input type="text" data-id="${id}" data-orig="${existing}" placeholder="เช่น 5,12,20"
+                    value="${existing}"
+                    class="mcsd-date-input w-28 border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-blue-400">
+            </div>
+        </div>`;
+    }).join('');
     document.getElementById('modal-cl-set-dates').classList.remove('hidden');
 }
 async function saveClPmDates() {
-    const days = [...document.querySelectorAll('.mcsd-day-cb:checked')].map(cb => parseInt(cb.value));
-    const key  = clPmDateKey(_clSetDatesMachineId, _clSetDatesYear, _clSetDatesMonth);
-    _clPmDates[key] = days;
+    const inputs  = [...document.querySelectorAll('.mcsd-date-input')];
+    const changed = inputs.filter(inp => inp.value.trim() !== (inp.dataset.orig || '').trim());
+    // confirm if any existing dates are being changed
+    const wasSet  = changed.filter(inp => (inp.dataset.orig||'').trim() !== '');
+    if (wasSet.length) {
+        const names = wasSet.map(inp => {
+            const m = machineMaster.find(x => (x.id||x.machineId||x.machine_id||'') === inp.dataset.id) || {};
+            return (m.name || m.machineName || inp.dataset.id) + ` (${inp.dataset.orig} → ${inp.value.trim()||'ล้างออก'})`;
+        }).join('\n');
+        if (!confirm(`ยืนยันการเลื่อนวัน PM ของ ${wasSet.length} เครื่อง?\n\n${names}`)) return;
+    }
+    if (!changed.length) { document.getElementById('modal-cl-set-dates').classList.add('hidden'); return; }
+    const dates = {};
+    changed.forEach(inp => {
+        const id  = inp.dataset.id;
+        const key = clPmDateKey(id, _clCalYear, _clCalMonth);
+        const val = inp.value.trim().split(',').map(v => parseInt(v.trim())).filter(n => !isNaN(n) && n > 0).join(',');
+        dates[key] = val;
+        // update local cache
+        _clCalAllPmDates[key] = val;
+        _clPmDates[key] = val ? val.split(',').map(Number) : [];
+    });
+    showLoading('กำลังบันทึก…');
     try {
-        const res = await clPost({ action:'savePmDates', dates: { [key]: days.join(',') } });
+        const res = await clPost({ action:'savePmDates', dates });
         if (res.success) showToast('บันทึกวัน PM เรียบร้อย', 'success');
         else showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error');
-    } catch(e) {
-        showToast('บันทึกล้มเหลว', 'error');
-    }
+    } catch(e) { showToast('บันทึกล้มเหลว', 'error'); }
+    finally { hideLoading(); }
     document.getElementById('modal-cl-set-dates').classList.add('hidden');
     renderClCalendar();
 }
@@ -5891,7 +6177,7 @@ function renderClScDaily(machines) {
     const defCount = _clDailyDefault.length || CL_DAILY_DEFAULT.length;
     tbody.innerHTML = pageRows.map(m => {
         const id     = m.id || m.machineId || m.machine_id || '';
-        const custom = clGetDailyItems(id);
+        const custom = clResolveDailyItems(id);
         const canEdit = userRole === 'engineer' || userRole === 'admin';
         return `<tr class="border-b border-gray-100 hover:bg-gray-50">
             <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${id}</td>
@@ -5899,8 +6185,8 @@ function renderClScDaily(machines) {
             <td class="px-4 py-2.5 text-center text-sm">${custom ? custom.length : '—'}</td>
             <td class="px-4 py-2.5 text-center text-sm">${defCount}</td>
             <td class="px-4 py-2.5 text-center flex gap-2 justify-center">
-                ${canEdit ? `<button onclick="openClItemsEditor('per-machine-daily','${id}')" class="text-xs text-green-600 hover:underline">✏️</button>` : ''}
-                ${canEdit ? `<button onclick="openClCopyModal('daily','${id}')" class="text-xs text-indigo-600 hover:underline">📋</button>` : ''}
+                ${canEdit ? `<button onclick="openClItemsEditor('per-machine-daily','${id}')" class="px-2.5 py-1 text-xs font-bold bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors">✏️ แก้ไข</button>` : ''}
+                ${canEdit ? `<button onclick="openClCopyModal('daily','${id}')" class="px-2.5 py-1 text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors">📋 คัดลอก</button>` : ''}
             </td>
         </tr>`;
     }).join('');
@@ -5935,8 +6221,8 @@ function renderClScPm(machines) {
             </td>
             <td class="px-3 py-2.5 text-center">
                 <div class="flex gap-2 justify-center">
-                    ${canEdit ? `<button onclick="openClItemsEditor('per-machine-pm','${id}')" class="text-xs text-blue-600 hover:underline">✏️ PM</button>` : ''}
-                    ${canEdit ? `<button onclick="openClCopyModal('pm','${id}')" class="text-xs text-indigo-600 hover:underline">📋</button>` : ''}
+                    ${canEdit ? `<button onclick="openClItemsEditor('per-machine-pm','${id}')" class="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">✏️ แก้ไข</button>` : ''}
+                    ${canEdit ? `<button onclick="openClCopyModal('pm','${id}')" class="px-2.5 py-1 text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors">📋 คัดลอก</button>` : ''}
                 </div>
             </td>
         </tr>`;
@@ -6014,6 +6300,8 @@ async function openClItemsEditor(mode, machineId) {
         document.getElementById('mcie-ref-items').innerHTML = defItems.map(i => `<div class="px-2 py-1 bg-gray-50 rounded text-xs">${i.label}</div>`).join('');
         const custom = clGetDailyItems(machineId) || [];
         mcieFlatRender(custom);
+        document.getElementById('mcie-daily-merge').checked = !!(_clPmPlans[machineId]?.dailyMergeDefault);
+        document.getElementById('mcie-daily-merge-wrap').classList.remove('hidden');
 
     } else if (mode === 'per-machine-pm') {
         hdrEl.className = 'px-6 py-4 flex-shrink-0 flex justify-between items-center bg-blue-700';
@@ -6029,6 +6317,7 @@ async function openClItemsEditor(mode, machineId) {
         document.getElementById('mcie-pm-settings').classList.remove('hidden');
     }
     if (mode !== 'per-machine-pm') document.getElementById('mcie-pm-settings').classList.add('hidden');
+    if (mode !== 'per-machine-daily') document.getElementById('mcie-daily-merge-wrap').classList.add('hidden');
     document.getElementById('modal-cl-items-editor').classList.remove('hidden');
 }
 function mcieFlatRender(items) {
@@ -6118,11 +6407,13 @@ async function saveClItemsEditor() {
 
         } else if (mode === 'per-machine-daily') {
             const items = mcieFlatGetItems();
+            const merge = document.getElementById('mcie-daily-merge')?.checked || false;
             const m  = machineMaster.find(x => (x.id||x.machineId||'') === machineId) || {};
-            const res = await clPost({ action:'saveMachineItems', type:'daily', machineId, machineName: m.name||m.machineName||'', factory: m.factory||'', area: m.area||'', items, editedBy: editorName });
+            const res = await clPost({ action:'saveMachineItems', type:'daily', machineId, machineName: m.name||m.machineName||'', factory: m.factory||'', area: m.area||'', items, dailyMergeDefault: merge, editedBy: editorName });
             if (!res.success) { showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error'); return; }
             if (!_clPmPlans[machineId]) _clPmPlans[machineId] = {};
             _clPmPlans[machineId].dailyItems = items;
+            _clPmPlans[machineId].dailyMergeDefault = merge;
             showToast('บันทึกรายการ Daily เรียบร้อย', 'success');
 
         } else if (mode === 'per-machine-pm') {

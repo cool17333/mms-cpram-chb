@@ -899,9 +899,23 @@
     </div>
     <div id="clsc-daily-view">
         <div class="mms-card overflow-hidden">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+            <div class="p-4 border-b border-gray-100 flex flex-wrap gap-2 justify-between items-center">
                 <h3 class="font-bold text-sm">รายการตรวจสอบประจำวัน</h3>
-                <button onclick="openClItemsEditor('default-daily',null)" class="mms-btn mms-btn-green text-xs">⚙️ ตั้งค่ารายการ Default รายวัน</button>
+                <div class="flex items-center gap-3">
+                    <span id="clsc-daily-count" class="text-xs text-gray-500"></span>
+                    <div class="flex items-center gap-1.5">
+                        <label class="text-xs text-gray-400 font-medium whitespace-nowrap">แสดง</label>
+                        <select id="clsc-daily-page-size" onchange="clScSetPageSize('daily',this.value)"
+                            class="border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-gray-400 bg-white">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="0">ทั้งหมด</option>
+                        </select>
+                        <label class="text-xs text-gray-400 font-medium">รายการ</label>
+                    </div>
+                    <button onclick="openClItemsEditor('default-daily',null)" class="mms-btn mms-btn-green text-xs">⚙️ ตั้งค่า Default รายวัน</button>
+                </div>
             </div>
             <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -919,12 +933,40 @@
                 </tbody>
             </table>
             </div>
+            <div id="clsc-daily-pagination" class="hidden px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+                <span id="clsc-daily-page-info" class="text-xs text-gray-500"></span>
+                <div class="flex items-center gap-1">
+                    <button onclick="clScGoPage('daily',0)" id="clsc-daily-pg-first"
+                        class="px-2.5 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">«</button>
+                    <button onclick="clScGoPage('daily',_clDailyPage-1)" id="clsc-daily-pg-prev"
+                        class="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">‹ ก่อน</button>
+                    <div id="clsc-daily-pg-nums" class="flex gap-1"></div>
+                    <button onclick="clScGoPage('daily',_clDailyPage+1)" id="clsc-daily-pg-next"
+                        class="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">ถัดไป ›</button>
+                    <button onclick="clScGoPage('daily',_clDailyTotalPages-1)" id="clsc-daily-pg-last"
+                        class="px-2.5 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">»</button>
+                </div>
+            </div>
         </div>
     </div>
     <div id="clsc-pm-view" class="hidden">
         <div class="mms-card overflow-hidden">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+            <div class="p-4 border-b border-gray-100 flex flex-wrap gap-2 justify-between items-center">
                 <h3 class="font-bold text-sm">แผน PM (Preventive Maintenance)</h3>
+                <div class="flex items-center gap-3">
+                    <span id="clsc-pm-count" class="text-xs text-gray-500"></span>
+                    <div class="flex items-center gap-1.5">
+                        <label class="text-xs text-gray-400 font-medium whitespace-nowrap">แสดง</label>
+                        <select id="clsc-pm-page-size" onchange="clScSetPageSize('pm',this.value)"
+                            class="border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-gray-400 bg-white">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="0">ทั้งหมด</option>
+                        </select>
+                        <label class="text-xs text-gray-400 font-medium">รายการ</label>
+                    </div>
+                </div>
             </div>
             <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -943,6 +985,20 @@
                     <tr><td colspan="7" class="text-center text-gray-400 py-8">เลือก Factory เพื่อดูข้อมูล</td></tr>
                 </tbody>
             </table>
+            </div>
+            <div id="clsc-pm-pagination" class="hidden px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+                <span id="clsc-pm-page-info" class="text-xs text-gray-500"></span>
+                <div class="flex items-center gap-1">
+                    <button onclick="clScGoPage('pm',0)" id="clsc-pm-pg-first"
+                        class="px-2.5 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">«</button>
+                    <button onclick="clScGoPage('pm',_clPmPage-1)" id="clsc-pm-pg-prev"
+                        class="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">‹ ก่อน</button>
+                    <div id="clsc-pm-pg-nums" class="flex gap-1"></div>
+                    <button onclick="clScGoPage('pm',_clPmPage+1)" id="clsc-pm-pg-next"
+                        class="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">ถัดไป ›</button>
+                    <button onclick="clScGoPage('pm',_clPmTotalPages-1)" id="clsc-pm-pg-last"
+                        class="px-2.5 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">»</button>
+                </div>
             </div>
         </div>
     </div>
@@ -4793,6 +4849,8 @@ let _clMcdeMode      = 'default-daily';  // current editor mode
 let _clMcdeMachineId = '';               // machine being edited
 let _clScCurrentTab = 'daily';
 let _clChartObj = null;
+let _clDailyPage = 0; let _clDailyPageSize = 10; let _clDailyTotalPages = 1;
+let _clPmPage    = 0; let _clPmPageSize    = 10; let _clPmTotalPages    = 1;
 
 // ---- helpers ----
 function clFacOptions() {
@@ -5496,15 +5554,65 @@ function renderClSchedule() {
     const search = (document.getElementById('clsc-search')?.value || '').toLowerCase();
     let machines = clMachinesFor(fac, area);
     if (search) machines = machines.filter(m => (m.id||m.machineId||'').toLowerCase().includes(search) || (m.name||m.machineName||'').toLowerCase().includes(search));
-    if (_clScCurrentTab === 'daily') renderClScDaily(machines);
+    if (_clScCurrentTab === 'daily') { _clDailyPage = 0; renderClScDaily(machines); }
+    else { _clPmPage = 0; renderClScPm(machines); }
+}
+function clScSetPageSize(tab, val) {
+    if (tab === 'daily') { _clDailyPageSize = parseInt(val); _clDailyPage = 0; }
+    else                 { _clPmPageSize    = parseInt(val); _clPmPage    = 0; }
+    renderClSchedule();
+}
+function clScGoPage(tab, page) {
+    if (tab === 'daily') { _clDailyPage = Math.max(0, Math.min(page, _clDailyTotalPages-1)); }
+    else                 { _clPmPage    = Math.max(0, Math.min(page, _clPmTotalPages-1)); }
+    const fac    = document.getElementById('clsc-fac')?.value  || '';
+    const area   = document.getElementById('clsc-area')?.value || '';
+    const search = (document.getElementById('clsc-search')?.value || '').toLowerCase();
+    let machines = clMachinesFor(fac, area);
+    if (search) machines = machines.filter(m => (m.id||m.machineId||'').toLowerCase().includes(search) || (m.name||m.machineName||'').toLowerCase().includes(search));
+    if (tab === 'daily') renderClScDaily(machines);
     else renderClScPm(machines);
+}
+function clScRenderPagBar(tab, page, totalPages, total, start, pageSize) {
+    const pagBar  = document.getElementById(`clsc-${tab}-pagination`);
+    const infoEl  = document.getElementById(`clsc-${tab}-page-info`);
+    const numsEl  = document.getElementById(`clsc-${tab}-pg-nums`);
+    const countEl = document.getElementById(`clsc-${tab}-count`);
+    if (countEl) countEl.textContent = pageSize
+        ? `แสดง ${total ? start+1 : 0}–${Math.min(start+pageSize, total)} จาก ${total} เครื่อง`
+        : `แสดงทั้งหมด ${total} เครื่อง`;
+    const showPag = pageSize > 0 && totalPages > 1;
+    pagBar.classList.toggle('hidden', !showPag);
+    if (!showPag) return;
+    infoEl.textContent = `หน้า ${page+1} / ${totalPages}`;
+    const atFirst = page === 0, atLast = page === totalPages-1;
+    document.getElementById(`clsc-${tab}-pg-first`).disabled = atFirst;
+    document.getElementById(`clsc-${tab}-pg-prev`).disabled  = atFirst;
+    document.getElementById(`clsc-${tab}-pg-next`).disabled  = atLast;
+    document.getElementById(`clsc-${tab}-pg-last`).disabled  = atLast;
+    const half = 2;
+    let pStart = Math.max(0, page-half), pEnd = Math.min(totalPages-1, page+half);
+    if (pEnd-pStart < 4) { if (pStart===0) pEnd = Math.min(totalPages-1,4); else pStart = Math.max(0,pEnd-4); }
+    let nums = '';
+    for (let p = pStart; p <= pEnd; p++) {
+        const active = p === page;
+        nums += `<button onclick="clScGoPage('${tab}',${p})" class="px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors ${active?'text-white':'border border-gray-200 hover:bg-gray-100 text-gray-600'}" ${active?`style="background:var(--mms-red)"`:''}>${p+1}</button>`;
+    }
+    numsEl.innerHTML = nums;
 }
 function renderClScDaily(machines) {
     const tbody = document.getElementById('clsc-daily-body');
     if (!tbody) return;
-    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
+    const total = machines.length;
+    const ps    = _clDailyPageSize;
+    _clDailyTotalPages = ps ? Math.max(1, Math.ceil(total/ps)) : 1;
+    if (_clDailyPage >= _clDailyTotalPages) _clDailyPage = _clDailyTotalPages-1;
+    const start   = ps ? _clDailyPage * ps : 0;
+    const pageRows = ps ? machines.slice(start, start+ps) : machines;
+    clScRenderPagBar('daily', _clDailyPage, _clDailyTotalPages, total, start, ps);
+    if (!total) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
     const defCount = _clDailyDefault.length || CL_DAILY_DEFAULT.length;
-    tbody.innerHTML = machines.map(m => {
+    tbody.innerHTML = pageRows.map(m => {
         const id     = m.id || m.machineId || m.machine_id || '';
         const custom = clGetDailyItems(id);
         const canEdit = userRole === 'engineer' || userRole === 'admin';
@@ -5523,10 +5631,17 @@ function renderClScDaily(machines) {
 function renderClScPm(machines) {
     const tbody = document.getElementById('clsc-pm-body');
     if (!tbody) return;
-    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
+    const total = machines.length;
+    const ps    = _clPmPageSize;
+    _clPmTotalPages = ps ? Math.max(1, Math.ceil(total/ps)) : 1;
+    if (_clPmPage >= _clPmTotalPages) _clPmPage = _clPmTotalPages-1;
+    const start    = ps ? _clPmPage * ps : 0;
+    const pageRows = ps ? machines.slice(start, start+ps) : machines;
+    clScRenderPagBar('pm', _clPmPage, _clPmTotalPages, total, start, ps);
+    if (!total) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
     // plans already loaded by loadClSchedule()
     const canEdit = userRole === 'engineer' || userRole === 'admin';
-    tbody.innerHTML = machines.map(m => {
+    tbody.innerHTML = pageRows.map(m => {
         const id        = m.id || m.machineId || m.machine_id || '';
         const plan      = clGetPmPlan(id);
         const next      = clNextPmDate(id);

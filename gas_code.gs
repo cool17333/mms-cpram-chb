@@ -86,7 +86,8 @@ function doPost(e) {
       const row = buildRow(data, whys, partsStr, /*keepTimestamp=*/true);
       sheet.getRange(data.rowIndex, 1, 1, row.length).setValues([row]);
 
-      writeLog(ss, data.tracking, 'แก้ไข → ' + (data.status || ''), data.byName, data.status);
+      const detail = buildChangeDetail(prev, row);
+      writeLog(ss, data.tracking, 'แก้ไข → ' + (data.status || '') + ' | ' + detail, data.byName, data.status);
       return jsonOut({ success: true, action: 'updated' });
     }
 
@@ -130,6 +131,46 @@ function doPost(e) {
       const cur = bak.getDataRange().getValues();
       sh.getRange(1, 1, cur.length, cur[0].length).setValues(cur);
       return jsonOut({ success: true, count: cur.length - 1 });
+    }
+
+    // ---- UPSERT เครื่องจักรรายตัว (Admin) ----
+    if (data.action === 'upsertMachine') {
+      if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
+        return jsonOut({ success: false, error: 'ต้องเป็น Admin เท่านั้น' });
+      const m = data.machine || {};
+      if (!String(m.id || '').trim()) return jsonOut({ success: false, error: 'ไม่มีรหัสเครื่องจักร' });
+      let sh = ss.getSheetByName('_Machines');
+      if (!sh) {
+        sh = ss.insertSheet('_Machines');
+        sh.getRange(1,1,1,7).setValues([['รหัสเครื่องจักร','ชื่อเครื่องจักร','โรงงาน','พื้นที่','ไลน์','ผู้แก้ไข','แก้ไขเมื่อ']]);
+      }
+      const vals = sh.getDataRange().getValues();
+      let foundRow = -1;
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]).trim().toLowerCase() === String(m.id).trim().toLowerCase()) { foundRow = i+1; break; }
+      }
+      const rowArr = [m.id||'', m.name||'', m.factory||'', m.area||'', m.line||'', data.byName||m.editedBy||'', new Date().toISOString()];
+      if (foundRow > 0) sh.getRange(foundRow,1,1,7).setValues([rowArr]);
+      else              sh.appendRow(rowArr);
+      writeLog(ss, '-', (foundRow>0?'แก้ไขทะเบียน — ':'เพิ่มทะเบียน — ') + (m.id||''), data.byName||'', '');
+      return jsonOut({ success: true, updated: foundRow>0 });
+    }
+
+    // ---- ลบเครื่องจักรรายตัว (Admin) ----
+    if (data.action === 'deleteMachineRow') {
+      if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
+        return jsonOut({ success: false, error: 'ต้องเป็น Admin เท่านั้น' });
+      const sh = ss.getSheetByName('_Machines');
+      if (!sh) return jsonOut({ success: false, error: 'ไม่พบทะเบียน' });
+      const vals = sh.getDataRange().getValues();
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]).trim().toLowerCase() === String(data.id||'').trim().toLowerCase()) {
+          sh.deleteRow(i+1);
+          writeLog(ss, '-', 'ลบทะเบียน — ' + (data.id||''), data.byName||'', '');
+          return jsonOut({ success: true });
+        }
+      }
+      return jsonOut({ success: false, error: 'ไม่พบรหัส ' + (data.id||'') });
     }
 
     // ---- ACCEPT job (Engineer / Admin รับงาน) ----
@@ -246,7 +287,7 @@ function doPost(e) {
       const role = ROLE_PW[(data.pw || '').trim()];
       if (role !== 'engineer' && role !== 'admin')
         return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin' });
-      const PM_HDR = ['machineId','machineName','factory','area','dailyEnabled','pmFreqMonths','pmStartMonth','dailyItemsJSON','pmItemsJSON','dailyEditedBy','dailyEditedAt','pmEditedBy','pmEditedAt'];
+      const PM_HDR = ['machineId','machineName','factory','area','dailyEnabled','pmFreqMonths','pmStartMonth','dailyItemsJSON','pmItemsJSON','dailyEditedBy','dailyEditedAt','pmEditedBy','pmEditedAt','dailyMergeDefault'];
       let sh = ss.getSheetByName('_PmPlans');
       if (!sh) {
         sh = ss.insertSheet('_PmPlans');
@@ -288,6 +329,7 @@ function doPost(e) {
           prev[10] || '',    // dailyEditedAt — preserved
           data.editedBy || prev[11] || '',
           nowStr,
+          p.dailyMergeDefault !== undefined ? (p.dailyMergeDefault ? 1 : 0) : (prev[13] !== '' && prev[13] !== undefined ? prev[13] : 0),
         ];
       });
       sh.clearContents();
@@ -327,7 +369,7 @@ function doPost(e) {
       const machineId = String(data.machineId || '').trim();
       const type = data.type || 'daily'; // 'daily' | 'pm'
       if (!machineId) return jsonOut({ success: false, error: 'machineId required' });
-      const PM_HDR2 = ['machineId','machineName','factory','area','dailyEnabled','pmFreqMonths','pmStartMonth','dailyItemsJSON','pmItemsJSON','dailyEditedBy','dailyEditedAt','pmEditedBy','pmEditedAt'];
+      const PM_HDR2 = ['machineId','machineName','factory','area','dailyEnabled','pmFreqMonths','pmStartMonth','dailyItemsJSON','pmItemsJSON','dailyEditedBy','dailyEditedAt','pmEditedBy','pmEditedAt','dailyMergeDefault'];
       let sh = ss.getSheetByName('_PmPlans');
       if (!sh) {
         sh = ss.insertSheet('_PmPlans');
@@ -359,6 +401,7 @@ function doPost(e) {
         rowData[7] = JSON.stringify(data.items || []);
         rowData[9]  = data.editedBy || '';
         rowData[10] = nowStr;
+        if (data.dailyMergeDefault !== undefined) rowData[13] = data.dailyMergeDefault ? 1 : 0;
       } else {
         rowData[8]  = JSON.stringify(data.items || []);
         rowData[11] = data.editedBy || '';
@@ -574,6 +617,18 @@ function doGetImage(id) {
 }
 
 // เก็บ log ทุกการกระทำลงชีต "_Log" (ใคร/เมื่อไหร่/ทำอะไร)
+function buildChangeDetail(prev, row) {
+  const WATCH = [6,7,8,9,10,11,12,18,19,23,31];
+  const trunc = v => { v = String(v == null ? '' : v); return v.length > 40 ? v.slice(0,40)+'…' : v; };
+  const changes = [];
+  WATCH.forEach(i => {
+    const a = String(prev[i] == null ? '' : prev[i]);
+    const b = String(row[i]  == null ? '' : row[i]);
+    if (a !== b) changes.push((typeof HEADERS !== 'undefined' && HEADERS[i] ? HEADERS[i] : 'col'+i) + ' [' + trunc(a) + '→' + trunc(b) + ']');
+  });
+  return changes.length ? changes.join(', ') : 'ไม่มีการเปลี่ยนฟิลด์หลัก';
+}
+
 function writeLog(ss, tracking, action, byName, status) {
   let log = ss.getSheetByName('_Log');
   if (!log) {
@@ -814,7 +869,7 @@ function doGetPmPlans(factory, area) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const sh = ss.getSheetByName('_PmPlans');
   if (!sh || sh.getLastRow() < 2) return jsonOut({ success: true, data: [] });
-  const lastCol = Math.max(sh.getLastColumn(), 13);
+  const lastCol = Math.max(sh.getLastColumn(), 14);
   const data = sh.getRange(1, 1, sh.getLastRow(), lastCol).getValues();
   const rows = [];
   for (let i = 1; i < data.length; i++) {
@@ -833,6 +888,7 @@ function doGetPmPlans(factory, area) {
       dailyItems, pmItems,
       dailyEditedBy: r[9]||'', dailyEditedAt: r[10]||'',
       pmEditedBy: r[11]||'', pmEditedAt: r[12]||'',
+      dailyMergeDefault: (r[13] === 1 || r[13] === '1' || r[13] === true),
     });
   }
   return jsonOut({ success: true, data: rows });

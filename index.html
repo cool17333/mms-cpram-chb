@@ -925,7 +925,6 @@
         <div class="mms-card overflow-hidden">
             <div class="p-4 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="font-bold text-sm">แผน PM (Preventive Maintenance)</h3>
-                <button onclick="saveAllPmPlans()" class="mms-btn mms-btn-blue text-xs">💾 บันทึกแผน PM ทั้งหมด</button>
             </div>
             <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -1467,6 +1466,20 @@
             <p class="text-xs text-gray-500 mb-3">กำหนดหัวข้อและรายการตรวจสอบ PM (สามารถมีหัวข้อย่อยได้)</p>
             <div id="mcie-pm-tree" class="space-y-1 mb-3"></div>
             <button onclick="mcieAddPmRoot()" class="mms-btn text-xs w-full">+ เพิ่มหัวข้อ</button>
+        </div>
+        <!-- PM plan settings (per-machine-pm only) -->
+        <div id="mcie-pm-settings" class="px-5 py-3 border-t border-gray-100 flex-shrink-0 hidden">
+            <p class="text-xs font-bold text-gray-700 mb-2">⚙️ ตั้งค่าแผน PM</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs text-gray-500 block mb-1">ความถี่ PM (เดือน)</label>
+                    <input id="mcie-pm-freq" type="number" min="1" max="24" value="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:border-blue-400">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 block mb-1">เดือนเริ่ม PM</label>
+                    <input id="mcie-pm-start" type="month" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
+                </div>
+            </div>
         </div>
         <!-- editor name + save footer -->
         <div class="p-4 border-t border-gray-100 flex-shrink-0">
@@ -5522,12 +5535,8 @@ function renderClScPm(machines) {
         return `<tr class="border-b border-gray-100 hover:bg-gray-50" data-machine-id="${id}">
             <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${id}</td>
             <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
-            <td class="px-3 py-2.5 text-center">
-                <input type="number" min="1" max="24" value="${plan.pmFreqMonths||3}" class="pm-freq w-16 border border-gray-200 rounded px-2 py-1 text-sm text-center">
-            </td>
-            <td class="px-3 py-2.5">
-                <input type="month" value="${plan.pmStartMonth||''}" class="pm-start border border-gray-200 rounded px-2 py-1 text-sm">
-            </td>
+            <td class="px-3 py-2.5 text-center text-sm text-gray-700">${plan.pmFreqMonths||3} เดือน</td>
+            <td class="px-3 py-2.5 text-center text-sm text-gray-700">${plan.pmStartMonth||'—'}</td>
             <td class="px-3 py-2.5 text-center text-xs text-gray-600">${next}</td>
             <td class="px-3 py-2.5 text-center text-xs text-gray-500">
                 <span class="text-blue-600">${dailyCount} Daily</span> / <span class="text-green-600">${pmCount} PM</span>
@@ -5622,7 +5631,12 @@ async function openClItemsEditor(mode, machineId) {
         const plan = _clPmPlans[machineId] || {};
         _clPmTree = Array.isArray(plan.pmItems) && plan.pmItems.length ? plan.pmItems : [_newClPmNode()];
         renderClPmTree();
+        // populate PM plan settings
+        document.getElementById('mcie-pm-freq').value  = plan.pmFreqMonths || 3;
+        document.getElementById('mcie-pm-start').value = plan.pmStartMonth || '';
+        document.getElementById('mcie-pm-settings').classList.remove('hidden');
     }
+    if (mode !== 'per-machine-pm') document.getElementById('mcie-pm-settings').classList.add('hidden');
     document.getElementById('modal-cl-items-editor').classList.remove('hidden');
 }
 function mcieFlatRender(items) {
@@ -5720,12 +5734,22 @@ async function saveClItemsEditor() {
             showToast('บันทึกรายการ Daily เรียบร้อย', 'success');
 
         } else if (mode === 'per-machine-pm') {
-            const items = _clPmTree;
+            const items        = _clPmTree;
+            const pmFreqMonths = parseInt(document.getElementById('mcie-pm-freq')?.value) || 3;
+            const pmStartMonth = document.getElementById('mcie-pm-start')?.value || '';
             const m  = machineMaster.find(x => (x.id||x.machineId||'') === machineId) || {};
+            // save plan settings (freq + start)
+            const planRes = await clPost({ action:'savePmPlans', plans: [{
+                machineId, machineName: m.name||m.machineName||'',
+                factory: m.factory||'', area: m.area||'',
+                dailyEnabled: true, pmFreqMonths, pmStartMonth,
+            }]});
+            if (!planRes.success) { showToast('บันทึกแผน PM ล้มเหลว: ' + (planRes.error||''), 'error'); return; }
+            // save PM items
             const res = await clPost({ action:'saveMachineItems', type:'pm', machineId, machineName: m.name||m.machineName||'', factory: m.factory||'', area: m.area||'', items, editedBy: editorName });
-            if (!res.success) { showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error'); return; }
+            if (!res.success) { showToast('บันทึกรายการล้มเหลว: ' + (res.error||''), 'error'); return; }
             if (!_clPmPlans[machineId]) _clPmPlans[machineId] = {};
-            _clPmPlans[machineId].pmItems = items;
+            Object.assign(_clPmPlans[machineId], { pmItems: items, pmFreqMonths, pmStartMonth });
             showToast('บันทึกรายการ PM เรียบร้อย', 'success');
         }
     } catch(e) { showToast('เชื่อมต่อ GAS ล้มเหลว', 'error'); return; }

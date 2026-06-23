@@ -3404,18 +3404,19 @@ function initHubStats() {
         document.getElementById('hub-count-bd').textContent  = month.length;
         document.getElementById('hub-count-wip').textContent = wip.length;
     }
-    // 2-factory dashboard
-    function facStats(fac) {
-        const machines = machineList.filter(m => String(m.factory||'') === fac);
+    // 2-factory dashboard — machine master stores "โรงงาน 1"/"โรงงาน 2"; records may store "1"/"2" or full name
+    function normFac(v) { v = String(v||'').trim(); return v === '1' ? 'โรงงาน 1' : v === '2' ? 'โรงงาน 2' : v; }
+    function facStats(facFull) {
+        const machines = machineList.filter(m => normFac(m.factory) === facFull);
         const total    = machines.length;
         const ACTIVE   = new Set(['รอรับงาน','แจ้ง Breakdown','รับงานแล้ว','กำลังดำเนินการแก้ไข','กำลังดำเนินการ','รออะไหล่','wip']);
         const bdIds    = new Set(
-            _lastRecords.filter(r => String(r.factory||'') === fac && ACTIVE.has(r.status))
+            _lastRecords.filter(r => normFac(r.factory) === facFull && ACTIVE.has(r.status))
                         .map(r => r.machineId || r.machineName).filter(Boolean));
         const bd = bdIds.size;
         return { run: Math.max(0, total - bd), bd };
     }
-    const f1 = facStats('1'), f2 = facStats('2');
+    const f1 = facStats('โรงงาน 1'), f2 = facStats('โรงงาน 2');
     const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     setEl('dash-f1-run', f1.run); setEl('dash-f1-bd', f1.bd);
     setEl('dash-f2-run', f2.run); setEl('dash-f2-bd', f2.bd);

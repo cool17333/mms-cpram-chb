@@ -890,7 +890,7 @@
         </div>
         <div>
             <label class="text-xs font-bold text-gray-500 block mb-1">รหัสเครื่องจักร</label>
-            <input id="clsc-search" type="text" placeholder="ค้นหารหัส..." oninput="loadClSchedule()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none w-40">
+            <input id="clsc-search" type="text" placeholder="ค้นหารหัส..." oninput="renderClSchedule()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none w-40">
         </div>
     </div>
     <div class="flex gap-2 mb-4">
@@ -933,7 +933,6 @@
                     <tr class="bg-gray-50 border-b border-gray-200">
                         <th class="text-left px-4 py-3 font-bold text-gray-600">รหัสเครื่องจักร</th>
                         <th class="text-left px-4 py-3 font-bold text-gray-600">ชื่อเครื่องจักร</th>
-                        <th class="text-center px-3 py-3 font-bold text-gray-600">Daily</th>
                         <th class="text-center px-3 py-3 font-bold text-gray-600">PM ทุก (เดือน)</th>
                         <th class="text-left px-3 py-3 font-bold text-gray-600">เริ่มต้น PM</th>
                         <th class="text-center px-3 py-3 font-bold text-gray-600">PM ถัดไป</th>
@@ -1977,7 +1976,7 @@
 // ============================================================
 // SETTINGS — Google Apps Script
 // ============================================================
-const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxToJNQT4vc3axDjnT-TA5xH0x9Ks2v8YkcYpvHxqpGijQz_f1BY0MowMjYzYwTnqa6Uw/exec';
+const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbyEwH14qponRSrzTaBjF_ixNyL_qti7EXA6WCLYp8k5KzIs1VjQMlxFY_8Zdx8eFCRmkA/exec';
 // URL เก่าที่เลิกใช้ — ถ้าเครื่องไหนเคยบันทึกไว้ จะล้างทิ้งอัตโนมัติให้ใช้ default ใหม่
 const OLD_GAS_URLS = [
     'https://script.google.com/macros/s/AKfycbwI_GPtgmDwEN55_LCQxeScZd1whjDo-mHW2WTQGfs-estHqCCPGzEIY1zV-7kcyGv3QA/exec',
@@ -5465,16 +5464,26 @@ function clScTab(tab) {
     document.getElementById('clsc-pm-view').classList.toggle('hidden', tab !== 'pm');
     document.getElementById('clsc-tab-daily').className = tab==='daily' ? 'mms-btn mms-btn-green' : 'mms-btn';
     document.getElementById('clsc-tab-pm').className    = tab==='pm'    ? 'mms-btn mms-btn-green' : 'mms-btn';
-    loadClSchedule();
+    renderClSchedule();
 }
 async function loadClSchedule() {
     const fac  = document.getElementById('clsc-fac')?.value  || '';
     const area = document.getElementById('clsc-area')?.value || '';
+    // Always fetch PM plans regardless of factory — empty factory = all machines
+    try {
+        const data = await clFetch({ action:'getPmPlans', factory: fac, area });
+        (data.data||[]).forEach(r => { _clPmPlans[r.machineId] = r; });
+    } catch(e) {}
+    renderClSchedule();
+}
+function renderClSchedule() {
+    const fac    = document.getElementById('clsc-fac')?.value  || '';
+    const area   = document.getElementById('clsc-area')?.value || '';
     const search = (document.getElementById('clsc-search')?.value || '').toLowerCase();
     let machines = clMachinesFor(fac, area);
     if (search) machines = machines.filter(m => (m.id||m.machineId||'').toLowerCase().includes(search) || (m.name||m.machineName||'').toLowerCase().includes(search));
     if (_clScCurrentTab === 'daily') renderClScDaily(machines);
-    else await renderClScPm(machines);
+    else renderClScPm(machines);
 }
 function renderClScDaily(machines) {
     const tbody = document.getElementById('clsc-daily-body');
@@ -5497,16 +5506,11 @@ function renderClScDaily(machines) {
         </tr>`;
     }).join('');
 }
-async function renderClScPm(machines) {
+function renderClScPm(machines) {
     const tbody = document.getElementById('clsc-pm-body');
     if (!tbody) return;
-    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
-    const fac  = document.getElementById('clsc-fac')?.value || '';
-    const area = document.getElementById('clsc-area')?.value || '';
-    try {
-        const data = await clFetch({ action:'getPmPlans', factory:fac, area });
-        (data.data||[]).forEach(r => { _clPmPlans[r.machineId] = r; });
-    } catch(e) {}
+    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
+    // plans already loaded by loadClSchedule()
     const canEdit = userRole === 'engineer' || userRole === 'admin';
     tbody.innerHTML = machines.map(m => {
         const id   = m.id || m.machineId || m.machine_id || '';
@@ -5516,9 +5520,6 @@ async function renderClScPm(machines) {
         return `<tr class="border-b border-gray-100 hover:bg-gray-50" data-machine-id="${id}">
             <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${id}</td>
             <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
-            <td class="px-3 py-2.5 text-center">
-                <input type="checkbox" class="pm-daily-enabled w-4 h-4" ${plan.dailyEnabled?'checked':''}>
-            </td>
             <td class="px-3 py-2.5 text-center">
                 <input type="number" min="1" max="24" value="${plan.pmFreqMonths||3}" class="pm-freq w-16 border border-gray-200 rounded px-2 py-1 text-sm text-center">
             </td>
@@ -5548,7 +5549,7 @@ async function saveAllPmPlans() {
             machineName:  m.name || m.machineName || '',
             factory:      fac,
             area,
-            dailyEnabled: row.querySelector('.pm-daily-enabled')?.checked ?? true,
+            dailyEnabled: true,
             pmFreqMonths: parseInt(row.querySelector('.pm-freq')?.value) || 3,
             pmStartMonth: row.querySelector('.pm-start')?.value || '',
         });

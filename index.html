@@ -111,29 +111,185 @@
             .shadow-xl,.shadow-sm,.shadow-md { box-shadow:none !important; }
             input,select,textarea { border-color:transparent !important; background:transparent !important; }
         }
+
+        /* ===== SIDEBAR + BOTTOM NAV ===== */
+        #sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0; z-index: 40;
+            width: 15rem;
+            background: #18181b;
+            display: flex; flex-direction: column;
+            overflow-y: auto; overflow-x: hidden;
+        }
+        #bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+            height: 56px;
+            background: #18181b;
+            border-top: 1px solid #333;
+            display: none;
+        }
+        #app-content { min-height: 100vh; }
+        #more-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 45; display: none;
+        }
+        #more-sheet {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 46;
+            background: #fff; border-radius: 20px 20px 0 0;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            transform: translateY(100%);
+            transition: transform .3s ease;
+        }
+        #more-sheet.open { transform: translateY(0); }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 14px; border-radius: 10px; margin: 2px 8px;
+            color: #a1a1aa; font-size: 0.8125rem; font-weight: 500;
+            cursor: pointer; transition: background .15s, color .15s;
+        }
+        .sidebar-item:hover { background: #27272a; color: #f4f4f5; }
+        .sidebar-item.active { background: var(--mms-red); color: #fff; }
+        .sidebar-item .nav-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; }
+        .bnav-tab {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 2px; cursor: pointer;
+            color: #71717a; font-size: 0.6rem; font-weight: 500;
+            -webkit-tap-highlight-color: transparent; user-select: none;
+            transition: color .15s; padding: 4px 0;
+        }
+        .bnav-tab .bnav-icon { font-size: 1.25rem; line-height: 1.2; }
+        .bnav-tab.active { color: var(--mms-red); }
+        .bnav-tab:active { opacity: 0.7; }
+        .more-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 8px; border-radius: 10px; cursor: pointer;
+            transition: background .15s;
+        }
+        .more-item:hover { background: #f9fafb; }
+        @media (min-width: 768px) {
+            #bottom-nav, #more-overlay, #more-sheet { display: none !important; }
+            #app-content { padding-left: 15rem; }
+        }
+        @media (max-width: 767px) {
+            #sidebar { display: none; }
+            #bottom-nav { display: flex; }
+            #app-content { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+            #toast { bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)); }
+        }
     </style>
 </head>
 <body class="selection:bg-orange-200 selection:text-orange-900">
 
-<!-- ==================== TOP NAV ==================== -->
-<div class="sticky top-0 z-50 bg-[#18181b] border-b border-gray-800 shadow-lg no-print">
-    <div class="max-w-6xl mx-auto px-2 sm:px-4 flex items-center gap-2 h-14 whitespace-nowrap">
-        <button id="btn-home" onclick="goHome()"
-                class="hidden shrink-0 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all bg-gray-800 text-gray-200 hover:bg-orange-500 hover:text-white flex items-center gap-1.5">
-            <span>🏠</span> Home
+<!-- ==================== SIDEBAR (Desktop ≥768px) ==================== -->
+<aside id="sidebar" class="no-print">
+    <!-- Brand -->
+    <div class="px-4 py-4 border-b border-gray-800 flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center text-base flex-shrink-0" style="background:var(--mms-red)">⚙️</div>
+            <div class="min-w-0">
+                <p class="text-white font-bold text-sm leading-tight">MMS</p>
+                <p class="text-gray-400 text-xs truncate">CPRAM Chonburi</p>
+            </div>
+        </div>
+    </div>
+    <!-- Sub-page back nav (shown when inside a sub-panel) -->
+    <div id="sidebar-subnav" class="hidden px-3 pt-3 pb-1">
+        <button onclick="goBack()" class="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-800 w-full">
+            <span>←</span><span id="sidebar-back-label">กลับ</span>
         </button>
-        <button id="btn-back" onclick="goBack()"
-                class="hidden shrink-0 px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all bg-gray-700 text-gray-200 hover:bg-red-600 hover:text-white flex items-center gap-1.5">
-            ← กลับ
-        </button>
-        <span id="nav-title" class="text-white font-bold text-sm sm:text-base truncate"></span>
-        <div class="ml-auto shrink-0">
-            <button onclick="openSettings()"
-                    class="text-gray-500 hover:text-orange-400 p-2 rounded-lg transition-colors text-lg"
-                    title="ตั้งค่าระบบ (GAS URL)">⚙️</button>
+    </div>
+    <!-- Main nav -->
+    <nav class="flex-1 py-2 space-y-0.5">
+        <div class="sidebar-item active" id="sn-home" onclick="goHome()">
+            <span class="nav-icon">🏠</span><span>หน้าหลัก</span>
+        </div>
+        <div class="sidebar-item" id="sn-bd" onclick="goBdHub()">
+            <span class="nav-icon">🚨</span><span>ระบบ Breakdown</span>
+        </div>
+        <div class="sidebar-item" id="sn-mach" onclick="goMachines()">
+            <span class="nav-icon">🗂️</span><span>ทะเบียนเครื่องจักร</span>
+        </div>
+        <div class="sidebar-item" id="sn-cl" onclick="goChecklist()">
+            <span class="nav-icon">✅</span><span>Checklist</span>
+        </div>
+    </nav>
+    <!-- Admin section -->
+    <div id="sidebar-admin-section" class="hidden px-3 pb-1 border-t border-gray-800 pt-2">
+        <p class="text-gray-600 text-xs font-bold uppercase tracking-wider px-2 mb-1">Admin</p>
+        <div class="sidebar-item" id="sn-log" onclick="goLog()">
+            <span class="nav-icon">📋</span><span>Log ระบบ</span>
+        </div>
+    </div>
+    <!-- Footer -->
+    <div class="px-3 py-2 border-t border-gray-800 flex-shrink-0 space-y-1">
+        <div class="sidebar-item" onclick="openSettings()">
+            <span class="nav-icon">⚙️</span><span>ตั้งค่า</span>
+        </div>
+        <div class="px-2 py-1.5">
+            <p class="text-xs text-gray-500">บทบาท: <span id="sidebar-role" class="text-gray-300 font-bold">User</span></p>
+            <button id="sidebar-logout" onclick="doLogout()" class="hidden text-xs text-red-400 hover:text-red-300 underline mt-0.5">ออกจากระบบ</button>
+        </div>
+    </div>
+</aside>
+
+<!-- ==================== BOTTOM NAV (Mobile <768px) ==================== -->
+<nav id="bottom-nav" class="no-print">
+    <div class="bnav-tab active" id="bn-home" onclick="goHome()">
+        <span class="bnav-icon">🏠</span><span>หน้าหลัก</span>
+    </div>
+    <div class="bnav-tab" id="bn-bd" onclick="goBdHub()">
+        <span class="bnav-icon">🚨</span><span>Breakdown</span>
+    </div>
+    <div class="bnav-tab" id="bn-mach" onclick="goMachines()">
+        <span class="bnav-icon">🗂️</span><span>ทะเบียน</span>
+    </div>
+    <div class="bnav-tab" id="bn-cl" onclick="goChecklist()">
+        <span class="bnav-icon">✅</span><span>Checklist</span>
+    </div>
+    <div class="bnav-tab" id="bn-more" onclick="openMoreSheet()">
+        <span class="bnav-icon">☰</span><span>เพิ่มเติม</span>
+    </div>
+</nav>
+
+<!-- ==================== MORE SHEET (Mobile) ==================== -->
+<div id="more-overlay" onclick="closeMoreSheet()"></div>
+<div id="more-sheet" class="no-print">
+    <div class="flex justify-center pt-2 pb-1">
+        <div class="w-10 h-1 rounded-full bg-gray-300"></div>
+    </div>
+    <div class="px-5 pb-5">
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">เพิ่มเติม</p>
+        <div class="more-item" onclick="openSettings();closeMoreSheet()">
+            <span class="text-lg">⚙️</span><span class="text-sm font-medium text-gray-800">ตั้งค่าระบบ</span>
+        </div>
+        <div class="more-item hidden" id="more-log-item" onclick="goLog();closeMoreSheet()">
+            <span class="text-lg">📋</span><span class="text-sm font-medium text-gray-800">Log ระบบ (Admin)</span>
+        </div>
+        <div class="mt-3 pt-3 border-t border-gray-100">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs text-gray-500">บทบาทปัจจุบัน</p>
+                    <p class="text-sm font-bold text-gray-800" id="more-role-display">User (ทั่วไป)</p>
+                </div>
+                <div class="flex-shrink-0">
+                    <div id="more-login-row" class="flex gap-2">
+                        <input id="more-login-pw" type="password" placeholder="รหัสผ่าน..."
+                               autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()"
+                               class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-28 outline-none focus:border-orange-500">
+                        <button onclick="doLogin()" class="px-3 py-1.5 bg-gray-900 text-white text-xs font-bold rounded-lg whitespace-nowrap">เข้า</button>
+                    </div>
+                    <button id="more-logout-btn" onclick="doLogout()" class="hidden text-xs font-bold text-red-600 hover:text-red-800 underline">ออกจากระบบ</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- hidden elements for legacy compat -->
+<span id="nav-title" class="hidden"></span>
+<button id="btn-home" class="hidden" onclick="goHome()"></button>
+<button id="btn-back" class="hidden" onclick="goBack()"></button>
+
+<!-- ==================== APP CONTENT WRAPPER ==================== -->
+<div id="app-content">
 
 <!-- ==================== TOAST ==================== -->
 <div id="toast" class="hidden">
@@ -326,62 +482,9 @@
     </div>
 </div>
 
-<!-- Hub Module Cards -->
-<div class="max-w-5xl mx-auto px-4 md:px-8 py-8">
-    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">เลือกโมดูล</p>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-        <!-- Breakdown Card -->
-        <div class="mms-card mms-card-red p-7 cursor-pointer" onclick="goBdHub()">
-            <div class="text-4xl mb-4">🚨</div>
-            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">ระบบ Breakdown</h2>
-            <p class="text-sm mb-5" style="color:var(--mms-text-sub)">แจ้งเหตุเครื่องจักรเสีย ติดตาม ปิดงาน และ Export รายงาน</p>
-            <div class="flex flex-wrap gap-2">
-                <button class="mms-btn mms-btn-red" onclick="event.stopPropagation();goBdHub()">🚨 เข้าระบบ Breakdown</button>
-            </div>
-        </div>
-
-        <!-- Registry Card -->
-        <div class="mms-card mms-card-blue p-7 cursor-pointer" onclick="goMachines()">
-            <div class="text-4xl mb-4">🗂️</div>
-            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">ระบบทะเบียนเครื่องจักร</h2>
-            <p class="text-sm mb-5" style="color:var(--mms-text-sub)">จัดการข้อมูลเครื่องจักร เพิ่ม/แก้ไข/ลบ นำเข้า Excel</p>
-            <div class="flex flex-wrap gap-2">
-                <button class="mms-btn mms-btn-blue" onclick="event.stopPropagation();goMachines()">🗂️ เข้าระบบทะเบียน</button>
-            </div>
-        </div>
-
-        <!-- Checklist Card -->
-        <div class="mms-card mms-card-green p-7 cursor-pointer" onclick="goChecklist()">
-            <div class="text-4xl mb-4">✅</div>
-            <h2 class="text-lg font-bold mb-1" style="color:var(--mms-text)">ระบบ Check list</h2>
-            <p class="text-sm mb-5" style="color:var(--mms-text-sub)">ตรวจสอบประจำวัน/เดือน Compliance KPI แผน PM</p>
-            <div class="flex flex-wrap gap-2">
-                <button class="mms-btn mms-btn-green" onclick="event.stopPropagation();goChecklist()">✅ เข้าระบบ Checklist</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Log Card (Admin only) -->
-    <div id="hub-card-log" class="hidden mt-5">
-        <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">🔐 เครื่องมือ Admin</p>
-        <div class="mms-card p-6 cursor-pointer" style="border-top:5px solid #6c757d" onclick="goLog()">
-            <div class="flex items-start gap-4">
-                <div class="text-3xl">📋</div>
-                <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-1">
-                        <h2 class="text-base font-bold" style="color:var(--mms-text)">Log ระบบทั้งหมด</h2>
-                        <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Admin</span>
-                    </div>
-                    <p class="text-sm mb-4" style="color:var(--mms-text-sub)">ประวัติการบันทึกและแก้ไขทุกรายการในระบบ แยกตาม Breakdown / ทะเบียนเครื่องจักร</p>
-                    <button class="mms-btn text-sm" style="background:#343a40;color:#fff" onclick="event.stopPropagation();goLog()">📋 ดู Log ระบบ</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick stats bar -->
-    <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+<!-- Quick stats -->
+<div class="max-w-5xl mx-auto px-4 md:px-8 py-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <p class="text-2xl font-bold" style="color:var(--mms-red)" id="hub-count-bd">—</p>
             <p class="text-xs text-gray-500 mt-1">Breakdown เดือนนี้</p>
@@ -2042,6 +2145,8 @@
 </div>
 </div><!-- end panel-machines -->
 
+</div><!-- end app-content -->
+
 <script>
 // ============================================================
 // SETTINGS — Google Apps Script
@@ -2100,7 +2205,7 @@ function roleLabel(r) {
 }
 
 async function doLogin() {
-    const pw = document.getElementById('login-pw').value.trim();
+    const pw = (document.getElementById('login-pw')?.value || document.getElementById('more-login-pw')?.value || '').trim();
     if (!pw) return;
     if (!GAS_URL) { showToast('⚠️ ตั้งค่า Web App URL ก่อน', 'error'); return; }
     try {
@@ -2114,6 +2219,8 @@ async function doLogin() {
         }
         userRole = json.role; sessionPw = pw;
         document.getElementById('login-pw').value = '';
+        if (document.getElementById('more-login-pw')) document.getElementById('more-login-pw').value = '';
+        closeMoreSheet();
         applyRole();
         showToast(`✅ เข้าสู่ระบบเป็น ${roleLabel(userRole)}`, 'success');
     } catch (err) {
@@ -2143,6 +2250,7 @@ function applyRole() {
     // Log card — Admin only
     document.getElementById('hub-card-log')?.classList.toggle('hidden', !isAdmin);
     if (_lastRecords.length) applyRecordFilter();   // re-render ปุ่มตาม role
+    updateNavRole();
 }
 
 // ============================================================
@@ -2919,13 +3027,56 @@ async function submitReportPopup() {
 const BD_SUB_PANELS = new Set(['form', 'records', 'summary']);
 const CL_SUB_PANELS = new Set(['cl-form', 'cl-list', 'cl-summary', 'cl-calendar', 'cl-schedule']);
 
+// ===== NAV helpers =====
+function openMoreSheet() {
+    document.getElementById('more-overlay').style.display = 'block';
+    document.getElementById('more-sheet').classList.add('open');
+}
+function closeMoreSheet() {
+    document.getElementById('more-overlay').style.display = 'none';
+    document.getElementById('more-sheet').classList.remove('open');
+}
+function updateNavActive(panel) {
+    document.querySelectorAll('.sidebar-item[id^="sn-"]').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.bnav-tab[id^="bn-"]').forEach(el => el.classList.remove('active'));
+    const isSubPanel = BD_SUB_PANELS.has(panel) || CL_SUB_PANELS.has(panel);
+    const map = {
+        'home':        ['sn-home','bn-home'],
+        'bd-hub':      ['sn-bd','bn-bd'],   'form':     ['sn-bd','bn-bd'],
+        'records':     ['sn-bd','bn-bd'],   'summary':  ['sn-bd','bn-bd'],
+        'machines':    ['sn-mach','bn-mach'],
+        'cl-hub':      ['sn-cl','bn-cl'],   'cl-form':  ['sn-cl','bn-cl'],
+        'cl-list':     ['sn-cl','bn-cl'],   'cl-summary':['sn-cl','bn-cl'],
+        'cl-calendar': ['sn-cl','bn-cl'],   'cl-schedule':['sn-cl','bn-cl'],
+        'log':         ['sn-log','bn-more'],
+    };
+    (map[panel] || []).forEach(id => document.getElementById(id)?.classList.add('active'));
+    document.getElementById('sidebar-subnav')?.classList.toggle('hidden', !isSubPanel);
+}
+function updateNavRole() {
+    const isAdmin = userRole === 'admin';
+    const isEng   = isAdmin || userRole === 'engineer';
+    const label   = isAdmin ? 'Admin' : isEng ? 'Engineer' : 'User (ทั่วไป)';
+    const sideRole = document.getElementById('sidebar-role');
+    if (sideRole) sideRole.textContent = label;
+    const moreRole = document.getElementById('more-role-display');
+    if (moreRole) moreRole.textContent = label;
+    document.getElementById('sidebar-logout')?.classList.toggle('hidden', !isEng);
+    document.getElementById('more-logout-btn')?.classList.toggle('hidden', !isEng);
+    document.getElementById('more-login-row')?.classList.toggle('hidden', isEng);
+    document.getElementById('sidebar-admin-section')?.classList.toggle('hidden', !isAdmin);
+    document.getElementById('more-log-item')?.classList.toggle('hidden', !isAdmin);
+}
+// ========================
+
 function switchTab(name) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + name)?.classList.add('active');
 
-    document.getElementById('nav-title').textContent = PAGE_TITLE[name] || '';
-    document.getElementById('btn-home').classList.toggle('hidden', name === 'home');
-    document.getElementById('btn-back').classList.toggle('hidden', !BD_SUB_PANELS.has(name) && !CL_SUB_PANELS.has(name));
+    document.getElementById('nav-title')?.classList && (document.getElementById('nav-title').textContent = PAGE_TITLE[name] || '');
+    document.getElementById('btn-home')?.classList.toggle('hidden', name === 'home');
+    document.getElementById('btn-back')?.classList.toggle('hidden', !BD_SUB_PANELS.has(name) && !CL_SUB_PANELS.has(name));
+    updateNavActive(name);
 
     if (name === 'summary') checkSummarySetup();
     if (name === 'records') checkRecordsSetup();

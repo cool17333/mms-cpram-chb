@@ -158,6 +158,14 @@
         .bnav-tab .bnav-icon { font-size: 1.25rem; line-height: 1.2; }
         .bnav-tab.active { color: var(--mms-red); }
         .bnav-tab:active { opacity: 0.7; }
+        .nav-chev { margin-left: auto; font-size: 0.75rem; color: #71717a; transition: transform .2s; display: inline-block; line-height: 1; }
+        .nav-group.open .nav-chev { transform: rotate(90deg); }
+        .nav-submenu { overflow: hidden; max-height: 0; transition: max-height .25s ease; }
+        .nav-group.open .nav-submenu { max-height: 400px; }
+        .sidebar-subitem { display: flex; align-items: center; padding: 6px 14px 6px 38px; border-radius: 8px; margin: 1px 8px;
+            color: #a1a1aa; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: background .15s, color .15s; }
+        .sidebar-subitem:hover { background: #27272a; color: #f4f4f5; }
+        .sidebar-subitem.active { color: #f87171; background: rgba(220,38,38,0.15); }
         .more-item {
             display: flex; align-items: center; gap: 12px;
             padding: 12px 8px; border-radius: 10px; cursor: pointer;
@@ -201,14 +209,35 @@
         <div class="sidebar-item active" id="sn-home" onclick="goHome()">
             <span class="nav-icon">🏠</span><span>หน้าหลัก</span>
         </div>
-        <div class="sidebar-item" id="sn-bd" onclick="goBdHub()">
-            <span class="nav-icon">🚨</span><span>ระบบ Breakdown</span>
+        <!-- Breakdown group -->
+        <div class="nav-group" id="grp-bd">
+            <div class="sidebar-item" id="sn-bd" onclick="clToggleNavGroup('bd')">
+                <span class="nav-icon">🚨</span><span class="flex-1">ระบบ Breakdown</span><span class="nav-chev">›</span>
+            </div>
+            <div class="nav-submenu" id="sub-bd">
+                <div class="sidebar-subitem" id="sni-bd-hub" onclick="goBdHub()">ภาพรวม</div>
+                <div class="sidebar-subitem" id="sni-bd-form" onclick="goManualCreate()">แจ้ง Breakdown</div>
+                <div class="sidebar-subitem" id="sni-bd-records" onclick="goRecords()">รายการ</div>
+                <div class="sidebar-subitem" id="sni-bd-summary" onclick="goSummary()">สรุป</div>
+            </div>
         </div>
         <div class="sidebar-item" id="sn-mach" onclick="goMachines()">
             <span class="nav-icon">🗂️</span><span>ทะเบียนเครื่องจักร</span>
         </div>
-        <div class="sidebar-item" id="sn-cl" onclick="goChecklist()">
-            <span class="nav-icon">✅</span><span>Checklist</span>
+        <!-- Checklist group -->
+        <div class="nav-group" id="grp-cl">
+            <div class="sidebar-item" id="sn-cl" onclick="clToggleNavGroup('cl')">
+                <span class="nav-icon">✅</span><span class="flex-1">Checklist</span><span class="nav-chev">›</span>
+            </div>
+            <div class="nav-submenu" id="sub-cl">
+                <div class="sidebar-subitem" id="sni-cl-hub" onclick="goChecklist()">ภาพรวม</div>
+                <div class="sidebar-subitem" id="sni-cl-daily" onclick="goClForm('daily')">รายวัน</div>
+                <div class="sidebar-subitem" id="sni-cl-pm" onclick="goClForm('pm')">PM Checklist</div>
+                <div class="sidebar-subitem" id="sni-cl-list" onclick="switchTab('cl-list')">รายการ</div>
+                <div class="sidebar-subitem" id="sni-cl-summary" onclick="switchTab('cl-summary')">สรุป / KPI</div>
+                <div class="sidebar-subitem" id="sni-cl-calendar" onclick="switchTab('cl-calendar')">ปฏิทิน PM</div>
+                <div class="sidebar-subitem" id="sni-cl-schedule" onclick="switchTab('cl-schedule')">รายละเอียดตรวจสอบ</div>
+            </div>
         </div>
     </nav>
     <!-- Admin section -->
@@ -3036,21 +3065,44 @@ function closeMoreSheet() {
     document.getElementById('more-overlay').style.display = 'none';
     document.getElementById('more-sheet').classList.remove('open');
 }
+function clToggleNavGroup(grp) {
+    document.getElementById('grp-' + grp)?.classList.toggle('open');
+}
 function updateNavActive(panel) {
     document.querySelectorAll('.sidebar-item[id^="sn-"]').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.bnav-tab[id^="bn-"]').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.sidebar-subitem').forEach(el => el.classList.remove('active'));
     const isSubPanel = BD_SUB_PANELS.has(panel) || CL_SUB_PANELS.has(panel);
-    const map = {
-        'home':        ['sn-home','bn-home'],
-        'bd-hub':      ['sn-bd','bn-bd'],   'form':     ['sn-bd','bn-bd'],
-        'records':     ['sn-bd','bn-bd'],   'summary':  ['sn-bd','bn-bd'],
-        'machines':    ['sn-mach','bn-mach'],
-        'cl-hub':      ['sn-cl','bn-cl'],   'cl-form':  ['sn-cl','bn-cl'],
-        'cl-list':     ['sn-cl','bn-cl'],   'cl-summary':['sn-cl','bn-cl'],
-        'cl-calendar': ['sn-cl','bn-cl'],   'cl-schedule':['sn-cl','bn-cl'],
-        'log':         ['sn-log','bn-more'],
+    // bottom nav
+    const bnMap = {
+        'home':'bn-home',
+        'bd-hub':'bn-bd','form':'bn-bd','records':'bn-bd','summary':'bn-bd',
+        'machines':'bn-mach',
+        'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl',
+        'log':'bn-more',
     };
-    (map[panel] || []).forEach(id => document.getElementById(id)?.classList.add('active'));
+    document.getElementById(bnMap[panel])?.classList.add('active');
+    // sidebar: single items
+    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log' };
+    if (snMap[panel]) document.getElementById(snMap[panel])?.classList.add('active');
+    // sidebar: group + sub-item
+    const grpMap = {
+        'bd-hub':      ['bd','sni-bd-hub'],
+        'form':        ['bd','sni-bd-form'],
+        'records':     ['bd','sni-bd-records'],
+        'summary':     ['bd','sni-bd-summary'],
+        'cl-hub':      ['cl','sni-cl-hub'],
+        'cl-form':     ['cl','sni-cl-daily'],
+        'cl-list':     ['cl','sni-cl-list'],
+        'cl-summary':  ['cl','sni-cl-summary'],
+        'cl-calendar': ['cl','sni-cl-calendar'],
+        'cl-schedule': ['cl','sni-cl-schedule'],
+    };
+    const gi = grpMap[panel];
+    if (gi) {
+        document.getElementById('grp-' + gi[0])?.classList.add('open');
+        document.getElementById(gi[1])?.classList.add('active');
+    }
     document.getElementById('sidebar-subnav')?.classList.toggle('hidden', !isSubPanel);
 }
 function updateNavRole() {
@@ -5803,7 +5855,7 @@ function renderClScPm(machines) {
             <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
             <td class="px-3 py-2.5 text-center text-sm text-gray-700">${plan.pmFreqMonths||3} เดือน</td>
             <td class="px-3 py-2.5 text-center text-sm text-gray-700">${(plan.pmStartMonth||'').slice(0,7)||'—'}</td>
-            <td class="px-3 py-2.5 text-center text-xs text-gray-600">${next}</td>
+            <td class="px-3 py-2.5 text-center text-sm text-gray-700">${next}</td>
             <td class="px-3 py-2.5 text-center text-xs text-gray-500">
                 <span class="text-blue-600">${dailyCount} Daily</span> / <span class="text-green-600">${pmCount} PM</span>
             </td>

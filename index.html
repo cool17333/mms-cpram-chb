@@ -936,6 +936,7 @@
                         <th class="text-center px-3 py-3 font-bold text-gray-600">PM ทุก (เดือน)</th>
                         <th class="text-left px-3 py-3 font-bold text-gray-600">เริ่มต้น PM</th>
                         <th class="text-center px-3 py-3 font-bold text-gray-600">PM ถัดไป</th>
+                        <th class="text-center px-3 py-3 font-bold text-gray-600">รายการตรวจสอบ</th>
                         <th class="text-center px-3 py-3 font-bold text-gray-600"></th>
                     </tr>
                 </thead>
@@ -5509,14 +5510,15 @@ function renderClScDaily(machines) {
 function renderClScPm(machines) {
     const tbody = document.getElementById('clsc-pm-body');
     if (!tbody) return;
-    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
+    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
     // plans already loaded by loadClSchedule()
     const canEdit = userRole === 'engineer' || userRole === 'admin';
     tbody.innerHTML = machines.map(m => {
-        const id   = m.id || m.machineId || m.machine_id || '';
-        const plan = clGetPmPlan(id);
-        const next = clNextPmDate(id);
-        const pmCount = Array.isArray(plan.pmItems) ? plan.pmItems.length : 0;
+        const id        = m.id || m.machineId || m.machine_id || '';
+        const plan      = clGetPmPlan(id);
+        const next      = clNextPmDate(id);
+        const pmCount   = Array.isArray(plan.pmItems)    ? plan.pmItems.length    : 0;
+        const dailyCount= Array.isArray(plan.dailyItems) ? plan.dailyItems.length : 0;
         return `<tr class="border-b border-gray-100 hover:bg-gray-50" data-machine-id="${id}">
             <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${id}</td>
             <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
@@ -5527,9 +5529,12 @@ function renderClScPm(machines) {
                 <input type="month" value="${plan.pmStartMonth||''}" class="pm-start border border-gray-200 rounded px-2 py-1 text-sm">
             </td>
             <td class="px-3 py-2.5 text-center text-xs text-gray-600">${next}</td>
+            <td class="px-3 py-2.5 text-center text-xs text-gray-500">
+                <span class="text-blue-600">${dailyCount} Daily</span> / <span class="text-green-600">${pmCount} PM</span>
+            </td>
             <td class="px-3 py-2.5 text-center">
                 <div class="flex gap-2 justify-center">
-                    ${canEdit ? `<button onclick="openClItemsEditor('per-machine-pm','${id}')" class="text-xs text-blue-600 hover:underline">✏️ PM</button>` : (pmCount ? `<span class="text-xs text-gray-400">${pmCount} หัวข้อ</span>` : '')}
+                    ${canEdit ? `<button onclick="openClItemsEditor('per-machine-pm','${id}')" class="text-xs text-blue-600 hover:underline">✏️ PM</button>` : ''}
                     ${canEdit ? `<button onclick="openClCopyModal('pm','${id}')" class="text-xs text-indigo-600 hover:underline">📋</button>` : ''}
                 </div>
             </td>
@@ -5538,6 +5543,7 @@ function renderClScPm(machines) {
 }
 async function saveAllPmPlans() {
     if (!userRole) { showToast('กรุณาเข้าสู่ระบบก่อน', 'warn'); return; }
+    if (userRole !== 'engineer' && userRole !== 'admin') { showToast('ต้องเป็น Engineer หรือ Admin เท่านั้น', 'warn'); return; }
     const fac  = document.getElementById('clsc-fac')?.value  || '';
     const area = document.getElementById('clsc-area')?.value || '';
     const plans = [];
@@ -5547,8 +5553,8 @@ async function saveAllPmPlans() {
         plans.push({
             machineId:    id,
             machineName:  m.name || m.machineName || '',
-            factory:      fac,
-            area,
+            factory:      m.factory || m.fac || fac,
+            area:         m.area || area,
             dailyEnabled: true,
             pmFreqMonths: parseInt(row.querySelector('.pm-freq')?.value) || 3,
             pmStartMonth: row.querySelector('.pm-start')?.value || '',
@@ -5560,6 +5566,7 @@ async function saveAllPmPlans() {
         if (res.success) {
             showToast('บันทึกแผน PM เรียบร้อย', 'success');
             plans.forEach(p => { Object.assign(_clPmPlans[p.machineId] || (_clPmPlans[p.machineId] = {}), p); });
+            renderClSchedule();
         } else showToast('บันทึกล้มเหลว: ' + (res.error||''), 'error');
     } catch(e) { showToast('เชื่อมต่อ GAS ล้มเหลว', 'error'); }
 }

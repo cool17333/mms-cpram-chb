@@ -253,6 +253,7 @@
                 <div class="sidebar-subitem" id="sni-cl-summary" onclick="switchTab('cl-summary')">สรุป / KPI</div>
                 <div class="sidebar-subitem" id="sni-cl-calendar" onclick="switchTab('cl-calendar')">ปฏิทิน PM</div>
                 <div class="sidebar-subitem" id="sni-cl-schedule" onclick="switchTab('cl-schedule')">รายละเอียดตรวจสอบ</div>
+                <div class="sidebar-subitem" id="sni-cl-status" onclick="switchTab('cl-status')">สถานะการตรวจ</div>
             </div>
         </div>
     </nav>
@@ -525,9 +526,10 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-white">Machine Management System</h1>
                 <p class="text-white/60 text-sm mt-1" id="hub-datetime"></p>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2 items-center">
                 <span class="mms-stat-chip" id="hub-stat-machines">🔧 เครื่องจักร: —</span>
                 <span class="mms-stat-chip" id="hub-stat-online">🟢 ระบบออนไลน์</span>
+                <button id="dash-refresh-btn" onclick="refreshDashboard()" class="mms-stat-chip cursor-pointer hover:bg-white/20">🔄 รีเฟรช</button>
             </div>
         </div>
     </div>
@@ -1273,6 +1275,48 @@
 </div>
 </div><!-- end panel-cl-schedule -->
 
+<!-- ==================== CHECKLIST: STATUS ==================== -->
+<div id="panel-cl-status" class="tab-panel p-4 md:p-6">
+<div class="max-w-5xl mx-auto">
+    <div class="mms-card p-4 mb-4 flex flex-wrap gap-3 items-end">
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">Factory</label>
+            <select id="clst-fac" onchange="clstFacChange()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">-- เลือก Factory --</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">Area</label>
+            <select id="clst-area" onchange="renderClStatus()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">ทั้งหมด</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">วันที่ (รายวัน)</label>
+            <input id="clst-date" type="date" onchange="loadClStatus()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+        </div>
+        <button onclick="loadClStatus()" class="mms-btn text-sm">🔄 รีเฟรช</button>
+    </div>
+    <div class="mms-card overflow-hidden">
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="text-left px-4 py-3 font-bold text-gray-600">เครื่องจักร</th>
+                    <th class="text-center px-3 py-3 font-bold text-gray-600">🌅 กะเช้า</th>
+                    <th class="text-center px-3 py-3 font-bold text-gray-600">🌙 กะดึก</th>
+                    <th class="text-center px-3 py-3 font-bold text-gray-600">🔧 PM (เดือนนี้)</th>
+                </tr>
+            </thead>
+            <tbody id="clst-body">
+                <tr><td colspan="4" class="text-center text-gray-400 py-8">เลือก Factory</td></tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+</div><!-- end panel-cl-status -->
+
 <!-- ==================== TAB 1: FORM ==================== -->
 <div id="panel-form" class="tab-panel p-4 md:p-8">
 <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200" id="report-content">
@@ -1496,6 +1540,8 @@
 </div><!-- end report-content -->
 
 <!-- ==================== PHOTO GALLERY (export page 2) ==================== -->
+<div id="ppt-slide" style="position:fixed;left:-99999px;top:0;width:1600px;height:900px;background:#fff;font-family:'Prompt',sans-serif;overflow:hidden"></div>
+
 <div id="photo-gallery" class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200" style="display:none">
     <div class="bg-[#18181b] px-8 py-6">
         <p class="text-orange-500 text-xs font-bold tracking-widest uppercase mb-1">● BREAKDOWN REPORT — รูปภาพประกอบ WHY-WHY</p>
@@ -2974,6 +3020,7 @@ const PAGE_TITLE = {
     'cl-summary':   '📊 สรุป / KPI',
     'cl-calendar':  '📅 ปฏิทิน PM',
     'cl-schedule':  '🔧 รายละเอียดตรวจสอบ',
+    'cl-status':    '✅ สถานะการตรวจ',
 };
 
 // โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
@@ -3071,6 +3118,9 @@ function saveWhyOnly() { showAddDataConfirm(); }
 // ปิดงาน — ต้องกรอกครบ (ยกเว้น Why-Why) ถึงจะปิดได้
 function closeJob() {
     const d = collectFormData();
+    // problem จริง = locked lines + บรรทัดใหม่ (hidden inp-problem ว่างเสมอ)
+    d.problem = [ _problemLocked, (document.getElementById('inp-problem-new')?.value || '').trim() ]
+                .filter(Boolean).join('\n');
     const need = [
         ['machineId','รหัสเครื่องจักร'], ['machineName','ชื่อเครื่องจักร'],
         ['factory','โรงงาน'], ['area','พื้นที่'], ['line','ไลน์การผลิต'],
@@ -3300,7 +3350,7 @@ async function submitReportPopup() {
 }
 
 const BD_SUB_PANELS = new Set(['form', 'records', 'summary']);
-const CL_SUB_PANELS = new Set(['cl-form', 'cl-list', 'cl-summary', 'cl-calendar', 'cl-schedule']);
+const CL_SUB_PANELS = new Set(['cl-form', 'cl-list', 'cl-summary', 'cl-calendar', 'cl-schedule', 'cl-status']);
 
 // ===== NAV helpers =====
 function openMoreSheet() {
@@ -3324,7 +3374,7 @@ function updateNavActive(panel) {
         'home':'bn-home',
         'bd-hub':'bn-bd','form':'bn-bd','records':'bn-bd','summary':'bn-bd',
         'machines':'bn-mach',
-        'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl',
+        'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl','cl-status':'bn-cl',
         'log':'bn-more',
     };
     document.getElementById(bnMap[panel])?.classList.add('active');
@@ -3343,6 +3393,7 @@ function updateNavActive(panel) {
         'cl-summary':  ['cl','sni-cl-summary'],
         'cl-calendar': ['cl','sni-cl-calendar'],
         'cl-schedule': ['cl','sni-cl-schedule'],
+        'cl-status':   ['cl','sni-cl-status'],
     };
     const gi = grpMap[panel];
     if (gi) {
@@ -3383,6 +3434,7 @@ function switchTab(name) {
     if (name === 'cl-summary') initClSummary();
     if (name === 'cl-calendar') initClCalendar();
     if (name === 'cl-schedule') initClSchedule();
+    if (name === 'cl-status') initClStatus();
     window.scrollTo(0, 0);
 }
 
@@ -3390,7 +3442,7 @@ function switchTab(name) {
 function goHome() {
     cancelEdit();
     switchTab('home');
-    initHubStats();
+    refreshDashboard();
 }
 
 function goBack() {
@@ -3617,18 +3669,31 @@ function initHubDatetime() {
     setInterval(fmt, 1000);
 }
 
+async function refreshDashboard() {
+    if (!GAS_URL) return;
+    const chip = document.getElementById('dash-refresh-btn');
+    if (chip) { chip.disabled = true; chip.textContent = '⏳'; }
+    try {
+        const r = await fetch(`${GAS_URL}?action=getAll`);
+        const j = await r.json();
+        if (j.success && Array.isArray(j.data)) _dashRecords = j.data;
+    } catch(e) {}
+    if (chip) { chip.disabled = false; chip.textContent = '🔄 รีเฟรช'; }
+    initHubStats();
+}
+
 function initHubStats() {
     const mc = machineList.length;
     if (mc) {
         document.getElementById('hub-stat-machines').textContent = `🔧 เครื่องจักร: ${mc}`;
         document.getElementById('hub-count-machines').textContent = mc;
     }
-    if (_lastRecords.length) {
+    if (_dashRecords.length) {
         const now  = new Date();
         const ym   = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-        const month = _lastRecords.filter(r => (r.date||'').startsWith(ym) && r.status !== 'cancel');
+        const month = _dashRecords.filter(r => (r.date||'').startsWith(ym) && r.status !== 'cancel');
         const ACTIVE = new Set(['รอรับงาน','แจ้ง Breakdown','รับงานแล้ว','กำลังดำเนินการแก้ไข','กำลังดำเนินการ','รออะไหล่','wip']);
-        const wip = _lastRecords.filter(r => ACTIVE.has(r.status));
+        const wip = _dashRecords.filter(r => ACTIVE.has(r.status));
         document.getElementById('hub-count-bd').textContent  = month.length;
         document.getElementById('hub-count-wip').textContent = wip.length;
     }
@@ -3639,7 +3704,7 @@ function initHubStats() {
         const total    = machines.length;
         const ACTIVE   = new Set(['รอรับงาน','แจ้ง Breakdown','รับงานแล้ว','กำลังดำเนินการแก้ไข','กำลังดำเนินการ','รออะไหล่','wip']);
         const bdIds    = new Set(
-            _lastRecords.filter(r => normFac(r.factory) === facFull && ACTIVE.has(r.status))
+            _dashRecords.filter(r => normFac(r.factory) === facFull && ACTIVE.has(r.status))
                         .map(r => r.machineId || r.machineName).filter(Boolean));
         const bd = bdIds.size;
         return { run: Math.max(0, total - bd), bd };
@@ -4599,6 +4664,7 @@ function updateRecArea() {
 }
 
 let _lastRecords = [];   // เก็บผลโหลดล่าสุด ไว้กรองสดด้วยรหัสเครื่องจักรโดยไม่ต้องโหลดใหม่
+let _dashRecords = [];   // ข้อมูล BD ทั้งหมด (ไม่มี filter) — สำหรับ Dashboard เท่านั้น
 
 async function loadRecords() {
     if (!GAS_URL) { openSettings(); return; }
@@ -5198,6 +5264,55 @@ async function _captureNode(node, capW, onMeasure) {
 //   portrait → PDF (หน้า 1 = ฟอร์ม, หน้า 2 = รูปภาพทั้งหมด ถ้ามีหลายรูป)
 //   ppt      → PNG (ไฟล์หลัก + ไฟล์รูปภาพ ถ้ามีหลายรูป)
 // ===================================================================
+function _pptImg(arr) {
+    const d = (arr && arr[0] && (arr[0].data || arr[0])) || '';
+    return d ? `<img src="${d}" style="width:100%;height:100%;object-fit:contain;background:#f3f4f6;border-radius:8px">` : '<div style="width:100%;height:100%;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:13px">ไม่มีรูป</div>';
+}
+function _pptCell(label, val) {
+    return `<div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px">
+        <div style="font-size:11px;color:#9ca3af">${label}</div>
+        <div style="font-size:16px;font-weight:700;color:#1f2937">${val}</div></div>`;
+}
+function _pptBox(label, val) {
+    return `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;overflow:hidden">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:4px">${label}</div>
+        <div style="font-size:13px;color:#374151;white-space:pre-wrap;line-height:1.4">${(val||'—').replace(/</g,'&lt;')}</div></div>`;
+}
+function buildPptSlide() {
+    const d = collectFormData();
+    d.problem = [ _problemLocked, (document.getElementById('inp-problem-new')?.value||'').trim() ].filter(Boolean).join('\n');
+    const h = Math.floor(d.downtimeMin/60), mn = d.downtimeMin%60;
+    const slide = document.getElementById('ppt-slide');
+    slide.innerHTML = `
+      <div style="height:100%;display:flex;flex-direction:column;padding:36px 44px;box-sizing:border-box">
+        <div style="border-bottom:3px solid #c0392b;padding-bottom:14px;margin-bottom:18px">
+          <div style="font-size:13px;color:#c0392b;font-weight:700;letter-spacing:1px">🔴 BREAKDOWN REPORT — CPRAM CHB</div>
+          <div style="font-size:30px;font-weight:800;color:#1f2937;line-height:1.1">${d.machineName||'—'}</div>
+          <div style="font-size:13px;color:#6b7280;margin-top:4px">Tracking: ${d.tracking||'—'} &bull; ${d.factory||''} / ${d.area||''} / ${d.line||''}</div>
+        </div>
+        <div style="flex:1;display:grid;grid-template-columns:1.2fr 1fr;gap:24px;min-height:0">
+          <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
+            <div style="display:flex;gap:10px">
+              ${_pptCell('⏱️ Downtime', `${h} ชม. ${mn} นาที`)}
+              ${_pptCell('🔧 ประเภท', d.bdType||'—')}
+            </div>
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;flex:1;min-height:0;overflow:hidden">
+              <div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:6px">⚠️ ปัญหาที่พบ</div>
+              <div style="font-size:15px;color:#374151;white-space:pre-wrap;line-height:1.5">${(d.problem||'—').replace(/</g,'&lt;')}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              ${_pptBox('✏️ มาตรการแก้ไข', d.corrective)}
+              ${_pptBox('🛡️ มาตรการป้องกัน', d.preventive)}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
+            <div style="flex:1;min-height:0"><div style="font-size:12px;font-weight:700;color:#c0392b;margin-bottom:4px">📷 ก่อนแก้ไข</div><div style="height:calc(100% - 22px)">${_pptImg(imgList.before)}</div></div>
+            <div style="flex:1;min-height:0"><div style="font-size:12px;font-weight:700;color:#16a085;margin-bottom:4px">📷 หลังแก้ไข</div><div style="height:calc(100% - 22px)">${_pptImg(imgList.after)}</div></div>
+          </div>
+        </div>
+      </div>`;
+}
+
 async function exportPDF(fmt = 'portrait') {
     if (typeof html2canvas === 'undefined') { alert('ไม่พบไลบรารี html2canvas'); return; }
     try { await _imgLoadPromise; } catch (_) {}   // รอรูปจาก Drive โหลดเสร็จก่อน
@@ -5219,34 +5334,26 @@ async function exportPDF(fmt = 'portrait') {
     try { if (document.fonts?.ready) await document.fonts.ready; } catch (_) {}
 
     try {
-        // ---------- หน้า 1: ฟอร์ม ----------
-        const mainCanvas = await _captureNode(document.getElementById('report-content'), CAP_W);
-
         if (isPNG) {
-            // ===== PNG — 16:9 (1920×1080) พอดีสไลด์ PowerPoint =====
-            const fitTo16x9 = (src) => {
-                const W = 1920, H = 1080;
-                const out = document.createElement('canvas');
-                out.width = W; out.height = H;
-                const g = out.getContext('2d');
-                g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
-                const s = Math.min(W / src.width, H / src.height);
-                const dw = src.width * s, dh = src.height * s;
-                g.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
-                return out;
-            };
-            _download(fitTo16x9(mainCanvas).toDataURL('image/png'), `BD_${name}.png`);
+            // ===== PNG — สไลด์ 16:9 เต็มจอ (1600×900) =====
+            buildPptSlide();
+            const slide = document.getElementById('ppt-slide');
+            slide.style.left = '0';
+            const cv = await _captureNode(slide, 1600);
+            slide.style.left = '-99999px';
+            _download(cv.toDataURL('image/png'), `BD_${name}.png`);
             if (withGallery) {
                 buildGallery('png');
                 const gal = document.getElementById('photo-gallery');
                 gal.style.display = 'block';
                 const galCanvas = await _captureNode(gal, CAP_W);
                 gal.style.display = 'none';
-                await new Promise(r => setTimeout(r, 400));
-                _download(fitTo16x9(galCanvas).toDataURL('image/png'), `BD_${name}_รูปภาพ.png`);
+                await new Promise(r => setTimeout(r, 300));
+                _download(galCanvas.toDataURL('image/png'), `BD_${name}_รูปภาพ.png`);
             }
         } else {
             // ===== PDF — A4 มาตรฐาน =====
+            const mainCanvas = await _captureNode(document.getElementById('report-content'), CAP_W);
             const { jsPDF } = window.jspdf;
             const M = 18;
             const pdf = new jsPDF({ unit:'pt', format:'a4', orientation:'portrait' });
@@ -5367,14 +5474,8 @@ window.addEventListener('DOMContentLoaded', () => {
     initHubDatetime();
     }
     loadMachines().then(async () => {
-        initHubStats(); // แสดงตัวเลขเครื่องก่อน
-        if (GAS_URL) {
-            try {
-                const r = await fetch(`${GAS_URL}?action=getAll`);
-                const j = await r.json();
-                if (j.success && j.data?.length) { _lastRecords = j.data; initHubStats(); }
-            } catch(e) {}
-        }
+        initHubStats();
+        await refreshDashboard(); // โหลด getAll → _dashRecords → initHubStats
     });
 
     // Year options (current ± 2)
@@ -6385,6 +6486,78 @@ function clScTab(tab) {
     document.getElementById('clsc-tab-pm').className    = tab==='pm'    ? 'mms-btn mms-btn-green' : 'mms-btn';
     renderClSchedule();
 }
+// ============================================================
+// CHECKLIST: STATUS PAGE (สถานะการตรวจรายเครื่อง)
+// ============================================================
+let _clstDaily = {};   // { 'เช้า': Set<machineId>, 'ดึก': Set<machineId> }
+let _clstPm    = new Set(); // machineId ที่ตรวจ PM เดือนนี้แล้ว
+
+async function initClStatus() {
+    if (!machineMaster.length) await loadMachineMaster();
+    clFillFacSelect('clst-fac', '');
+    clFillAreaSelect('clst-area', '', '');
+    document.getElementById('clst-date').value = new Date().toISOString().slice(0,10);
+    if (!Object.keys(_clPmPlans).length) {
+        try { const p = await clFetch({ action:'getPmPlans', factory:'', area:'' }); (p.data||[]).forEach(r => _clPmPlans[r.machineId] = r); } catch(e) {}
+    }
+    loadClStatus();
+}
+function clstFacChange() {
+    clFillAreaSelect('clst-area', document.getElementById('clst-fac')?.value || '', '');
+    loadClStatus();
+}
+async function loadClStatus() {
+    const fac     = document.getElementById('clst-fac')?.value  || '';
+    const area    = document.getElementById('clst-area')?.value || '';
+    const dateStr = document.getElementById('clst-date')?.value || new Date().toISOString().slice(0,10);
+    const tbody   = document.getElementById('clst-body');
+    if (!fac) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">เลือก Factory</td></tr>'; return; }
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">กำลังโหลด...</td></tr>';
+    const yr = dateStr.slice(0,4), mo = dateStr.slice(5,7);
+    _clstDaily = { 'เช้า': new Set(), 'ดึก': new Set() };
+    _clstPm = new Set();
+    try {
+        const dr = await clFetch({ action:'getChecklists', factory:fac, area, type:'daily', month:mo, year:yr });
+        (dr.data||[]).forEach(r => {
+            const mid = r.machineId || r.machine || '';
+            if (r.date === dateStr && _clstDaily[r.shift]) _clstDaily[r.shift].add(mid);
+        });
+        const pr = await clFetch({ action:'getChecklists', factory:fac, area, type:'pm', month:mo, year:yr });
+        (pr.data||[]).forEach(r => _clstPm.add(r.machineId || r.machine || ''));
+    } catch(e) {}
+    renderClStatus();
+}
+function renderClStatus() {
+    const fac     = document.getElementById('clst-fac')?.value  || '';
+    const area    = document.getElementById('clst-area')?.value || '';
+    const dateStr = document.getElementById('clst-date')?.value || new Date().toISOString().slice(0,10);
+    const yr = Number(dateStr.slice(0,4)), mo = Number(dateStr.slice(5,7));
+    const tbody = document.getElementById('clst-body');
+    if (!fac) return;
+    const machines = clMachinesFor(fac, area);
+    if (!machines.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
+    const okB  = '<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">✅ ตรวจแล้ว</span>';
+    const noB  = '<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-500">❌ ยังไม่ตรวจ</span>';
+    const dueB = '<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-500">⏰ ค้าง</span>';
+    const naB  = '<span class="text-xs text-gray-300">—</span>';
+    tbody.innerHTML = machines.map(m => {
+        const id   = m.id || m.machineId || m.machine_id || '';
+        const name = m.name || m.machineName || id;
+        const plan = _clPmPlans[id] || {};
+        const dailyOn = plan.dailyEnabled !== false && plan.dailyEnabled !== 0 && plan.dailyEnabled !== '0';
+        const morning = !dailyOn ? naB : (_clstDaily['เช้า'].has(id) ? okB : noB);
+        const night   = !dailyOn ? naB : (_clstDaily['ดึก'].has(id) ? okB : noB);
+        const pmDue   = clIsPmDueInMonth(id, yr, mo - 1); // mo-1 = 0-based
+        const pm      = !pmDue ? naB : (_clstPm.has(id) ? okB : dueB);
+        return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+            <td class="px-4 py-2.5"><span class="text-sm font-medium">${name}</span> <span class="text-xs text-gray-400 font-mono">${id}</span></td>
+            <td class="px-3 py-2.5 text-center">${morning}</td>
+            <td class="px-3 py-2.5 text-center">${night}</td>
+            <td class="px-3 py-2.5 text-center">${pm}</td>
+        </tr>`;
+    }).join('');
+}
+
 async function loadClSchedule() {
     const fac  = document.getElementById('clsc-fac')?.value  || '';
     const area = document.getElementById('clsc-area')?.value || '';

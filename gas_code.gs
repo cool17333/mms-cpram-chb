@@ -231,6 +231,7 @@ function doPost(e) {
         Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss'),
       ]);
       SpreadsheetApp.flush();
+      sh.getRange(2, 3, Math.max(1, sh.getLastRow()-1), 1).setNumberFormat('@'); // กัน Sheets แปลง date
       try { lock2.releaseLock(); } catch(e) {}
       writeLog(ss, tracking, 'บันทึก Checklist ' + (data.type||''), data.inspector, data.overallResult);
       return jsonOut({ success: true, tracking });
@@ -856,15 +857,19 @@ function doGetChecklists(factory, area, type, month, year) {
   for (let i = 1; i < data.length; i++) {
     const r = data[i];
     if (!r[0]) continue;
+    // normalize date — Sheets อาจ coerce "2026-06-23" เป็น Date object
+    const ds = (r[2] instanceof Date)
+      ? Utilities.formatDate(r[2], 'Asia/Bangkok', 'yyyy-MM-dd')
+      : String(r[2] || '').slice(0, 10);
     if (factory && r[4] !== factory) continue;
     if (area    && r[5] !== area)    continue;
     if (type    && r[1] !== type)    continue;
-    if (month   && !String(r[2]).startsWith(month)) continue;
-    if (year    && !String(r[2]).startsWith(year))  continue;
+    if (month   && ds.slice(5, 7) !== month) continue; // month param = "06" (2 หลัก)
+    if (year    && ds.slice(0, 4) !== year)  continue; // year param = "2026"
     let results = [];
     try { results = JSON.parse(r[15]||'[]'); } catch(e) {}
     rows.push({
-      id: r[0], type: r[1], date: r[2], shift: r[3], factory: r[4], area: r[5],
+      id: r[0], type: r[1], date: ds, shift: r[3], factory: r[4], area: r[5],
       machine: r[6], machineName: r[7], inspector: r[8], remark: r[9],
       ok: Number(r[10])||0, ng: Number(r[11])||0, fix: Number(r[12])||0, na: Number(r[13])||0,
       overallResult: r[14], results, createdAt: r[16],

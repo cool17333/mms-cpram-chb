@@ -5380,6 +5380,21 @@ function clAreaOptions(factory) {
 function clMachinesFor(factory, area) {
     return machineMaster.filter(m => (!factory || m.factory === factory) && (!area || m.area === area));
 }
+function clIsPmDueInMonth(machineId, year, month) {
+    const plan = _clPmPlans[machineId] || {};
+    const sm   = (plan.pmStartMonth || plan.pmStartDate || '').slice(0, 7); // YYYY-MM
+    if (!sm) return false;
+    const freq = parseInt(plan.pmFreqMonths || plan.pmFreq) || 3;
+    const [sy, smm] = sm.split('-').map(Number);
+    const diffMonths = (year - sy) * 12 + (month - (smm - 1)); // month is 0-based
+    return diffMonths >= 0 && diffMonths % freq === 0;
+}
+function clMachinesDueForPm(factory, area, year, month) {
+    return clMachinesFor(factory, area).filter(m => {
+        const id = m.id || m.machineId || m.machine_id || '';
+        return clIsPmDueInMonth(id, year, month);
+    });
+}
 function clResultBadge(result) {
     if (result === 'PASS') return '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">✅ PASS</span>';
     if (result === 'FAIL') return '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">❌ FAIL</span>';
@@ -5965,7 +5980,7 @@ function updateClCalLabel() {
 async function renderClCalendar() {
     const fac  = document.getElementById('clcal-fac')?.value  || '';
     const area = document.getElementById('clcal-area')?.value || '';
-    const machines = clMachinesFor(fac, area);
+    const machines = clMachinesDueForPm(fac, area, _clCalYear, _clCalMonth);
     const grid = document.getElementById('clcal-grid');
     if (!grid) return;
     const ym = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}`;
@@ -6063,7 +6078,7 @@ function openClSetDates() {
     if (userRole === 'user') return;
     const fac  = document.getElementById('clcal-fac')?.value  || '';
     const area = document.getElementById('clcal-area')?.value || '';
-    const machines = clMachinesFor(fac, area);
+    const machines = clMachinesDueForPm(fac, area, _clCalYear, _clCalMonth);
     const ym = `${_clCalYear}-${String(_clCalMonth+1).padStart(2,'0')}`;
     const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
     document.getElementById('mcsd-info').textContent = `${thMonths[_clCalMonth]} ${_clCalYear+543} — ${machines.length} เครื่องจักร`;

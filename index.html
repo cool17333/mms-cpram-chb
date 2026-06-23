@@ -82,6 +82,15 @@
                     display:flex; align-items:center; justify-content:center; padding:1rem; }
         .modal-bg.hidden { display:none; }
 
+        #loading-overlay { position:fixed; inset:0; z-index:300; display:flex; align-items:center;
+          justify-content:center; background:rgba(24,24,27,.55); backdrop-filter:blur(2px); }
+        #loading-overlay.hidden { display:none; }
+        .lo-card { background:#fff; border-radius:var(--mms-radius); padding:26px 34px; box-shadow:var(--mms-shadow);
+          display:flex; flex-direction:column; align-items:center; gap:14px; }
+        .lo-spin { width:42px; height:42px; border-radius:50%; border:4px solid #f0e0de;
+          border-top-color:var(--mms-red); animation:lo-rot .8s linear infinite; }
+        @keyframes lo-rot { to { transform:rotate(360deg); } }
+        .lo-text { font-size:.85rem; font-weight:700; color:var(--mms-text); }
         #toast { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); z-index:200;
                  transition:opacity .3s; pointer-events:none; }
         #toast.hidden { opacity:0; }
@@ -323,6 +332,12 @@
 <div id="app-content">
 
 <!-- ==================== TOAST ==================== -->
+<div id="loading-overlay" class="hidden">
+  <div class="lo-card">
+    <div class="lo-spin"></div>
+    <p id="loading-text" class="lo-text">กำลังโหลดข้อมูล…</p>
+  </div>
+</div>
 <div id="toast" class="hidden">
     <div id="toast-inner" class="px-6 py-3 rounded-full font-bold text-sm shadow-xl"></div>
 </div>
@@ -501,8 +516,8 @@
     <div class="max-w-5xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">CPRAM Chonburi — Plant Management</p>
-                <h1 class="text-2xl md:text-3xl font-bold text-white">ระบบจัดการเครื่องจักร</h1>
+                <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">CPRAM Chonburi</p>
+                <h1 class="text-2xl md:text-3xl font-bold text-white">Machine Management System</h1>
                 <p class="text-white/60 text-sm mt-1" id="hub-datetime"></p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -513,27 +528,53 @@
     </div>
 </div>
 
-<!-- Quick stats -->
-<div class="max-w-5xl mx-auto px-4 md:px-8 py-6">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p class="text-2xl font-bold" style="color:var(--mms-red)" id="hub-count-bd">—</p>
-            <p class="text-xs text-gray-500 mt-1">Breakdown เดือนนี้</p>
+<!-- Factory Dashboard -->
+<div class="max-w-5xl mx-auto px-4 md:px-8 py-6 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="hub-fac-dash">
+        <!-- โรงงาน 1 -->
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <p class="text-sm font-bold text-gray-700 mb-3">🏭 โรงงาน 1</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-lg p-3 text-center" style="background:#eafaf1">
+                    <p class="text-2xl font-bold" style="color:#27ae60" id="dash-f1-run">—</p>
+                    <p class="text-xs text-gray-500 mt-1">กำลังใช้งาน</p>
+                </div>
+                <div class="rounded-lg p-3 text-center" style="background:#fdecea">
+                    <p class="text-2xl font-bold" style="color:var(--mms-red)" id="dash-f1-bd">—</p>
+                    <p class="text-xs text-gray-500 mt-1">Breakdown</p>
+                </div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p class="text-2xl font-bold" style="color:var(--mms-blue)" id="hub-count-wip">—</p>
-            <p class="text-xs text-gray-500 mt-1">กำลังดำเนินการ</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p class="text-2xl font-bold" style="color:var(--mms-green)" id="hub-count-machines">—</p>
-            <p class="text-xs text-gray-500 mt-1">เครื่องจักรทั้งหมด</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <p class="text-2xl font-bold text-gray-700" id="hub-count-summary">—</p>
-            <p class="text-xs text-gray-500 mt-1">ดู Dashboard</p>
+        <!-- โรงงาน 2 -->
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <p class="text-sm font-bold text-gray-700 mb-3">🏭 โรงงาน 2</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-lg p-3 text-center" style="background:#eafaf1">
+                    <p class="text-2xl font-bold" style="color:#27ae60" id="dash-f2-run">—</p>
+                    <p class="text-xs text-gray-500 mt-1">กำลังใช้งาน</p>
+                </div>
+                <div class="rounded-lg p-3 text-center" style="background:#fdecea">
+                    <p class="text-2xl font-bold" style="color:var(--mms-red)" id="dash-f2-bd">—</p>
+                    <p class="text-xs text-gray-500 mt-1">Breakdown</p>
+                </div>
+            </div>
         </div>
     </div>
-
+    <!-- summary row -->
+    <div class="grid grid-cols-3 gap-3">
+        <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
+            <p class="text-xl font-bold" style="color:var(--mms-green)" id="hub-count-machines">—</p>
+            <p class="text-xs text-gray-500 mt-0.5">เครื่องจักรทั้งหมด</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
+            <p class="text-xl font-bold" style="color:var(--mms-red)" id="hub-count-bd">—</p>
+            <p class="text-xs text-gray-500 mt-0.5">Breakdown เดือนนี้</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
+            <p class="text-xl font-bold" style="color:var(--mms-blue)" id="hub-count-wip">—</p>
+            <p class="text-xs text-gray-500 mt-0.5">กำลังดำเนินการ</p>
+        </div>
+    </div>
 </div>
 
 </div><!-- end panel-home -->
@@ -2297,11 +2338,13 @@ function goMachines() {
 async function loadMachineMaster() {
     if (!GAS_URL) return;
     setVisible('mach-loading', true);
+    showLoading('กำลังโหลดทะเบียนเครื่องจักร…');
     try {
         const res  = await fetch(`${GAS_URL}?action=getMachines`);
         const json = await res.json();
         machineMaster = (json.data || []).map(m => ({ id:m.id||'', name:m.name||'', factory:m.factory||'', area:m.area||'', line:m.line||'', editedBy:m.editedBy||'', editedAt:m.editedAt||'' }));
     } catch (e) { showToast('❌ โหลดทะเบียนไม่สำเร็จ', 'error'); }
+    finally { hideLoading(); }
     setVisible('mach-loading', false);
     machUpdateFilterArea();
     renderMachTable();
@@ -3347,22 +3390,35 @@ function initHubDatetime() {
 }
 
 function initHubStats() {
-    // machines count from machineList (already loaded)
     const mc = machineList.length;
     if (mc) {
         document.getElementById('hub-stat-machines').textContent = `🔧 เครื่องจักร: ${mc}`;
         document.getElementById('hub-count-machines').textContent = mc;
     }
-    // breakdown stats from cached records
     if (_lastRecords.length) {
-        const now   = new Date();
-        const ym    = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        const now  = new Date();
+        const ym   = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
         const month = _lastRecords.filter(r => (r.date||'').startsWith(ym) && r.status !== 'cancel');
-        const wip   = _lastRecords.filter(r => r.status === 'wip');
+        const ACTIVE = new Set(['รอรับงาน','แจ้ง Breakdown','รับงานแล้ว','กำลังดำเนินการแก้ไข','กำลังดำเนินการ','รออะไหล่','wip']);
+        const wip = _lastRecords.filter(r => ACTIVE.has(r.status));
         document.getElementById('hub-count-bd').textContent  = month.length;
         document.getElementById('hub-count-wip').textContent = wip.length;
-        document.getElementById('hub-count-summary').textContent = '📊';
     }
+    // 2-factory dashboard
+    function facStats(fac) {
+        const machines = machineList.filter(m => String(m.factory||'') === fac);
+        const total    = machines.length;
+        const ACTIVE   = new Set(['รอรับงาน','แจ้ง Breakdown','รับงานแล้ว','กำลังดำเนินการแก้ไข','กำลังดำเนินการ','รออะไหล่','wip']);
+        const bdIds    = new Set(
+            _lastRecords.filter(r => String(r.factory||'') === fac && ACTIVE.has(r.status))
+                        .map(r => r.machineId || r.machineName).filter(Boolean));
+        const bd = bdIds.size;
+        return { run: Math.max(0, total - bd), bd };
+    }
+    const f1 = facStats('1'), f2 = facStats('2');
+    const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setEl('dash-f1-run', f1.run); setEl('dash-f1-bd', f1.bd);
+    setEl('dash-f2-run', f2.run); setEl('dash-f2-bd', f2.bd);
 }
 
 // แจ้ง Breakdown ใหม่ → ฟอร์มย่อ (อาการ+รูป) ขั้น report
@@ -3425,6 +3481,16 @@ function checkRecordsSetup() {
 // TOAST NOTIFICATION
 // ============================================================
 let toastTimer;
+let _loadingCount = 0;
+function showLoading(msg) {
+  _loadingCount++;
+  const t = document.getElementById('loading-text'); if (t && msg) t.textContent = msg;
+  document.getElementById('loading-overlay')?.classList.remove('hidden');
+}
+function hideLoading(force) {
+  _loadingCount = force ? 0 : Math.max(0, _loadingCount - 1);
+  if (_loadingCount === 0) document.getElementById('loading-overlay')?.classList.add('hidden');
+}
 function showToast(msg, type = 'success') {
     const toast = document.getElementById('toast');
     const inner = document.getElementById('toast-inner');
@@ -4085,6 +4151,7 @@ async function confirmAddData() {
     const btn = document.getElementById('confirm-ok-btn');
     btn.disabled = true;
     btn.innerHTML = '<span class="animate-spin">⏳</span> กำลังบันทึก...';
+    showLoading('กำลังบันทึกข้อมูล…');
 
     const isEdit = !!(editMode && editRowIndex);
     const data = { ...collectFormData(), byName, action: isEdit ? 'update' : 'create' };
@@ -4129,6 +4196,7 @@ async function confirmAddData() {
         showToast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
         console.error(err);
     } finally {
+        hideLoading();
         btn.disabled = false;
         btn.innerHTML = `<span>✅</span> <span id="confirm-btn-label">${editMode ? 'อัปเดตข้อมูล' : 'บันทึกเข้า Google Sheet'}</span>`;
     }
@@ -4258,7 +4326,7 @@ async function loadRecords() {
     setVisible('rec-loading',   true);
     setVisible('rec-table-wrap',false);
     setVisible('rec-empty',     false);
-
+    showLoading('กำลังโหลดรายการ Breakdown…');
     try {
         const params = new URLSearchParams({ action:'getAll', factory, area, status, month, machineId });
         const res  = await fetch(`${GAS_URL}?${params}`);
@@ -4272,7 +4340,7 @@ async function loadRecords() {
     } catch (err) {
         setVisible('rec-loading', false);
         showToast('❌ โหลดข้อมูลไม่สำเร็จ: ' + err.message, 'error');
-    }
+    } finally { hideLoading(); }
 }
 
 // กรองรายการที่โหลดมาแล้วด้วยรหัสเครื่องจักร + สถานะ — ทำงานทันทีฝั่ง browser
@@ -4383,7 +4451,7 @@ async function loadSummary() {
     setVisible('sum-charts', false);
     setVisible('sum-tables', false);
     setVisible('sum-empty', false);
-
+    showLoading('กำลังโหลดข้อมูลสรุป…');
     try {
         const url  = `${GAS_URL}?action=getData&year=${year}&factory=${encodeURIComponent(factory)}&area=${encodeURIComponent(area)}`;
         const res  = await fetch(url);
@@ -4402,7 +4470,7 @@ async function loadSummary() {
         setVisible('sum-loading', false);
         showToast('❌ โหลดข้อมูลไม่สำเร็จ: ' + err.message, 'error');
         console.error(err);
-    }
+    } finally { hideLoading(); }
 }
 
 function setVisible(id, show) {
@@ -4625,7 +4693,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v2.0';
+const EXPORT_VER = 'v2.1';
 
 // html2canvas วาดข้อความฟอนต์ Prompt จมลง ~0.45em (ทุก span/ป้าย/ปุ่ม)
 // → วัดค่าจริงบนเครื่องนี้ครั้งเดียวด้วย probe เล็กๆ แล้วใช้ชดเชยตอน capture จริง
@@ -5399,6 +5467,7 @@ async function saveChecklistConfirm() {
     const overallResult = ng > 0 ? 'FAIL' : fix > 0 ? 'FIX' : 'PASS';
     const btn = document.getElementById('clf-save-btn');
     btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+    showLoading('กำลังบันทึก Checklist…');
     try {
         const res = await clPost({
             action:'saveChecklist', type, date, shift:'-', factory:fac, area, machineId, machineName, inspector, remark,
@@ -5413,6 +5482,7 @@ async function saveChecklistConfirm() {
     } catch(e) {
         showToast('เชื่อมต่อ GAS ล้มเหลว', 'error');
     } finally {
+        hideLoading();
         btn.disabled = false; btn.textContent = '💾 บันทึก Checklist';
     }
 }
@@ -5746,11 +5816,12 @@ function clScTab(tab) {
 async function loadClSchedule() {
     const fac  = document.getElementById('clsc-fac')?.value  || '';
     const area = document.getElementById('clsc-area')?.value || '';
-    // Always fetch PM plans regardless of factory — empty factory = all machines
+    showLoading('กำลังโหลดแผน Checklist…');
     try {
         const data = await clFetch({ action:'getPmPlans', factory: fac, area });
         (data.data||[]).forEach(r => { _clPmPlans[r.machineId] = r; });
     } catch(e) {}
+    finally { hideLoading(); }
     renderClSchedule();
 }
 function renderClSchedule() {

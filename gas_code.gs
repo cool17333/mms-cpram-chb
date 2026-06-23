@@ -18,6 +18,9 @@ const ROLE_PW = {
   'cpram123456':    'admin',
 };
 
+// Token สำหรับ Daily Check ผ่าน QR (ฝังใน URL ของ QR เท่านั้น)
+const DAILY_TOKEN = 'cprdaily2026';
+
 const HEADERS = [
   'วันที่บันทึก',
   'ชื่อเครื่องจักร',
@@ -200,8 +203,9 @@ function doPost(e) {
 
     // ---- SAVE Checklist record ----
     if (data.action === 'saveChecklist') {
-      const role = ROLE_PW[(data.pw || '').trim()];
-      if (!role) return jsonOut({ success: false, error: 'ต้องเข้าสู่ระบบก่อน' });
+      const role    = ROLE_PW[(data.pw || '').trim()];
+      const tokenOk = String(data.token || '') === DAILY_TOKEN && (data.type === 'daily');
+      if (!role && !tokenOk) return jsonOut({ success: false, error: 'ต้องเข้าสู่ระบบก่อน' });
       // Upload per-item images to Drive (Checklist_Images folder)
       data.results = saveChecklistItemImgs(data.results || []);
       let sh = ss.getSheetByName('_Checklists');
@@ -274,6 +278,7 @@ function doPost(e) {
         existing[tid][editByCol] = data.editedBy || '';
         existing[tid][editAtCol] = nowStr;
         if (type === 'daily') existing[tid][13] = srcRow[13]; // copy dailyMergeDefault
+        if (type === 'pm')   { existing[tid][5] = srcRow[5]; existing[tid][6] = srcRow[6]; } // pmFreq + pmStartMonth
       });
       sh.clearContents();
       sh.getRange(1, 1, 1, COPY_HDR.length).setValues([COPY_HDR]);
@@ -337,6 +342,7 @@ function doPost(e) {
       sh.getRange(1, 1, 1, PM_HDR.length).setValues([PM_HDR]);
       const allRows = existingOrder.map(id => existing[id]).filter(Boolean);
       if (allRows.length) sh.getRange(2, 1, allRows.length, PM_HDR.length).setValues(allRows);
+      sh.getRange(2, 7, Math.max(1, sh.getLastRow()-1), 1).setNumberFormat('@'); // กัน Sheets แปลง pmStartMonth เป็น Date
       writeLog(ss, '-', 'บันทึกแผน PM (' + plans.length + ' เครื่อง)', data.editedBy||'', '');
       return jsonOut({ success: true, count: allRows.length });
     }
@@ -410,11 +416,13 @@ function doPost(e) {
       }
       if (rowIdx > 0) {
         sh.getRange(rowIdx, 1, 1, PM_HDR2.length).setValues([rowData]);
+        sh.getRange(rowIdx, 7, 1, 1).setNumberFormat('@'); // กัน Sheets แปลง pmStartMonth เป็น Date
       } else {
         if (!rowData[5]) rowData[5] = 3;
         if (!rowData[7]) rowData[7] = '[]';
         if (!rowData[8]) rowData[8] = '[]';
         sh.appendRow(rowData);
+        sh.getRange(sh.getLastRow(), 7, 1, 1).setNumberFormat('@');
       }
       SpreadsheetApp.flush();
       writeLog(ss, '-', 'แก้ไข ' + (type === 'daily' ? 'Daily' : 'PM') + ' items — ' + machineId, data.editedBy||'', '');
@@ -885,7 +893,9 @@ function doGetPmPlans(factory, area) {
       machineId: r[0], machineName: r[1], factory: r[2], area: r[3],
       dailyEnabled: r[4] !== 0 && r[4] !== '0' && r[4] !== false,
       pmFreqMonths: Number(r[5]) || 3,
-      pmStartMonth: r[6] || '',
+      pmStartMonth: (r[6] instanceof Date)
+        ? Utilities.formatDate(r[6], 'Asia/Bangkok', 'yyyy-MM')
+        : String(r[6] || '').slice(0, 7),
       dailyItems, pmItems,
       dailyEditedBy: r[9]||'', dailyEditedAt: r[10]||'',
       pmEditedBy: r[11]||'', pmEditedAt: r[12]||'',

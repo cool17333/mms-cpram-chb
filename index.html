@@ -6561,8 +6561,10 @@ async function saveClCopy() {
             const srcPlan = _clPmPlans[_clCopySourceId] || {};
             targetIds.forEach(tid => {
                 if (!_clPmPlans[tid]) _clPmPlans[tid] = {};
-                if (_clCopyType === 'daily') _clPmPlans[tid].dailyItems = srcPlan.dailyItems || [];
-                else _clPmPlans[tid].pmItems = srcPlan.pmItems || [];
+                if (_clCopyType === 'daily') {
+                    _clPmPlans[tid].dailyItems = srcPlan.dailyItems || [];
+                    _clPmPlans[tid].dailyMergeDefault = srcPlan.dailyMergeDefault || false;
+                } else _clPmPlans[tid].pmItems = srcPlan.pmItems || [];
             });
             document.getElementById('modal-cl-copy').classList.add('hidden');
             loadClSchedule();

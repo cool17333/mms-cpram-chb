@@ -241,7 +241,7 @@ function doPost(e) {
       const targetIds = (data.targetIds || []).map(id => String(id).trim()).filter(Boolean);
       const type      = data.type || 'daily';
       if (!sourceId || !targetIds.length) return jsonOut({ success: false, error: 'sourceId/targetIds required' });
-      const COPY_HDR = ['machineId','machineName','factory','area','dailyEnabled','pmFreqMonths','pmStartMonth','dailyItemsJSON','pmItemsJSON','dailyEditedBy','dailyEditedAt','pmEditedBy','pmEditedAt'];
+      const COPY_HDR = ['machineId','machineName','factory','area','dailyEnabled','pmFreqMonths','pmStartMonth','dailyItemsJSON','pmItemsJSON','dailyEditedBy','dailyEditedAt','pmEditedBy','pmEditedAt','dailyMergeDefault'];
       let sh = ss.getSheetByName('_PmPlans');
       if (!sh) {
         sh = ss.insertSheet('_PmPlans');
@@ -273,6 +273,7 @@ function doPost(e) {
         existing[tid][colIdx]    = srcRow[colIdx];
         existing[tid][editByCol] = data.editedBy || '';
         existing[tid][editAtCol] = nowStr;
+        if (type === 'daily') existing[tid][13] = srcRow[13]; // copy dailyMergeDefault
       });
       sh.clearContents();
       sh.getRange(1, 1, 1, COPY_HDR.length).setValues([COPY_HDR]);

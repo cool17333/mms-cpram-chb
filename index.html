@@ -1287,13 +1287,17 @@
         </div>
         <div>
             <label class="text-xs font-bold text-gray-500 block mb-1">Area</label>
-            <select id="clst-area" onchange="renderClStatus()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+            <select id="clst-area" onchange="loadClStatus()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
                 <option value="">ทั้งหมด</option>
             </select>
         </div>
         <div>
             <label class="text-xs font-bold text-gray-500 block mb-1">วันที่ (รายวัน)</label>
             <input id="clst-date" type="date" onchange="loadClStatus()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">ค้นหาเครื่องจักร</label>
+            <input id="clst-search" type="text" oninput="renderClStatus()" placeholder="ชื่อ / รหัส..." class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none w-44">
         </div>
         <button onclick="loadClStatus()" class="mms-btn text-sm">🔄 รีเฟรช</button>
     </div>
@@ -6496,7 +6500,9 @@ async function initClStatus() {
     if (!machineMaster.length) await loadMachineMaster();
     clFillFacSelect('clst-fac', '');
     clFillAreaSelect('clst-area', '', '');
-    document.getElementById('clst-date').value = new Date().toISOString().slice(0,10);
+    // วันที่ใช้ Bangkok timezone (UTC+7) ไม่ใช่ UTC
+    const todayBKK = new Date(Date.now() + 7*3600000).toISOString().slice(0,10);
+    document.getElementById('clst-date').value = todayBKK;
     if (!Object.keys(_clPmPlans).length) {
         try { const p = await clFetch({ action:'getPmPlans', factory:'', area:'' }); (p.data||[]).forEach(r => _clPmPlans[r.machineId] = r); } catch(e) {}
     }
@@ -6509,45 +6515,57 @@ function clstFacChange() {
 async function loadClStatus() {
     const fac     = document.getElementById('clst-fac')?.value  || '';
     const area    = document.getElementById('clst-area')?.value || '';
-    const dateStr = document.getElementById('clst-date')?.value || new Date().toISOString().slice(0,10);
+    const dateStr = document.getElementById('clst-date')?.value
+                    || new Date(Date.now() + 7*3600000).toISOString().slice(0,10);
     const tbody   = document.getElementById('clst-body');
     if (!fac) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">เลือก Factory</td></tr>'; return; }
     tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">กำลังโหลด...</td></tr>';
     const yr = dateStr.slice(0,4), mo = dateStr.slice(5,7);
-    _clstDaily = { 'เช้า': new Set(), 'ดึก': new Set() };
+    _clstDaily = {};   // รีเซ็ต — รับ shift ทุกชื่อแบบ dynamic
     _clstPm = new Set();
     try {
         const dr = await clFetch({ action:'getChecklists', factory:fac, area, type:'daily', month:mo, year:yr });
         (dr.data||[]).forEach(r => {
-            const mid = r.machineId || r.machine || '';
-            if (r.date === dateStr && _clstDaily[r.shift]) _clstDaily[r.shift].add(mid);
+            const mid   = String(r.machineId || r.machine || '').trim();
+            const shift = String(r.shift || '').trim();
+            const date  = String(r.date  || '').slice(0, 10);
+            if (!mid || date !== dateStr) return;
+            if (!_clstDaily[shift]) _clstDaily[shift] = new Set();
+            _clstDaily[shift].add(mid);
         });
         const pr = await clFetch({ action:'getChecklists', factory:fac, area, type:'pm', month:mo, year:yr });
-        (pr.data||[]).forEach(r => _clstPm.add(r.machineId || r.machine || ''));
-    } catch(e) {}
+        (pr.data||[]).forEach(r => _clstPm.add(String(r.machineId || r.machine || '').trim()));
+    } catch(e) { console.error('[loadClStatus]', e); }
     renderClStatus();
 }
 function renderClStatus() {
     const fac     = document.getElementById('clst-fac')?.value  || '';
     const area    = document.getElementById('clst-area')?.value || '';
-    const dateStr = document.getElementById('clst-date')?.value || new Date().toISOString().slice(0,10);
+    const dateStr = document.getElementById('clst-date')?.value
+                    || new Date(Date.now() + 7*3600000).toISOString().slice(0,10);
+    const search  = (document.getElementById('clst-search')?.value || '').trim().toLowerCase();
     const yr = Number(dateStr.slice(0,4)), mo = Number(dateStr.slice(5,7));
     const tbody = document.getElementById('clst-body');
     if (!fac) return;
-    const machines = clMachinesFor(fac, area);
+    let machines = clMachinesFor(fac, area);
+    if (search) machines = machines.filter(m => {
+        const id   = String(m.id || m.machineId || '').toLowerCase();
+        const name = String(m.name || m.machineName || '').toLowerCase();
+        return id.includes(search) || name.includes(search);
+    });
     if (!machines.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
     const okB  = '<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">✅ ตรวจแล้ว</span>';
     const noB  = '<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-500">❌ ยังไม่ตรวจ</span>';
     const dueB = '<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-500">⏰ ค้าง</span>';
     const naB  = '<span class="text-xs text-gray-300">—</span>';
     tbody.innerHTML = machines.map(m => {
-        const id   = m.id || m.machineId || m.machine_id || '';
+        const id   = String(m.id || m.machineId || m.machine_id || '').trim();
         const name = m.name || m.machineName || id;
         const plan = _clPmPlans[id] || {};
         const dailyOn = plan.dailyEnabled !== false && plan.dailyEnabled !== 0 && plan.dailyEnabled !== '0';
-        const morning = !dailyOn ? naB : (_clstDaily['เช้า'].has(id) ? okB : noB);
-        const night   = !dailyOn ? naB : (_clstDaily['ดึก'].has(id) ? okB : noB);
-        const pmDue   = clIsPmDueInMonth(id, yr, mo - 1); // mo-1 = 0-based
+        const morning = !dailyOn ? naB : (_clstDaily['เช้า']?.has(id) ? okB : noB);
+        const night   = !dailyOn ? naB : (_clstDaily['ดึก']?.has(id) ? okB : noB);
+        const pmDue   = clIsPmDueInMonth(id, yr, mo - 1);
         const pm      = !pmDue ? naB : (_clstPm.has(id) ? okB : dueB);
         return `<tr class="border-b border-gray-100 hover:bg-gray-50">
             <td class="px-4 py-2.5"><span class="text-sm font-medium">${name}</span> <span class="text-xs text-gray-400 font-mono">${id}</span></td>

@@ -5651,7 +5651,7 @@ function renderClScPm(machines) {
             <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${id}</td>
             <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
             <td class="px-3 py-2.5 text-center text-sm text-gray-700">${plan.pmFreqMonths||3} เดือน</td>
-            <td class="px-3 py-2.5 text-center text-sm text-gray-700">${plan.pmStartMonth||'—'}</td>
+            <td class="px-3 py-2.5 text-center text-sm text-gray-700">${(plan.pmStartMonth||'').slice(0,7)||'—'}</td>
             <td class="px-3 py-2.5 text-center text-xs text-gray-600">${next}</td>
             <td class="px-3 py-2.5 text-center text-xs text-gray-500">
                 <span class="text-blue-600">${dailyCount} Daily</span> / <span class="text-green-600">${pmCount} PM</span>

@@ -5645,7 +5645,6 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
     const ss = STATUS_STYLE[d.status] || { bg:'#f1f5f9', c:'#64748b', lbl: d.status || '—' };
     const whyHtml = whyTree.map((n, i) => _buildWhyNodeHtml(n, String(i+1), 0)).join('') || '<span style="color:#94a3b8;font-size:12px">ยังไม่มีข้อมูล Why-Why</span>';
 
-    const slide = document.getElementById('ppt-slide');
     slide.innerHTML = `
     <div style="height:100%;display:flex;flex-direction:column;background:#f1f5f9;box-sizing:border-box;overflow:hidden;font-family:'Prompt',sans-serif">
 
@@ -7680,7 +7679,6 @@ async function enterBdKiosk(machineId, token) {
     const noticeText = document.getElementById('rm-qr-notice-text');
     if (notice)     notice.classList.remove('hidden');
     if (noticeText) noticeText.textContent = `📱 สแกน QR — ${id} ${name}`;
-}
 }
 
 // ---- BD QR GENERATE MODAL ----

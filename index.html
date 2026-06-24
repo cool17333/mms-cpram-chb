@@ -451,6 +451,33 @@
                 </div>
             </label>
         </div>
+        <!-- Aspect ratio selector — แสดงเฉพาะเมื่อเลือก PNG -->
+        <div id="png-ratio-row" class="hidden mb-4">
+            <p class="text-xs font-bold text-gray-600 mb-2">อัตราส่วน (Aspect Ratio)</p>
+            <div class="flex gap-2 flex-wrap">
+                <label class="ratio-opt cursor-pointer">
+                    <input type="radio" name="png-ratio" value="16:9" class="hidden" checked>
+                    <div class="ratio-opt-inner border-2 border-orange-500 bg-orange-50 rounded-lg px-4 py-2 text-center transition-all">
+                        <p class="text-sm font-bold text-gray-800">16 : 9</p>
+                        <p class="text-[10px] text-gray-500">Widescreen (default)</p>
+                    </div>
+                </label>
+                <label class="ratio-opt cursor-pointer">
+                    <input type="radio" name="png-ratio" value="4:3" class="hidden">
+                    <div class="ratio-opt-inner border-2 border-gray-200 rounded-lg px-4 py-2 text-center transition-all hover:border-orange-300">
+                        <p class="text-sm font-bold text-gray-800">4 : 3</p>
+                        <p class="text-[10px] text-gray-500">Standard</p>
+                    </div>
+                </label>
+                <label class="ratio-opt cursor-pointer">
+                    <input type="radio" name="png-ratio" value="a4l" class="hidden">
+                    <div class="ratio-opt-inner border-2 border-gray-200 rounded-lg px-4 py-2 text-center transition-all hover:border-orange-300">
+                        <p class="text-sm font-bold text-gray-800">A4 แนวนอน</p>
+                        <p class="text-[10px] text-gray-500">297 × 210 mm</p>
+                    </div>
+                </label>
+            </div>
+        </div>
         <p class="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 mb-5">
             💡 PDF = ย่อเนื้อหาให้พอดีในหน้าเดียว &nbsp;•&nbsp; PNG = ภาพความละเอียดสูง วางใน PowerPoint แล้วลาก fit slide
         </p>
@@ -5231,9 +5258,30 @@ function _setExportBtnLabel(fmt) {
     if (lbl) lbl.textContent = (fmt === 'ppt') ? 'Export PNG' : 'Export PDF';
 }
 
+// Aspect ratio dimensions for PNG export
+const PPT_RATIO_DIMS = {
+    '16:9': [1600, 900],
+    '4:3':  [1600, 1200],
+    'a4l':  [1600, Math.round(1600 * 210 / 297)],   // ≈ 1131
+};
+function _getSelectedRatio() {
+    const v = document.querySelector('input[name="png-ratio"]:checked')?.value || '16:9';
+    return PPT_RATIO_DIMS[v] || PPT_RATIO_DIMS['16:9'];
+}
+function _updateRatioOpts() {
+    document.querySelectorAll('.ratio-opt').forEach(lbl => {
+        const radio = lbl.querySelector('input');
+        const inner = lbl.querySelector('.ratio-opt-inner');
+        const sel   = radio.checked;
+        inner.classList.toggle('border-orange-500', sel);
+        inner.classList.toggle('bg-orange-50',      sel);
+        inner.classList.toggle('border-gray-200',   !sel);
+    });
+}
+
 function showPDFPicker(itemForRow) {
     _pdfPickerForRow = itemForRow || null;
-    // reset selection → default portrait
+    // reset → default portrait (PDF)
     document.querySelectorAll('.pdf-fmt-card').forEach(card => {
         const val = card.dataset.fmt;
         const inner = card.querySelector('.pdf-card-inner');
@@ -5242,6 +5290,11 @@ function showPDFPicker(itemForRow) {
         inner.classList.toggle('bg-orange-50',      val === 'portrait');
         card.querySelector('input').checked = (val === 'portrait');
     });
+    // reset ratio → 16:9, hide ratio row (เริ่มต้นเลือก PDF)
+    const ratioRow = document.getElementById('png-ratio-row');
+    if (ratioRow) ratioRow.classList.add('hidden');
+    const def = document.querySelector('input[name="png-ratio"][value="16:9"]');
+    if (def) { def.checked = true; _updateRatioOpts(); }
     _setExportBtnLabel('portrait');
     document.getElementById('pdf-picker-modal').classList.remove('hidden');
 }
@@ -5265,6 +5318,17 @@ function initPDFCards() {
             inner.classList.remove('border-gray-200');
             card.querySelector('input').checked = true;
             _setExportBtnLabel(card.dataset.fmt);
+            // แสดง/ซ่อน ratio row ตาม format
+            const ratioRow = document.getElementById('png-ratio-row');
+            if (ratioRow) ratioRow.classList.toggle('hidden', card.dataset.fmt !== 'ppt');
+        });
+    });
+    // ratio opt click handler
+    document.querySelectorAll('.ratio-opt').forEach(lbl => {
+        lbl.addEventListener('click', () => {
+            document.querySelectorAll('input[name="png-ratio"]').forEach(r => r.checked = false);
+            lbl.querySelector('input').checked = true;
+            _updateRatioOpts();
         });
     });
 }
@@ -5560,7 +5624,10 @@ function _buildWhyNodeHtml(node, label, depth) {
     </div>`;
 }
 
-function buildPptSlide() {
+function buildPptSlide(slideW = 1600, slideH = 900) {
+    const slide = document.getElementById('ppt-slide');
+    slide.style.width  = slideW + 'px';
+    slide.style.height = slideH + 'px';
     const d = collectFormData();
     d.problem = [ _problemLocked, (document.getElementById('inp-problem-new')?.value||'').trim() ].filter(Boolean).join('\n');
     const h  = Math.floor(d.downtimeMin / 60), mn = d.downtimeMin % 60;
@@ -5700,11 +5767,12 @@ async function exportPDF(fmt = 'portrait') {
 
     try {
         if (isPNG) {
-            // ===== PNG — สไลด์ 16:9 เต็มจอ (1600×900) =====
-            buildPptSlide();
+            // ===== PNG — อัตราส่วนตามที่เลือก =====
+            const [pW, pH] = _getSelectedRatio();
+            buildPptSlide(pW, pH);
             const slide = document.getElementById('ppt-slide');
             slide.style.left = '0';
-            const cv = await _captureNode(slide, 1600);
+            const cv = await _captureNode(slide, pW);
             slide.style.left = '-99999px';
             _download(cv.toDataURL('image/png'), `BD_${name}.png`);
             if (withGallery) {

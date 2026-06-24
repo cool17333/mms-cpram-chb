@@ -3660,7 +3660,7 @@ function switchTab(name) {
     updateNavActive(name);
 
     if (name === 'summary') checkSummarySetup();
-    if (name === 'home') loadHomeDash();
+    if (name === 'home' && machineMaster.length) loadHomeDash(); // ไม่ยิงตอน init (machineMaster ยังว่าง)
     if (name === 'records') checkRecordsSetup();
     if (name === 'cl-hub') initClHub();
     if (name === 'cl-list') initClList();
@@ -5906,11 +5906,10 @@ window.addEventListener('DOMContentLoaded', () => {
         switchTab('home');
         initHubDatetime();
     }
-    loadMachines().then(async () => {
+    loadMachines().then(() => {
         initHubStats();
-        await refreshDashboard(); // โหลด getAll → _dashRecords → initHubStats
-        loadHomeDash();           // daily + PM checklist dashboard บนหน้าแรก
-        // BD QR — เปิดหลัง machine master โหลดเสร็จ เพื่อ autofill ได้ถูกต้อง
+        refreshDashboard(); // fire-and-forget — ไม่ block loadHomeDash
+        loadHomeDash();     // ยิงพร้อมกัน ไม่รอ getAll
         if (_qp.get('mode') === 'bd-report' && _qp.get('m')) {
             enterBdKiosk(_qp.get('m'), _qp.get('t') || '');
         }

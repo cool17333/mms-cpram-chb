@@ -600,6 +600,20 @@
             <p class="text-xs text-gray-500 mt-0.5">กำลังดำเนินการ</p>
         </div>
     </div>
+
+    <!-- Daily Checklist Dashboard -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-sm font-bold text-gray-800">📋 สถานะการตรวจประจำวัน (Daily Checklist)</h2>
+                <p id="home-cldash-date" class="text-xs text-gray-400 mt-0.5"></p>
+            </div>
+            <button onclick="loadClDailyDash()" class="mms-btn text-xs" style="background:#f0f2f5;color:var(--mms-text)">🔄</button>
+        </div>
+        <div id="home-cldash-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="text-center text-gray-400 py-8 col-span-2 text-sm">กำลังโหลด...</div>
+        </div>
+    </div>
 </div>
 
 </div><!-- end panel-home -->
@@ -3489,6 +3503,7 @@ function switchTab(name) {
     updateNavActive(name);
 
     if (name === 'summary') checkSummarySetup();
+    if (name === 'home') loadClDailyDash();
     if (name === 'records') checkRecordsSetup();
     if (name === 'cl-hub') initClHub();
     if (name === 'cl-list') initClList();
@@ -5587,6 +5602,7 @@ window.addEventListener('DOMContentLoaded', () => {
     loadMachines().then(async () => {
         initHubStats();
         await refreshDashboard(); // โหลด getAll → _dashRecords → initHubStats
+        loadClDailyDash();        // daily checklist dashboard บนหน้าแรก
     });
 
     // Year options (current ± 2)
@@ -5784,20 +5800,20 @@ function clHubFacChange() {
 
 // ---- DAILY DASHBOARD ----
 let _clDashRows = [];   // today's daily checklists for dashboard
+const _CLDASH_GRIDS = ['cldash-grid', 'home-cldash-grid'];
+const _CLDASH_DATES = ['cldash-date', 'home-cldash-date'];
 
 async function loadClDailyDash() {
-    const grid = document.getElementById('cldash-grid');
-    const dateEl = document.getElementById('cldash-date');
-    const refreshBtn = document.getElementById('cldash-refresh');
-    if (!grid) return;
-
     const todayBKK = new Date(Date.now() + 7*3600000).toISOString().slice(0,10);
     const yr = todayBKK.slice(0,4), mo = todayBKK.slice(5,7);
-    if (dateEl) dateEl.textContent = `วันที่ ${todayBKK}`;
+    const dateText = `วันที่ ${todayBKK}`;
+    _CLDASH_DATES.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = dateText; });
+    _CLDASH_GRIDS.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = '<div class="text-center text-gray-400 py-10 col-span-2">กำลังโหลด...</div>'; });
+    const refreshBtn = document.getElementById('cldash-refresh');
     if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = '⏳'; }
-    grid.innerHTML = '<div class="text-center text-gray-400 py-10 col-span-2">กำลังโหลด...</div>';
 
     try {
+        if (!machineMaster.length) await loadMachineMaster();
         if (!Object.keys(_clPmPlans).length) {
             const p = await clFetch({ action:'getPmPlans', factory:'', area:'' });
             (p.data||[]).forEach(r => _clPmPlans[r.machineId] = r);
@@ -5805,7 +5821,8 @@ async function loadClDailyDash() {
         const d = await clFetch({ action:'getChecklists', factory:'', area:'', type:'daily', month:mo, year:yr });
         _clDashRows = (d.data||[]).filter(r => r.date === todayBKK);
     } catch(e) {
-        grid.innerHTML = '<div class="text-center text-red-400 py-10 col-span-2">โหลดข้อมูลล้มเหลว</div>';
+        const errHtml = '<div class="text-center text-red-400 py-10 col-span-2 text-sm">โหลดข้อมูลล้มเหลว</div>';
+        _CLDASH_GRIDS.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = errHtml; });
         if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = '🔄 รีเฟรช'; }
         return;
     }
@@ -5814,11 +5831,10 @@ async function loadClDailyDash() {
 }
 
 function renderClDailyDash() {
-    const grid = document.getElementById('cldash-grid');
-    if (!grid) return;
     const facs = clFacOptions();
+    const noFacHtml = '<div class="text-center text-gray-400 py-10 col-span-2 text-sm">ไม่พบข้อมูลโรงงาน</div>';
     if (!facs.length) {
-        grid.innerHTML = '<div class="text-center text-gray-400 py-10 col-span-2">ไม่พบข้อมูลโรงงาน</div>';
+        _CLDASH_GRIDS.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = noFacHtml; });
         return;
     }
 
@@ -5836,7 +5852,7 @@ function renderClDailyDash() {
 
     const SHIFTS = [{ key:'เช้า', icon:'🌅', label:'กะเช้า' }, { key:'ดึก', icon:'🌙', label:'กะดึก' }];
 
-    grid.innerHTML = facs.map(fac => {
+    const html = facs.map(fac => {
         const allM = clMachinesFor(fac, '').filter(m => {
             const id = String(m.id || m.machineId || m.machine_id || '').trim();
             const plan = _clPmPlans[id] || {};
@@ -5889,6 +5905,8 @@ function renderClDailyDash() {
             <div class="p-5 flex-1">${shiftRows}</div>
         </div>`;
     }).join('');
+
+    _CLDASH_GRIDS.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
 }
 async function loadClHubRecent() {
     const el = document.getElementById('cl-hub-recent');

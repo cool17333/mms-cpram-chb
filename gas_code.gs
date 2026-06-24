@@ -674,7 +674,7 @@ function doGet(e) {
   try {
     const action  = e.parameter.action  || '';
     const year    = e.parameter.year    || String(new Date().getFullYear());
-    const factory = (e.parameter.factory || '').replace(/\s+/g, '');
+    const factory = (e.parameter.factory || '').trim();
     const area    = e.parameter.area    || '';
     const status  = e.parameter.status  || '';
     const month   = e.parameter.month   || ''; // YYYY-MM

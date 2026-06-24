@@ -2123,6 +2123,14 @@
             <h2 class="text-lg font-bold text-white flex items-center gap-2">🚨 แจ้ง Breakdown</h2>
             <p class="text-xs text-red-200 mt-0.5">กรอกข้อมูลเหตุเครื่องจักรเสีย</p>
         </div>
+        <!-- QR scan notice — แสดงเฉพาะเมื่อเปิดจาก QR -->
+        <div id="rm-qr-notice" class="hidden bg-orange-50 border-b border-orange-200 px-5 py-2.5 flex items-center gap-2 flex-shrink-0">
+            <span class="text-orange-500 text-lg">📱</span>
+            <div>
+                <p class="text-xs font-bold text-orange-700" id="rm-qr-notice-text">สแกน QR — ข้อมูลเครื่องจักรถูก autofill แล้ว</p>
+                <p class="text-[10px] text-orange-500">กรุณากรอกเฉพาะ อาการ / รูปภาพ / ชื่อผู้แจ้ง</p>
+            </div>
+        </div>
         <div class="p-6 overflow-y-auto">
         <div class="space-y-3 text-sm">
             <div>
@@ -3452,6 +3460,11 @@ function onMachineIdLookup() {
 }
 
 function openReportPopup() {
+    // re-enable fields ที่อาจถูก lock จาก QR kiosk
+    ['rm-machine','rm-factory','rm-area','rm-line','rm-date','rm-time'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.disabled = false;
+    });
+    document.getElementById('rm-qr-notice')?.classList.add('hidden');
     document.getElementById('rm-factory').value = '';
     rmUpdateArea();
     ['rm-machine','rm-line','rm-date','rm-time','rm-problem'].forEach(id => document.getElementById(id).value = '');
@@ -3463,7 +3476,14 @@ function openReportPopup() {
     loadMachines();   // รีเฟรช master ทุกครั้งที่เปิด
 }
 
-function closeReportModal() { document.getElementById('report-modal').classList.add('hidden'); }
+function closeReportModal() {
+    // re-enable ก่อน hide — กันกรณี QR kiosk ล็อก field ค้างไว้
+    ['rm-machine','rm-factory','rm-area','rm-line','rm-date','rm-time'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.disabled = false;
+    });
+    document.getElementById('rm-qr-notice')?.classList.add('hidden');
+    document.getElementById('report-modal').classList.add('hidden');
+}
 
 function rmUpdateArea() {
     const f = document.getElementById('rm-factory').value;
@@ -5814,16 +5834,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const _qp = new URLSearchParams(location.search);
     if (_qp.get('mode') === 'daily' && _qp.get('m')) {
         enterDailyKiosk(_qp.get('m'), _qp.get('t') || '');
-    } else if (_qp.get('mode') === 'bd-report' && _qp.get('m')) {
-        enterBdKiosk(_qp.get('m'), _qp.get('t') || '');
     } else {
-    switchTab('home');
-    initHubDatetime();
+        switchTab('home');
+        initHubDatetime();
     }
     loadMachines().then(async () => {
         initHubStats();
         await refreshDashboard(); // โหลด getAll → _dashRecords → initHubStats
         loadHomeDash();           // daily + PM checklist dashboard บนหน้าแรก
+        // BD QR — เปิดหลัง machine master โหลดเสร็จ เพื่อ autofill ได้ถูกต้อง
+        if (_qp.get('mode') === 'bd-report' && _qp.get('m')) {
+            enterBdKiosk(_qp.get('m'), _qp.get('t') || '');
+        }
     });
 
     // Year options (current ± 2)
@@ -7531,109 +7553,65 @@ async function saveClItemsEditor() {
     loadClSchedule();
 }
 
-// ---- BD QR KIOSK ----
+// ---- BD QR KIOSK — เปิด report-modal ปกติพร้อม autofill ----
 const BD_QR_TOKEN = 'cprbdreport2026';
-let _bdKioskMachine = null;
-let _bdKioskImage   = null;
 
 async function enterBdKiosk(machineId, token) {
     if (token !== BD_QR_TOKEN) {
-        document.body.innerHTML = '<div style="padding:48px;text-align:center;font-family:sans-serif"><h2 style="color:#c0392b">❌ QR Code ไม่ถูกต้องหรือหมดอายุ</h2></div>';
+        showToast('❌ QR Code ไม่ถูกต้องหรือหมดอายุ', 'error');
         return;
     }
-    document.body.classList.add('kiosk-mode');
-    showLoading('กำลังโหลดข้อมูลเครื่องจักร…');
-    try {
-        if (!machineMaster.length) await loadMachineMaster();
-        const m = machineMaster.find(x => (x.id||x.machineId||x.machine_id||'') === machineId);
-        if (!m) {
-            hideLoading();
-            document.body.innerHTML = '<div style="padding:48px;text-align:center;font-family:sans-serif"><h2 style="color:#c0392b">❌ ไม่พบเครื่องจักรรหัส ' + machineId + '</h2></div>';
-            return;
-        }
-        _bdKioskMachine = m;
-        _bdKioskImage   = null;
-        const id   = m.id || m.machineId || m.machine_id || '';
-        const name = m.name || m.machineName || id;
-        const fac  = m.factory || '';
-        const area = m.area    || '';
-        const line = m.line    || m.productionLine || '—';
-        const now  = new Date(Date.now() + 7*3600000);
-        const dateStr = now.toISOString().slice(0,10);
-        const timeStr = now.toISOString().slice(11,16);
-        document.getElementById('bdk-machine-label').textContent = `${id} — ${name}`;
-        document.getElementById('bdk-machine-id').textContent    = id;
-        document.getElementById('bdk-fac-area').textContent      = `${fac} / ${area}`;
-        document.getElementById('bdk-line').textContent          = line;
-        document.getElementById('bdk-datetime').textContent      = `${dateStr} ${timeStr} น.`;
-        document.getElementById('bdk-problem').value = '';
-        document.getElementById('bdk-byname').value  = '';
-        document.getElementById('bdk-preview').classList.add('hidden');
-        document.getElementById('bdk-photo-hint').classList.remove('hidden');
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-        document.getElementById('panel-bd-kiosk').classList.remove('hidden');
-    } finally { hideLoading(); }
-}
-
-function bdkSetImage(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => compressImage(reader.result, d => {
-        _bdKioskImage = d;
-        const img = document.getElementById('bdk-preview');
-        img.src = d; img.classList.remove('hidden');
-        document.getElementById('bdk-photo-hint').classList.add('hidden');
-    });
-    reader.readAsDataURL(file);
-    event.target.value = '';
-}
-
-async function submitBdKiosk() {
-    const problem = document.getElementById('bdk-problem').value.trim();
-    const byName  = document.getElementById('bdk-byname').value.trim();
-    if (!problem) return showToast('⚠️ กรุณาระบุอาการ/ปัญหา', 'error');
-    if (!byName)  return showToast('⚠️ กรุณาระบุชื่อผู้แจ้ง', 'error');
-    if (!GAS_URL) return showToast('⚠️ ยังไม่ได้ตั้งค่า Web App URL', 'error');
-    const m    = _bdKioskMachine;
+    const m = machineMaster.find(x => (x.id||x.machineId||x.machine_id||'') === machineId);
+    if (!m) {
+        showToast(`❌ ไม่พบเครื่องจักรรหัส ${machineId}`, 'error');
+        return;
+    }
     const id   = m.id || m.machineId || m.machine_id || '';
     const name = m.name || m.machineName || id;
-    const now  = new Date(Date.now() + 7*3600000);
+    const fac  = m.factory || '';
+    const area = m.area    || '';
+    const line = m.line    || m.productionLine || '';
+
+    // Bangkok time
+    const now     = new Date(Date.now() + 7*3600000);
     const dateStr = now.toISOString().slice(0,10);
     const timeStr = now.toISOString().slice(11,16);
-    const data = {
-        timestamp: new Date().toISOString(), tracking: '',
-        machineName: name, factory: m.factory||'', area: m.area||'', machineId: id,
-        line: m.line||m.productionLine||'', status: 'รอรับงาน',
-        bdStart: `${dateStr}T${timeStr}`, bdEnd: '', downtimeMin: 0,
-        bdType: '', problem: `${problem} *${byName} - แจ้ง Breakdown (QR)`,
-        device: '', whys: [''], corrective: '', preventive: '', parts: [],
-        byName, action: 'create',
-        imgBefore: _bdKioskImage || '', imgAfter: '',
-    };
-    const btn = document.getElementById('bdk-submit');
-    btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
-    try {
-        const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(data) });
-        const json = await res.json();
-        if (json && json.success) {
-            document.getElementById('panel-bd-kiosk').innerHTML = `
-                <div class="min-h-screen flex items-center justify-center p-6" style="background:linear-gradient(135deg,#14532d,#1f2937)">
-                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center">
-                        <div class="text-6xl mb-4">✅</div>
-                        <h2 class="text-xl font-bold text-gray-800 mb-2">แจ้ง Breakdown สำเร็จ</h2>
-                        <p class="text-sm text-gray-500 mb-1">เลขที่ใบแจ้งเหตุ</p>
-                        <p class="text-2xl font-bold mb-4" style="color:#dc2626">${json.tracking || '—'}</p>
-                        <p class="text-sm text-gray-400">ทีมช่างจะรับทราบและดำเนินการโดยเร็ว</p>
-                    </div>
-                </div>`;
-        } else {
-            showToast('❌ แจ้งไม่สำเร็จ: ' + (json?.error || 'ไม่ทราบสาเหตุ'), 'error');
-            btn.disabled = false; btn.textContent = '🚨 ยืนยันแจ้ง Breakdown';
-        }
-    } catch(err) {
-        showToast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
-        btn.disabled = false; btn.textContent = '🚨 ยืนยันแจ้ง Breakdown';
-    }
+
+    // เปิด popup ปกติ (reset + show modal)
+    openReportPopup();
+
+    // รอให้ UI render แล้ว autofill
+    await new Promise(r => setTimeout(r, 60));
+
+    document.getElementById('rm-machine').value = name;
+
+    // factory: machineMaster เก็บ "โรงงาน 1"/"โรงงาน 2" → map เป็น "1"/"2"
+    const facSel = document.getElementById('rm-factory');
+    facSel.value = fac === 'โรงงาน 1' ? '1' : fac === 'โรงงาน 2' ? '2' : fac.replace(/[^0-9]/g,'') || '';
+    rmUpdateArea();
+
+    await new Promise(r => setTimeout(r, 40));
+
+    const areaSel = document.getElementById('rm-area');
+    areaSel.value = area;
+
+    document.getElementById('rm-line').value = line;
+    document.getElementById('rm-date').value = dateStr;
+    document.getElementById('rm-time').value = timeStr;
+
+    // ล็อก field ที่ autofill ไว้ — user กรอกแค่ ปัญหา/รูป/ชื่อ
+    ['rm-machine','rm-line','rm-date','rm-time'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.disabled = true;
+    });
+    facSel.disabled  = true;
+    areaSel.disabled = true;
+
+    // แสดง QR notice banner
+    const notice = document.getElementById('rm-qr-notice');
+    const noticeText = document.getElementById('rm-qr-notice-text');
+    if (notice)     notice.classList.remove('hidden');
+    if (noticeText) noticeText.textContent = `📱 สแกน QR — ${id} ${name}`;
+}
 }
 
 // ---- BD QR GENERATE MODAL ----

@@ -856,63 +856,85 @@
 </div><!-- end panel-log -->
 
 <!-- ==================== CHECKLIST: HUB ==================== -->
-<div id="panel-cl-hub" class="tab-panel p-4 md:p-6">
-<div class="max-w-5xl mx-auto">
-    <div class="rounded-2xl p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4" style="background:linear-gradient(135deg,#1a472a,#27ae60)">
+<div id="panel-cl-hub" class="tab-panel p-3 md:p-5">
+    <!-- Banner -->
+    <div class="rounded-2xl px-6 py-5 mb-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4" style="background:linear-gradient(135deg,#1a472a,#27ae60)">
         <div>
             <h1 class="text-2xl font-bold text-white mb-1">✅ ระบบ Check list</h1>
             <p class="text-green-200 text-sm">ตรวจสอบประจำวัน · PM Compliance · KPI</p>
         </div>
-        <div class="flex gap-3 flex-wrap">
+        <div class="flex gap-3 flex-wrap items-center">
             <span id="cl-hub-stat-today" class="mms-stat-chip">📋 วันนี้: —</span>
             <span id="cl-hub-stat-month" class="mms-stat-chip">📊 เดือนนี้: —</span>
         </div>
     </div>
-    <div class="flex flex-wrap gap-3 mb-5 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-        <select id="cl-hub-fac" onchange="clHubFacChange()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
-            <option value="">-- โรงงาน --</option>
-        </select>
-        <select id="cl-hub-area" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
-            <option value="">-- Area --</option>
-        </select>
-    </div>
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
-        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid var(--mms-green)" onclick="goClForm('daily')">
-            <div class="text-3xl mb-2">📋</div>
-            <h3 class="font-bold mb-1">Checklist รายวัน</h3>
-            <p class="text-xs text-gray-500">บันทึกการตรวจสอบประจำวัน</p>
+
+    <!-- Daily Dashboard -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-5">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-base font-bold text-gray-800">📋 สถานะการตรวจประจำวัน</h2>
+                <p id="cldash-date" class="text-xs text-gray-400 mt-0.5"></p>
+            </div>
+            <button onclick="loadClDailyDash()" id="cldash-refresh"
+                class="mms-btn text-sm" style="background:#f0f2f5;color:var(--mms-text)">🔄 รีเฟรช</button>
         </div>
-        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid var(--mms-blue)" onclick="goClForm('pm')">
-            <div class="text-3xl mb-2">🔧</div>
-            <h3 class="font-bold mb-1">PM Checklist</h3>
-            <p class="text-xs text-gray-500">บันทึกการ Preventive Maintenance</p>
-        </div>
-        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid #8e44ad" onclick="switchTab('cl-list')">
-            <div class="text-3xl mb-2">📁</div>
-            <h3 class="font-bold mb-1">รายการ Checklist</h3>
-            <p class="text-xs text-gray-500">ดูประวัติการตรวจสอบ</p>
-        </div>
-        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid var(--mms-red)" onclick="switchTab('cl-summary')">
-            <div class="text-3xl mb-2">📊</div>
-            <h3 class="font-bold mb-1">สรุปผล / KPI</h3>
-            <p class="text-xs text-gray-500">Compliance rate &amp; KPI dashboard</p>
-        </div>
-        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid #e67e22" onclick="switchTab('cl-calendar')">
-            <div class="text-3xl mb-2">📅</div>
-            <h3 class="font-bold mb-1">ปฏิทิน PM</h3>
-            <p class="text-xs text-gray-500">ดูกำหนด PM รายเดือน</p>
-        </div>
-        <div class="mms-card p-5 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid #16a085" onclick="switchTab('cl-schedule')">
-            <div class="text-3xl mb-2">🔧</div>
-            <h3 class="font-bold mb-1">รายละเอียดตรวจสอบ</h3>
-            <p class="text-xs text-gray-500">กำหนดแผน PM &amp; รายการตรวจ</p>
+        <div id="cldash-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="text-center text-gray-400 py-10 col-span-2">กำลังโหลด...</div>
         </div>
     </div>
-    <div class="mms-card p-5">
-        <h3 class="font-bold mb-3 text-sm">🕐 Checklist ล่าสุด</h3>
-        <div id="cl-hub-recent" class="text-sm text-gray-400 text-center py-4">กำลังโหลด...</div>
+
+    <!-- Quick actions + Recent -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <!-- Quick action cards -->
+        <div class="xl:col-span-2">
+            <h3 class="text-sm font-bold text-gray-600 mb-3 px-1">⚡ เมนูหลัก</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="mms-card p-4 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid var(--mms-green)" onclick="goClForm('daily')">
+                    <div class="text-2xl mb-2">📋</div>
+                    <h3 class="font-bold mb-1 text-sm">Checklist รายวัน</h3>
+                    <p class="text-xs text-gray-500">บันทึกการตรวจสอบประจำวัน</p>
+                </div>
+                <div class="mms-card p-4 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid var(--mms-blue)" onclick="goClForm('pm')">
+                    <div class="text-2xl mb-2">🔧</div>
+                    <h3 class="font-bold mb-1 text-sm">PM Checklist</h3>
+                    <p class="text-xs text-gray-500">บันทึก Preventive Maintenance</p>
+                </div>
+                <div class="mms-card p-4 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid #8e44ad" onclick="switchTab('cl-list')">
+                    <div class="text-2xl mb-2">📁</div>
+                    <h3 class="font-bold mb-1 text-sm">รายการ Checklist</h3>
+                    <p class="text-xs text-gray-500">ดูประวัติการตรวจสอบ</p>
+                </div>
+                <div class="mms-card p-4 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid var(--mms-red)" onclick="switchTab('cl-summary')">
+                    <div class="text-2xl mb-2">📊</div>
+                    <h3 class="font-bold mb-1 text-sm">สรุปผล / KPI</h3>
+                    <p class="text-xs text-gray-500">Compliance rate &amp; KPI</p>
+                </div>
+                <div class="mms-card p-4 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid #e67e22" onclick="switchTab('cl-calendar')">
+                    <div class="text-2xl mb-2">📅</div>
+                    <h3 class="font-bold mb-1 text-sm">ปฏิทิน PM</h3>
+                    <p class="text-xs text-gray-500">ดูกำหนด PM รายเดือน</p>
+                </div>
+                <div class="mms-card p-4 cursor-pointer hover:shadow-md transition-shadow" style="border-top:4px solid #16a085" onclick="switchTab('cl-schedule')">
+                    <div class="text-2xl mb-2">🔧</div>
+                    <h3 class="font-bold mb-1 text-sm">รายละเอียดตรวจสอบ</h3>
+                    <p class="text-xs text-gray-500">กำหนดแผน PM &amp; รายการตรวจ</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent -->
+        <div class="xl:col-span-1">
+            <h3 class="text-sm font-bold text-gray-600 mb-3 px-1">🕐 Checklist ล่าสุด</h3>
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div id="cl-hub-recent" class="text-sm text-gray-400 text-center py-8">กำลังโหลด...</div>
+            </div>
+        </div>
     </div>
-</div>
+
+    <!-- hidden selects (needed by clFillFacSelect/Area) -->
+    <select id="cl-hub-fac" onchange="clHubFacChange()" class="hidden"></select>
+    <select id="cl-hub-area" class="hidden"></select>
 </div><!-- end panel-cl-hub -->
 
 <!-- ==================== CHECKLIST: FORM ==================== -->
@@ -5753,10 +5775,120 @@ async function initClHub() {
     clFillFacSelect('cl-hub-fac', '');
     clFillAreaSelect('cl-hub-area', '', '');
     loadClHubRecent();
+    loadClDailyDash();
 }
 function clHubFacChange() {
     const fac = document.getElementById('cl-hub-fac')?.value || '';
     clFillAreaSelect('cl-hub-area', fac, '');
+}
+
+// ---- DAILY DASHBOARD ----
+let _clDashRows = [];   // today's daily checklists for dashboard
+
+async function loadClDailyDash() {
+    const grid = document.getElementById('cldash-grid');
+    const dateEl = document.getElementById('cldash-date');
+    const refreshBtn = document.getElementById('cldash-refresh');
+    if (!grid) return;
+
+    const todayBKK = new Date(Date.now() + 7*3600000).toISOString().slice(0,10);
+    const yr = todayBKK.slice(0,4), mo = todayBKK.slice(5,7);
+    if (dateEl) dateEl.textContent = `วันที่ ${todayBKK}`;
+    if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = '⏳'; }
+    grid.innerHTML = '<div class="text-center text-gray-400 py-10 col-span-2">กำลังโหลด...</div>';
+
+    try {
+        if (!Object.keys(_clPmPlans).length) {
+            const p = await clFetch({ action:'getPmPlans', factory:'', area:'' });
+            (p.data||[]).forEach(r => _clPmPlans[r.machineId] = r);
+        }
+        const d = await clFetch({ action:'getChecklists', factory:'', area:'', type:'daily', month:mo, year:yr });
+        _clDashRows = (d.data||[]).filter(r => r.date === todayBKK);
+    } catch(e) {
+        grid.innerHTML = '<div class="text-center text-red-400 py-10 col-span-2">โหลดข้อมูลล้มเหลว</div>';
+        if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = '🔄 รีเฟรช'; }
+        return;
+    }
+    if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = '🔄 รีเฟรช'; }
+    renderClDailyDash();
+}
+
+function renderClDailyDash() {
+    const grid = document.getElementById('cldash-grid');
+    if (!grid) return;
+    const facs = clFacOptions();
+    if (!facs.length) {
+        grid.innerHTML = '<div class="text-center text-gray-400 py-10 col-span-2">ไม่พบข้อมูลโรงงาน</div>';
+        return;
+    }
+
+    // build done sets: key = 'fac|shift' → Set<machineId>
+    const doneSet = {};
+    _clDashRows.forEach(r => {
+        const mid   = String(r.machineId || r.machine || '').trim();
+        const fac   = String(r.factory  || '').trim();
+        const shift = String(r.shift    || '').trim();
+        if (!mid || !fac || !shift) return;
+        const key = `${fac}|${shift}`;
+        if (!doneSet[key]) doneSet[key] = new Set();
+        doneSet[key].add(mid);
+    });
+
+    const SHIFTS = [{ key:'เช้า', icon:'🌅', label:'กะเช้า' }, { key:'ดึก', icon:'🌙', label:'กะดึก' }];
+
+    grid.innerHTML = facs.map(fac => {
+        const allM = clMachinesFor(fac, '').filter(m => {
+            const id = String(m.id || m.machineId || m.machine_id || '').trim();
+            const plan = _clPmPlans[id] || {};
+            return plan.dailyEnabled !== false && plan.dailyEnabled !== 0 && plan.dailyEnabled !== '0';
+        });
+        const total = allM.length;
+
+        const shiftRows = SHIFTS.map(({ key, icon, label }) => {
+            const done = doneSet[`${fac}|${key}`]?.size || 0;
+            const pct  = total ? Math.round(done / total * 100) : 0;
+            const remaining = total - done;
+            const barColor  = pct === 100 ? '#27ae60' : pct > 0 ? '#e67e22' : '#bdc3c7';
+            const pctColor  = pct === 100 ? 'text-green-600' : pct > 0 ? 'text-orange-500' : 'text-gray-400';
+            return `
+            <div class="mb-4 last:mb-0">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-sm font-bold text-gray-700">${icon} ${label}</span>
+                    <span class="text-sm font-bold ${pctColor}">${done}<span class="font-normal text-gray-400">/${total}</span> เครื่อง</span>
+                </div>
+                <div class="relative h-6 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-700" style="width:${pct}%;background:${barColor}"></div>
+                    <span class="absolute inset-0 flex items-center justify-center text-xs font-bold ${pct > 45 ? 'text-white' : 'text-gray-500'}">${pct}%</span>
+                </div>
+                <div class="flex justify-between mt-1.5 text-xs">
+                    <span class="text-green-600 font-semibold">✅ ตรวจแล้ว ${done} เครื่อง</span>
+                    <span class="${remaining > 0 ? 'text-red-400' : 'text-gray-300'} font-semibold">⏳ ยังไม่ตรวจ ${remaining} เครื่อง</span>
+                </div>
+            </div>`;
+        }).join('');
+
+        const totalSessions = SHIFTS.length * total;
+        const doneSessions  = SHIFTS.reduce((s, { key }) => s + (doneSet[`${fac}|${key}`]?.size || 0), 0);
+        const overallPct    = totalSessions ? Math.round(doneSessions / totalSessions * 100) : 0;
+        const hdrBg = overallPct === 100 ? 'linear-gradient(135deg,#1a472a,#27ae60)'
+                    : overallPct >   0  ? 'linear-gradient(135deg,#7d4500,#e67e22)'
+                    :                     'linear-gradient(135deg,#555,#999)';
+
+        return `
+        <div class="rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="px-6 py-4 flex items-center justify-between" style="background:${hdrBg}">
+                <div>
+                    <h3 class="font-bold text-white text-lg">🏭 ${fac}</h3>
+                    <p class="text-white/70 text-xs mt-0.5">${total} เครื่องมีแผนรายวัน</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-3xl font-black text-white">${overallPct}%</div>
+                    <div class="text-white/70 text-xs">รวมทั้ง 2 กะ</div>
+                </div>
+            </div>
+            <div class="p-5 flex-1">${shiftRows}</div>
+        </div>`;
+    }).join('');
 }
 async function loadClHubRecent() {
     const el = document.getElementById('cl-hub-recent');
@@ -5783,9 +5915,9 @@ async function loadClHubRecent() {
 function renderClHubRecent() {
     const el = document.getElementById('cl-hub-recent');
     if (!el) return;
-    if (!_clChecklists.length) { el.innerHTML = '<p class="text-gray-400 text-center py-4">ยังไม่มี Checklist</p>'; return; }
-    const rows = _clChecklists.map(r => `
-        <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick='openClDetail(${JSON.stringify(r)})'>
+    if (!_clChecklists.length) { el.innerHTML = '<p class="text-gray-400 text-center py-8">ยังไม่มี Checklist</p>'; return; }
+    const rows = _clChecklists.map((r, idx) => `
+        <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="openClDetail(_clChecklists[${idx}])">
             <td class="px-3 py-2 font-mono text-xs text-gray-500">${r.id||'—'}</td>
             <td class="px-3 py-2 text-xs">${r.type==='pm'?'🔧 PM':'📋 Daily'}</td>
             <td class="px-3 py-2 text-xs">${r.date||'—'}</td>

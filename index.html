@@ -6107,6 +6107,8 @@ async function saveChecklistConfirm() {
 }
 
 // ---- LIST ----
+let _clListRows = [];   // cache สำหรับ openClDetail by index (ป้องกัน JSON.stringify ใน onclick)
+
 async function initClList() {
     if (!machineMaster.length) await loadMachineMaster();
     const now = new Date();
@@ -6114,6 +6116,7 @@ async function initClList() {
     document.getElementById('cll-month').value = ym;
     clFillFacSelect('cll-fac', '');
     cllFacChange();
+    loadClList();
 }
 function cllFacChange() {
     const fac = document.getElementById('cll-fac')?.value || '';
@@ -6178,9 +6181,9 @@ async function loadClList() {
             return;
         }
         const data = await clFetch({ action:'getChecklists', factory:fac, area, type, month:mon||'', year:year||'' });
-        const rows = data.data || [];
-        if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบข้อมูล</td></tr>'; return; }
-        tbody.innerHTML = rows.map(r => `
+        _clListRows = data.data || [];
+        if (!_clListRows.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบข้อมูล</td></tr>'; return; }
+        tbody.innerHTML = _clListRows.map((r, idx) => `
             <tr class="border-b border-gray-100 hover:bg-gray-50">
                 <td class="px-4 py-2 font-mono text-xs text-gray-500">${r.id||'—'}</td>
                 <td class="px-3 py-2 text-xs">${r.type==='pm'?'🔧 PM':'📋 Daily'}</td>
@@ -6188,7 +6191,7 @@ async function loadClList() {
                 <td class="px-3 py-2 text-xs">${r.machineName||r.machine||'—'}</td>
                 <td class="px-3 py-2 text-xs">${r.inspector||'—'}</td>
                 <td class="px-3 py-2 text-center">${clResultBadge(r.overallResult)}</td>
-                <td class="px-3 py-2 text-center"><button onclick='openClDetail(${JSON.stringify(r)})' class="text-xs text-blue-500 hover:underline">ดู</button></td>
+                <td class="px-3 py-2 text-center"><button onclick="openClDetail(_clListRows[${idx}])" class="text-xs text-blue-500 hover:underline">ดู</button></td>
             </tr>`).join('');
     } catch(e) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center text-red-400 py-8">โหลดข้อมูลล้มเหลว</td></tr>';

@@ -5515,39 +5515,147 @@ function _pptBox(label, val) {
         <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:4px">${label}</div>
         <div style="font-size:13px;color:#374151;white-space:pre-wrap;line-height:1.4">${(val||'—').replace(/</g,'&lt;')}</div></div>`;
 }
+function _buildWhyNodeHtml(node, label, depth) {
+    const text = (node.text || '').trim();
+    if (!text) return '';
+    const isLeaf = !node.children || node.children.length === 0;
+    const indent  = depth * 20;
+    const bg      = isLeaf ? '#fef2f2' : depth === 0 ? '#eff6ff' : '#f8fafc';
+    const border  = isLeaf ? '#fecaca' : depth === 0 ? '#bfdbfe' : '#e2e8f0';
+    const txtCol  = isLeaf ? '#dc2626' : depth === 0 ? '#1e3a5f' : '#374151';
+    const rootTag = isLeaf ? `<span style="font-size:9px;background:#dc2626;color:#fff;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle">Root Cause</span>` : '';
+    const connector = depth > 0 ? `<div style="width:12px;height:1px;background:#cbd5e1;margin-top:10px;flex-shrink:0"></div>` : '';
+    const children  = (node.children || []).map((ch, j) => _buildWhyNodeHtml(ch, `${label}.${j+1}`, depth+1)).join('');
+    return `<div style="margin-left:${indent}px;margin-bottom:5px">
+        <div style="display:flex;align-items:flex-start;gap:5px">
+            ${connector}
+            <div style="flex:1">
+                <div style="background:${bg};border:1px solid ${border};border-radius:7px;padding:5px 10px;display:flex;align-items:center;gap:8px">
+                    <span style="font-size:10px;font-weight:700;color:#94a3b8;flex-shrink:0">WHY ${label}</span>
+                    <span style="font-size:12px;color:${txtCol};font-weight:${isLeaf?700:500}">${text.replace(/</g,'&lt;')}${rootTag}</span>
+                </div>
+                ${children}
+            </div>
+        </div>
+    </div>`;
+}
+
 function buildPptSlide() {
     const d = collectFormData();
     d.problem = [ _problemLocked, (document.getElementById('inp-problem-new')?.value||'').trim() ].filter(Boolean).join('\n');
-    const h = Math.floor(d.downtimeMin/60), mn = d.downtimeMin%60;
+    const h  = Math.floor(d.downtimeMin / 60), mn = d.downtimeMin % 60;
+    const dtStr   = d.downtimeMin ? `${h} ชม. ${mn} นาที` : '—';
+    const over24  = d.downtimeMin > 24 * 60;
+    const STATUS_STYLE = {
+        'ดำเนินการเสร็จสิ้น':      { bg:'#dcfce7', c:'#16a34a', lbl:'✅ ดำเนินการเสร็จสิ้น' },
+        'กำลังดำเนินการแก้ไข':     { bg:'#fef3c7', c:'#d97706', lbl:'🔧 กำลังดำเนินการ' },
+        'รออะไหล่':                 { bg:'#ede9fe', c:'#7c3aed', lbl:'⏳ รออะไหล่' },
+        'รอรับงาน':                 { bg:'#fee2e2', c:'#dc2626', lbl:'🚨 รอรับงาน' },
+        'รับงานแล้ว':               { bg:'#dbeafe', c:'#2563eb', lbl:'📋 รับงานแล้ว' },
+    };
+    const ss = STATUS_STYLE[d.status] || { bg:'#f1f5f9', c:'#64748b', lbl: d.status || '—' };
+    const whyHtml = whyTree.map((n, i) => _buildWhyNodeHtml(n, String(i+1), 0)).join('') || '<span style="color:#94a3b8;font-size:12px">ยังไม่มีข้อมูล Why-Why</span>';
+
     const slide = document.getElementById('ppt-slide');
     slide.innerHTML = `
-      <div style="height:100%;display:flex;flex-direction:column;padding:36px 44px;box-sizing:border-box">
-        <div style="border-bottom:3px solid #c0392b;padding-bottom:14px;margin-bottom:18px">
-          <div style="font-size:13px;color:#c0392b;font-weight:700;letter-spacing:1px">🔴 BREAKDOWN REPORT — CPRAM CHB</div>
-          <div style="font-size:30px;font-weight:800;color:#1f2937;line-height:1.1">${d.machineName||'—'}</div>
-          <div style="font-size:13px;color:#6b7280;margin-top:4px">Tracking: ${d.tracking||'—'} &bull; ${d.factory||''} / ${d.area||''} / ${d.line||''}</div>
-        </div>
-        <div style="flex:1;display:grid;grid-template-columns:1.2fr 1fr;gap:24px;min-height:0">
-          <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
-            <div style="display:flex;gap:10px">
-              ${_pptCell('⏱️ Downtime', `${h} ชม. ${mn} นาที`)}
-              ${_pptCell('🔧 ประเภท', d.bdType||'—')}
-            </div>
-            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;flex:1;min-height:0;overflow:hidden">
-              <div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:6px">⚠️ ปัญหาที่พบ</div>
-              <div style="font-size:15px;color:#374151;white-space:pre-wrap;line-height:1.5">${(d.problem||'—').replace(/</g,'&lt;')}</div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              ${_pptBox('✏️ มาตรการแก้ไข', d.corrective)}
-              ${_pptBox('🛡️ มาตรการป้องกัน', d.preventive)}
+    <div style="height:100%;display:flex;flex-direction:column;background:#f1f5f9;box-sizing:border-box;overflow:hidden;font-family:'Prompt',sans-serif">
+
+      <!-- HEADER -->
+      <div style="background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);padding:16px 28px;flex-shrink:0">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:10px;color:#93c5fd;font-weight:700;letter-spacing:2px;margin-bottom:3px">🔴 BREAKDOWN REPORT • MACHINE • CPRAM CHB</div>
+            <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(d.machineName||'—').replace(/</g,'&lt;')}</div>
+            <div style="display:flex;gap:16px;font-size:11px;color:#93c5fd;flex-wrap:wrap">
+              <span>🔢 Tracking ID: <strong style="color:#fff">${d.tracking||'—'}</strong></span>
+              <span>📍 พื้นที่: <strong style="color:#fff">${(d.area||'—')} (${d.factory||'—'})</strong></span>
+              <span>⚙️ Machine ID: <strong style="color:#fff">${d.machineId||'—'}</strong></span>
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
-            <div style="flex:1;min-height:0"><div style="font-size:12px;font-weight:700;color:#c0392b;margin-bottom:4px">📷 ก่อนแก้ไข</div><div style="height:calc(100% - 22px)">${_pptImg(imgList.before)}</div></div>
-            <div style="flex:1;min-height:0"><div style="font-size:12px;font-weight:700;color:#16a085;margin-bottom:4px">📷 หลังแก้ไข</div><div style="height:calc(100% - 22px)">${_pptImg(imgList.after)}</div></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+            <div style="background:${ss.bg};color:${ss.c};border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700">${ss.lbl}</div>
+            ${d.downtimeMin ? `<div style="background:#fef2f2;color:#dc2626;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px">
+              ⚠️ Downtime: ${dtStr}
+              ${over24 ? `<span style="background:#dc2626;color:#fff;border-radius:8px;padding:1px 7px;font-size:9px">เกิน 24 ชม.</span>` : ''}
+            </div>` : ''}
           </div>
         </div>
-      </div>`;
+      </div>
+
+      <!-- BODY -->
+      <div style="flex:1;display:grid;grid-template-columns:1.1fr 0.9fr;gap:10px;padding:10px 14px;min-height:0;overflow:hidden">
+
+        <!-- LEFT COL -->
+        <div style="display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden">
+
+          <!-- Card: ข้อมูลปัญหา -->
+          <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <div style="font-size:11px;font-weight:800;color:#d97706;margin-bottom:8px;letter-spacing:.3px">ℹ️ ข้อมูลปัญหาและตำแหน่ง</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+              <div>
+                <div style="font-size:9px;color:#94a3b8;font-weight:600;margin-bottom:2px">ตำแหน่ง / สาย (LINE)</div>
+                <div style="font-size:13px;font-weight:700;color:#1e293b">${(d.line||'—').replace(/</g,'&lt;')}</div>
+              </div>
+              <div>
+                <div style="font-size:9px;color:#94a3b8;font-weight:600;margin-bottom:2px">ประเภท BREAKDOWN</div>
+                <div style="font-size:13px;font-weight:700;color:#1e293b">${(d.bdType||'—').replace(/</g,'&lt;')}</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:7px 10px">
+                <div style="font-size:9px;color:#dc2626;font-weight:700;margin-bottom:2px">ปัญหาที่พบ (PROBLEM)</div>
+                <div style="font-size:12px;color:#dc2626;font-weight:600;white-space:pre-wrap;line-height:1.4">${(d.problem||'—').replace(/</g,'&lt;')}</div>
+              </div>
+              <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px">
+                <div style="font-size:9px;color:#d97706;font-weight:700;margin-bottom:2px">อุปกรณ์ที่เกิดปัญหา</div>
+                <div style="font-size:12px;color:#92400e;font-weight:600;white-space:pre-wrap;line-height:1.4">${(d.device||'—').replace(/</g,'&lt;')}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card: Why-Why -->
+          <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;flex:1;min-height:0;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <div style="font-size:11px;font-weight:800;color:#1e3a5f;margin-bottom:8px">🌿 การวิเคราะห์แบบรากต้นไม้ (Why-Why Tree Analysis)</div>
+            <div style="overflow:hidden">${whyHtml}</div>
+          </div>
+        </div>
+
+        <!-- RIGHT COL -->
+        <div style="display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden">
+
+          <!-- Card: รูปภาพ -->
+          <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;flex:1;min-height:0;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <div style="font-size:11px;font-weight:800;color:#2563eb;margin-bottom:8px;flex-shrink:0">📷 รูปภาพสภาพอุปกรณ์ ก่อน-หลัง ดำเนินการ</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0">
+              <div style="display:flex;flex-direction:column;gap:4px;min-height:0">
+                <div style="background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;border-radius:5px;padding:2px 8px;text-align:center;flex-shrink:0">ก่อนแก้ไข</div>
+                <div style="flex:1;min-height:0">${_pptImg(imgList.before)}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;min-height:0">
+                <div style="background:#dcfce7;color:#16a34a;font-size:9px;font-weight:700;border-radius:5px;padding:2px 8px;text-align:center;flex-shrink:0">หลังแก้ไข</div>
+                <div style="flex:1;min-height:0">${_pptImg(imgList.after)}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card: มาตรการ -->
+          <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <div style="font-size:11px;font-weight:800;color:#374151;margin-bottom:8px">📋 แผนมาตรการแก้ไขและป้องกัน</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;padding:9px 11px">
+                <div style="font-size:10px;font-weight:700;color:#ea580c;margin-bottom:4px">🔧 มาตรการแก้ไข (Corrective)</div>
+                <div style="font-size:11px;color:#431407;white-space:pre-wrap;line-height:1.5">${(d.corrective||'—').replace(/</g,'&lt;')}</div>
+              </div>
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;padding:9px 11px">
+                <div style="font-size:10px;font-weight:700;color:#16a34a;margin-bottom:4px">🛡️ มาตรการป้องกัน (Preventive)</div>
+                <div style="font-size:11px;color:#14532d;white-space:pre-wrap;line-height:1.5">${(d.preventive||'—').replace(/</g,'&lt;')}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>`;
 }
 
 async function exportPDF(fmt = 'portrait') {

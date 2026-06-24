@@ -3438,7 +3438,9 @@ async function loadMachines() {
         const res  = await fetch(`${GAS_URL}?action=getMachines`);
         const json = await res.json();
         machineList = json.data || [];
-        refilterMachineIdHints();   // เคารพ scope โรงงาน/พื้นที่ที่เลือกอยู่ (กัน clobber ทับ filtered list)
+        // populate machineMaster ด้วย endpoint เดียวกัน ป้องกัน loadHomeDash ยิง getMachines ซ้ำ
+        machineMaster = machineList.map(m => ({ id:m.id||'', name:m.name||'', factory:m.factory||'', area:m.area||'', line:m.line||'', editedBy:m.editedBy||'', editedAt:m.editedAt||'' }));
+        refilterMachineIdHints();
         const nameDl = document.getElementById('machine-name-list');
         if (nameDl) nameDl.innerHTML = [...new Set(machineList.map(m => m.name).filter(Boolean))].map(n => `<option value="${esc(n)}"></option>`).join('');
     } catch (e) { /* เงียบ — กรอกเองได้ */ }

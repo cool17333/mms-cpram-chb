@@ -538,22 +538,6 @@
 <!-- Home Dashboard Body -->
 <div class="px-4 md:px-8 py-5 space-y-4">
 
-    <!-- Summary bar -->
-    <div class="grid grid-cols-3 gap-3">
-        <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
-            <p class="text-xl font-bold text-green-600" id="hub-count-machines">—</p>
-            <p class="text-xs text-gray-500 mt-0.5">เครื่องจักรทั้งหมด</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
-            <p class="text-xl font-bold text-red-500" id="hub-count-bd">—</p>
-            <p class="text-xs text-gray-500 mt-0.5">Breakdown เดือนนี้</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
-            <p class="text-xl font-bold text-blue-500" id="hub-count-wip">—</p>
-            <p class="text-xs text-gray-500 mt-0.5">กำลังดำเนินการ</p>
-        </div>
-    </div>
-
     <!-- Factory 1 - RTE Factory -->
     <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
         <div class="px-5 py-3 flex items-center gap-3" style="background:linear-gradient(135deg,#1a3a5c,#2980b9)">
@@ -662,7 +646,25 @@
     </div>
 </div>
 
-<div class="max-w-5xl mx-auto px-4 md:px-8 py-8">
+<!-- BD Stats summary -->
+<div class="max-w-5xl mx-auto px-4 md:px-8 pt-4">
+    <div class="grid grid-cols-3 gap-3">
+        <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
+            <p class="text-xl font-bold text-green-600" id="hub-count-machines">—</p>
+            <p class="text-xs text-gray-500 mt-0.5">เครื่องจักรทั้งหมด</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
+            <p class="text-xl font-bold text-red-500" id="hub-count-bd">—</p>
+            <p class="text-xs text-gray-500 mt-0.5">Breakdown เดือนนี้</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
+            <p class="text-xl font-bold text-blue-500" id="hub-count-wip">—</p>
+            <p class="text-xs text-gray-500 mt-0.5">กำลังดำเนินการ</p>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-5xl mx-auto px-4 md:px-8 py-6">
     <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">เลือกการดำเนินการ</p>
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
 
@@ -690,6 +692,14 @@
             <button class="mms-btn mms-btn-blue w-full justify-center text-sm" onclick="event.stopPropagation();goSummary()">📊 ดูสรุป</button>
         </div>
 
+        <!-- QR แจ้ง Breakdown (Engineer/Admin) -->
+        <div id="bdhub-card-qr" class="hidden mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #27ae60" onclick="openBdQrGenModal()">
+            <div class="text-4xl mb-3">📱</div>
+            <h3 class="font-bold mb-1" style="color:var(--mms-text)">QR แจ้ง Breakdown</h3>
+            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">สร้าง QR Code สำหรับแจ้งเครื่องเสีย</p>
+            <button class="mms-btn w-full justify-center text-sm" style="background:#27ae60;color:#fff" onclick="event.stopPropagation();openBdQrGenModal()">📱 Generate QR</button>
+        </div>
+
         <!-- Manual Report (Admin only) -->
         <div id="bdhub-card-manual" class="hidden mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #8e44ad" onclick="goManualCreate()">
             <div class="text-4xl mb-3">✍️</div>
@@ -701,6 +711,50 @@
 </div>
 
 </div><!-- end panel-bd-hub -->
+
+<!-- ==================== BD QR KIOSK PANEL ==================== -->
+<div id="panel-bd-kiosk" class="tab-panel hidden">
+<div class="min-h-screen flex items-start justify-center py-8 px-4" style="background:linear-gradient(135deg,#7f1d1d,#1f2937)">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="px-6 py-4" style="background:#dc2626">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">🚨 แจ้ง Breakdown</h2>
+            <p id="bdk-machine-label" class="text-red-200 text-sm mt-0.5">—</p>
+        </div>
+        <div class="p-5 space-y-4">
+            <!-- Machine info read-only -->
+            <div class="bg-gray-50 rounded-xl p-4 space-y-2 text-sm border border-gray-100">
+                <div class="flex justify-between"><span class="text-gray-500">รหัสเครื่องจักร</span><span class="font-bold font-mono" id="bdk-machine-id">—</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">โรงงาน / พื้นที่</span><span class="font-bold" id="bdk-fac-area">—</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">ไลน์การผลิต</span><span class="font-bold" id="bdk-line">—</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">วันที่แจ้ง</span><span class="font-bold" id="bdk-datetime">—</span></div>
+            </div>
+            <!-- Problem -->
+            <div>
+                <label class="text-sm font-bold text-gray-700 block mb-1">อาการ / ปัญหา <span class="text-red-500">*</span></label>
+                <textarea id="bdk-problem" rows="3" placeholder="ระบุอาการที่พบ..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-200 resize-none"></textarea>
+            </div>
+            <!-- Photo -->
+            <div>
+                <label class="text-sm font-bold text-gray-700 block mb-1">รูปภาพ</label>
+                <div class="relative border-2 border-dashed border-red-300 hover:border-red-500 rounded-xl bg-red-50/40 flex items-center justify-center overflow-hidden" style="height:10rem">
+                    <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" capture="environment" onchange="bdkSetImage(event)">
+                    <img id="bdk-preview" class="absolute inset-0 w-full h-full object-contain bg-white hidden">
+                    <span id="bdk-photo-hint" class="text-red-300 text-sm font-semibold pointer-events-none">📷 ถ่ายรูป / อัปโหลด</span>
+                </div>
+            </div>
+            <!-- Name -->
+            <div>
+                <label class="text-sm font-bold text-gray-700 block mb-1">👤 ชื่อผู้แจ้ง <span class="text-red-500">*</span></label>
+                <input id="bdk-byname" type="text" placeholder="ระบุชื่อ-นามสกุล..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-500">
+            </div>
+            <!-- Submit -->
+            <button id="bdk-submit" onclick="submitBdKiosk()" class="w-full py-3 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2" style="background:#dc2626">
+                🚨 ยืนยันแจ้ง Breakdown
+            </button>
+        </div>
+    </div>
+</div>
+</div><!-- end panel-bd-kiosk -->
 
 <!-- ==================== PANEL: LOG VIEWER ==================== -->
 <div id="panel-log" class="tab-panel">
@@ -1980,6 +2034,27 @@
   </div>
 </div>
 
+<!-- modal-bd-qr-gen: Generate QR PDF for BD Report -->
+<div id="modal-bd-qr-gen" class="modal-bg hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+    <div class="px-6 py-4 flex-shrink-0 flex justify-between items-center" style="background:#dc2626">
+      <h2 class="text-base font-bold text-white">📱 Generate QR Code (แจ้ง Breakdown)</h2>
+      <button onclick="document.getElementById('modal-bd-qr-gen').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
+    </div>
+    <div class="p-4 flex-shrink-0 border-b border-gray-100 flex flex-wrap items-end gap-3">
+      <div><label class="text-xs font-bold text-gray-500 block mb-1">ขนาด QR (mm)</label>
+        <input id="bd-qr-size-mm" type="number" min="15" max="100" value="40" class="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
+      <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" id="bd-qr-select-all" onchange="bdQrToggleAll(this.checked)"> เลือกทั้งหมด</label>
+      <span id="bd-qr-sel-count" class="text-xs text-gray-500 ml-auto">เลือก 0</span>
+    </div>
+    <div id="bd-qr-machine-list" class="flex-1 overflow-y-auto p-4 space-y-1"></div>
+    <div class="p-4 border-t border-gray-100 flex-shrink-0 flex gap-3 justify-end">
+      <button onclick="document.getElementById('modal-bd-qr-gen').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
+      <button onclick="generateBdQrPdf()" class="mms-btn" style="background:#dc2626;color:#fff">📄 สร้าง PDF</button>
+    </div>
+  </div>
+</div>
+
 <!-- modal-cl-items-editor: 3-mode items editor (default-daily / per-machine-daily / per-machine-pm) -->
 <div id="modal-cl-items-editor" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden max-h-[92vh] flex flex-col">
@@ -2626,8 +2701,9 @@ function applyRole() {
     document.getElementById('role-display').textContent = roleLabel(userRole);
     document.getElementById('login-row').classList.toggle('hidden', userRole !== 'user');
     document.getElementById('logout-btn').classList.toggle('hidden', userRole === 'user');
-    // Manual Report card ใน bd-hub (เฉพาะ engineer/admin)
+    // Manual Report + QR BD card ใน bd-hub (เฉพาะ engineer/admin)
     document.getElementById('bdhub-card-manual')?.classList.toggle('hidden', userRole === 'user');
+    document.getElementById('bdhub-card-qr')?.classList.toggle('hidden', userRole === 'user');
     // แก้ URL ได้เฉพาะ Admin
     const urlInput = document.getElementById('gas-url-input');
     if (urlInput) urlInput.disabled = !isAdmin;
@@ -5630,6 +5706,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const _qp = new URLSearchParams(location.search);
     if (_qp.get('mode') === 'daily' && _qp.get('m')) {
         enterDailyKiosk(_qp.get('m'), _qp.get('t') || '');
+    } else if (_qp.get('mode') === 'bd-report' && _qp.get('m')) {
+        enterBdKiosk(_qp.get('m'), _qp.get('t') || '');
     } else {
     switchTab('home');
     initHubDatetime();
@@ -7343,6 +7421,162 @@ async function saveClItemsEditor() {
 
     document.getElementById('modal-cl-items-editor').classList.add('hidden');
     loadClSchedule();
+}
+
+// ---- BD QR KIOSK ----
+const BD_QR_TOKEN = 'cprbdreport2026';
+let _bdKioskMachine = null;
+let _bdKioskImage   = null;
+
+async function enterBdKiosk(machineId, token) {
+    if (token !== BD_QR_TOKEN) {
+        document.body.innerHTML = '<div style="padding:48px;text-align:center;font-family:sans-serif"><h2 style="color:#c0392b">❌ QR Code ไม่ถูกต้องหรือหมดอายุ</h2></div>';
+        return;
+    }
+    document.body.classList.add('kiosk-mode');
+    showLoading('กำลังโหลดข้อมูลเครื่องจักร…');
+    try {
+        if (!machineMaster.length) await loadMachineMaster();
+        const m = machineMaster.find(x => (x.id||x.machineId||x.machine_id||'') === machineId);
+        if (!m) {
+            hideLoading();
+            document.body.innerHTML = '<div style="padding:48px;text-align:center;font-family:sans-serif"><h2 style="color:#c0392b">❌ ไม่พบเครื่องจักรรหัส ' + machineId + '</h2></div>';
+            return;
+        }
+        _bdKioskMachine = m;
+        _bdKioskImage   = null;
+        const id   = m.id || m.machineId || m.machine_id || '';
+        const name = m.name || m.machineName || id;
+        const fac  = m.factory || '';
+        const area = m.area    || '';
+        const line = m.line    || m.productionLine || '—';
+        const now  = new Date(Date.now() + 7*3600000);
+        const dateStr = now.toISOString().slice(0,10);
+        const timeStr = now.toISOString().slice(11,16);
+        document.getElementById('bdk-machine-label').textContent = `${id} — ${name}`;
+        document.getElementById('bdk-machine-id').textContent    = id;
+        document.getElementById('bdk-fac-area').textContent      = `${fac} / ${area}`;
+        document.getElementById('bdk-line').textContent          = line;
+        document.getElementById('bdk-datetime').textContent      = `${dateStr} ${timeStr} น.`;
+        document.getElementById('bdk-problem').value = '';
+        document.getElementById('bdk-byname').value  = '';
+        document.getElementById('bdk-preview').classList.add('hidden');
+        document.getElementById('bdk-photo-hint').classList.remove('hidden');
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+        document.getElementById('panel-bd-kiosk').classList.remove('hidden');
+    } finally { hideLoading(); }
+}
+
+function bdkSetImage(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => compressImage(reader.result, d => {
+        _bdKioskImage = d;
+        const img = document.getElementById('bdk-preview');
+        img.src = d; img.classList.remove('hidden');
+        document.getElementById('bdk-photo-hint').classList.add('hidden');
+    });
+    reader.readAsDataURL(file);
+    event.target.value = '';
+}
+
+async function submitBdKiosk() {
+    const problem = document.getElementById('bdk-problem').value.trim();
+    const byName  = document.getElementById('bdk-byname').value.trim();
+    if (!problem) return showToast('⚠️ กรุณาระบุอาการ/ปัญหา', 'error');
+    if (!byName)  return showToast('⚠️ กรุณาระบุชื่อผู้แจ้ง', 'error');
+    if (!GAS_URL) return showToast('⚠️ ยังไม่ได้ตั้งค่า Web App URL', 'error');
+    const m    = _bdKioskMachine;
+    const id   = m.id || m.machineId || m.machine_id || '';
+    const name = m.name || m.machineName || id;
+    const now  = new Date(Date.now() + 7*3600000);
+    const dateStr = now.toISOString().slice(0,10);
+    const timeStr = now.toISOString().slice(11,16);
+    const data = {
+        timestamp: new Date().toISOString(), tracking: '',
+        machineName: name, factory: m.factory||'', area: m.area||'', machineId: id,
+        line: m.line||m.productionLine||'', status: 'รอรับงาน',
+        bdStart: `${dateStr}T${timeStr}`, bdEnd: '', downtimeMin: 0,
+        bdType: '', problem: `${problem} *${byName} - แจ้ง Breakdown (QR)`,
+        device: '', whys: [''], corrective: '', preventive: '', parts: [],
+        byName, action: 'create',
+        imgBefore: _bdKioskImage || '', imgAfter: '',
+    };
+    const btn = document.getElementById('bdk-submit');
+    btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+    try {
+        const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(data) });
+        const json = await res.json();
+        if (json && json.success) {
+            document.getElementById('panel-bd-kiosk').innerHTML = `
+                <div class="min-h-screen flex items-center justify-center p-6" style="background:linear-gradient(135deg,#14532d,#1f2937)">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center">
+                        <div class="text-6xl mb-4">✅</div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-2">แจ้ง Breakdown สำเร็จ</h2>
+                        <p class="text-sm text-gray-500 mb-1">เลขที่ใบแจ้งเหตุ</p>
+                        <p class="text-2xl font-bold mb-4" style="color:#dc2626">${json.tracking || '—'}</p>
+                        <p class="text-sm text-gray-400">ทีมช่างจะรับทราบและดำเนินการโดยเร็ว</p>
+                    </div>
+                </div>`;
+        } else {
+            showToast('❌ แจ้งไม่สำเร็จ: ' + (json?.error || 'ไม่ทราบสาเหตุ'), 'error');
+            btn.disabled = false; btn.textContent = '🚨 ยืนยันแจ้ง Breakdown';
+        }
+    } catch(err) {
+        showToast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
+        btn.disabled = false; btn.textContent = '🚨 ยืนยันแจ้ง Breakdown';
+    }
+}
+
+// ---- BD QR GENERATE MODAL ----
+function openBdQrGenModal() {
+    if (userRole !== 'engineer' && userRole !== 'admin') { showToast('ต้องเป็น Engineer หรือ Admin', 'warn'); return; }
+    const machines = machineMaster.slice();
+    document.getElementById('bd-qr-machine-list').innerHTML = machines.map(m => {
+        const id = m.id||m.machineId||m.machine_id||''; const name = m.name||m.machineName||id;
+        return `<label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+            <input type="checkbox" class="bd-qr-cb w-4 h-4" value="${id}" onchange="bdQrUpdateCount()">
+            <span class="text-xs font-mono text-gray-500 shrink-0">${id}</span>
+            <span class="text-sm">${name}</span></label>`;
+    }).join('') || '<p class="text-center text-gray-400 py-6">ไม่พบเครื่องจักร</p>';
+    document.getElementById('bd-qr-select-all').checked = false;
+    bdQrUpdateCount();
+    document.getElementById('modal-bd-qr-gen').classList.remove('hidden');
+}
+function bdQrToggleAll(on) { document.querySelectorAll('.bd-qr-cb').forEach(cb => cb.checked = on); bdQrUpdateCount(); }
+function bdQrUpdateCount() { document.getElementById('bd-qr-sel-count').textContent = 'เลือก ' + document.querySelectorAll('.bd-qr-cb:checked').length; }
+
+function generateBdQrPdf() {
+    const ids = [...document.querySelectorAll('.bd-qr-cb:checked')].map(cb => cb.value);
+    if (!ids.length) { showToast('เลือกเครื่องอย่างน้อย 1 เครื่อง', 'warn'); return; }
+    const sizeMm = Math.min(100, Math.max(15, parseFloat(document.getElementById('bd-qr-size-mm').value)||40));
+    const base   = location.origin + location.pathname;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
+    const PAGE_W=210, PAGE_H=297, MARGIN=10, LABEL_H=10, GAP=6;
+    const cellW = sizeMm + GAP;
+    const cellH = sizeMm + LABEL_H + GAP;
+    const cols  = Math.max(1, Math.floor((PAGE_W - 2*MARGIN + GAP) / cellW));
+    const rows  = Math.max(1, Math.floor((PAGE_H - 2*MARGIN + GAP) / cellH));
+    const perPage = cols * rows;
+    ids.forEach((id, i) => {
+        if (i > 0 && i % perPage === 0) pdf.addPage();
+        const idx = i % perPage; const r = Math.floor(idx/cols), c = idx % cols;
+        const x = MARGIN + c*cellW, y = MARGIN + r*cellH;
+        const m = machineMaster.find(z => (z.id||z.machineId||z.machine_id||'')===id) || {};
+        const name = m.name||m.machineName||id;
+        const url  = `${base}?mode=bd-report&m=${encodeURIComponent(id)}&t=${encodeURIComponent(BD_QR_TOKEN)}`;
+        pdf.addImage(qrDataUrl(url, Math.round(sizeMm*8)), 'PNG', x, y, sizeMm, sizeMm);
+        pdf.setFontSize(8); pdf.setTextColor(0);
+        pdf.text(String(id), x + sizeMm/2, y + sizeMm + 4, { align:'center', maxWidth: cellW });
+        pdf.setFontSize(6); pdf.setTextColor(80);
+        pdf.text(String(name).slice(0,32), x + sizeMm/2, y + sizeMm + 8, { align:'center', maxWidth: cellW });
+        pdf.setFontSize(5); pdf.setTextColor(180);
+        pdf.text('แจ้ง Breakdown', x + sizeMm/2, y + sizeMm + 11.5, { align:'center' });
+        pdf.setTextColor(0);
+    });
+    pdf.save(`QR_BDReport_${ids.length}เครื่อง.pdf`);
+    document.getElementById('modal-bd-qr-gen').classList.add('hidden');
 }
 
 // ---- QR GENERATE MODAL (Phase E) ----

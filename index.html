@@ -783,6 +783,31 @@
                 <p class="text-sm">ยังไม่มีประวัติการแก้ไขเครื่องจักร</p>
             </div>
         </div>
+
+        <!-- History log section -->
+        <div class="mt-5">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <h3 class="text-sm font-bold text-gray-600">📜 ประวัติการแก้ไขทะเบียน</h3>
+                <span id="log-mc-hist-count" class="text-xs text-gray-400"></span>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-200">
+                                <th class="px-4 py-2.5 text-left w-36">เวลา</th>
+                                <th class="px-4 py-2.5 text-left">การกระทำ</th>
+                                <th class="px-4 py-2.5 text-left">ผู้ดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-mc-hist-tbody"></tbody>
+                    </table>
+                </div>
+                <div id="log-mc-hist-empty" class="hidden text-center py-8 text-gray-400">
+                    <p class="text-sm">ยังไม่มีประวัติ Log ทะเบียน</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ── CHECKLIST LOG ── -->
@@ -793,7 +818,16 @@
                     <label class="text-xs font-bold text-gray-500 block mb-1">ค้นหา</label>
                     <input id="log-cl-search" type="text" placeholder="การกระทำ / ผู้ดำเนินการ..."
                         oninput="renderClLog()"
-                        class="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 w-64 transition-colors">
+                        class="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 w-52 transition-colors">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">เลข Tracking</label>
+                    <input id="log-cl-tracking" type="text" placeholder="CL-CHB..."
+                        oninput="renderClLog()"
+                        class="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 w-40 transition-colors">
+                </div>
+                <div class="ml-auto self-end">
+                    <span id="log-cl-count" class="text-xs text-gray-400 font-medium"></span>
                 </div>
             </div>
         </div>
@@ -803,6 +837,7 @@
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
                             <th class="text-left px-4 py-3 text-xs font-bold text-gray-500">เวลา</th>
+                            <th class="text-left px-4 py-3 text-xs font-bold text-gray-500">Tracking</th>
                             <th class="text-left px-4 py-3 text-xs font-bold text-gray-500">การกระทำ</th>
                             <th class="text-left px-4 py-3 text-xs font-bold text-gray-500">ผู้ดำเนินการ</th>
                         </tr>
@@ -3499,35 +3534,54 @@ function switchLogTab(tab) {
         if (btn) btn.className = 'log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all ' +
             (tab === t ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-800');
     });
-    if (tab === 'machines') renderMcLog();
+    if (tab === 'machines') { renderMcLog(); renderMcLogHistory(); }
     if (tab === 'cl') renderClLog();
 }
 const CL_LOG_KEYS = ['Checklist','Daily','PM items','แผน PM','Copy','Default'];
-function isClLog(row) {
-    const act = String(Array.isArray(row) ? (row[2]||'') : (row.action||row[2]||''));
+const MC_REG_KEYS = ['เพิ่มทะเบียน','แก้ไขทะเบียน','ลบทะเบียน'];
+function _logTracking(row) { return String(Array.isArray(row) ? (row[1]||'') : (row.tracking||row[1]||'')); }
+function _logAction(row)   { return String(Array.isArray(row) ? (row[2]||'') : (row.action||row[2]||'')); }
+function isBdLog(row)  { return _logTracking(row).startsWith('BD-'); }
+function isClLog(row)  {
+    if (_logTracking(row).startsWith('CL-')) return true;
+    const act = _logAction(row);
     return CL_LOG_KEYS.some(k => act.includes(k));
 }
+function isMcLog(row)  {
+    const act = _logAction(row);
+    return _logTracking(row) === '-' && MC_REG_KEYS.some(k => act.includes(k));
+}
+
 function renderClLog() {
-    const q = (document.getElementById('log-cl-search')?.value || '').toLowerCase();
+    const q  = (document.getElementById('log-cl-search')?.value   || '').trim().toLowerCase();
+    const tq = (document.getElementById('log-cl-tracking')?.value || '').trim().toLowerCase();
     const tbody = document.getElementById('log-cl-tbody');
     const empty = document.getElementById('log-cl-empty');
     if (!tbody) return;
-    const rows = (_allBdLog || []).filter(r => isClLog(r)).filter(r => {
-        if (!q) return true;
-        const line = (Array.isArray(r) ? r.join(' ') : Object.values(r).join(' ')).toLowerCase();
-        return line.includes(q);
+    const allCl = (_allBdLog || []).filter(isClLog);
+    const rows = allCl.filter(r => {
+        const tracking = String(r.tracking||'').toLowerCase();
+        const act = String(r.action||'').toLowerCase();
+        const by  = String(r.byName||'').toLowerCase();
+        if (tq && !tracking.includes(tq)) return false;
+        if (q  && !act.includes(q) && !by.includes(q) && !tracking.includes(q)) return false;
+        return true;
     });
+    const countEl = document.getElementById('log-cl-count');
+    if (countEl) countEl.textContent = `${rows.length} / ${allCl.length} รายการ`;
     empty.classList.toggle('hidden', rows.length > 0);
     tbody.innerHTML = rows.map(r => {
-        const time = Array.isArray(r) ? r[0] : (r.time||r[0]||'');
-        const act  = Array.isArray(r) ? r[2] : (r.action||r[2]||'');
-        const by   = Array.isArray(r) ? r[3] : (r.byName||r[3]||'');
+        const time     = String(r.time||'').replace('T',' ').slice(0,16) || '—';
+        const tracking = r.tracking || '—';
+        const act      = String(r.action||'—');
+        const by       = String(r.byName||'—');
         return `<tr class="border-b border-gray-100 hover:bg-gray-50">
             <td class="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">${time}</td>
+            <td class="px-4 py-2.5"><span class="text-xs font-bold text-teal-600">${tracking}</span></td>
             <td class="px-4 py-2.5 text-sm">${act}</td>
             <td class="px-4 py-2.5 text-sm text-gray-600">${by}</td>
         </tr>`;
-    }).join('') || '<tr><td colspan="3" class="text-center py-8 text-gray-400 text-sm">ไม่พบรายการ</td></tr>';
+    }).join('') || '<tr><td colspan="4" class="text-center py-8 text-gray-400 text-sm">ไม่พบรายการ</td></tr>';
 }
 
 async function loadAllLog() {
@@ -3559,7 +3613,8 @@ async function loadAllLog() {
         } catch (_) {}
     }
     _logMcData = machineMaster.filter(m => m.editedBy);
-    if (_logCurrentTab === 'machines') renderMcLog();
+    if (_logCurrentTab === 'machines') { renderMcLog(); renderMcLogHistory(); }
+    if (_logCurrentTab === 'cl') renderClLog();
 }
 
 const ACTION_LABELS = {
@@ -3577,7 +3632,8 @@ function renderBdLog() {
     const tbody = document.getElementById('log-bd-tbody');
     const emptyEl = document.getElementById('log-bd-empty');
 
-    const rows = _allBdLog.filter(r => {
+    const allBd = _allBdLog.filter(isBdLog);
+    const rows = allBd.filter(r => {
         const matchAct = !act || String(r.action||'').toLowerCase().includes(act);
         const matchQ   = !q  ||
             String(r.tracking||'').toLowerCase().includes(q) ||
@@ -3587,7 +3643,7 @@ function renderBdLog() {
         return matchAct && matchQ;
     });
 
-    document.getElementById('log-bd-count').textContent = `${rows.length} / ${_allBdLog.length} รายการ`;
+    document.getElementById('log-bd-count').textContent = `${rows.length} / ${allBd.length} รายการ`;
 
     if (!rows.length) {
         tbody.innerHTML = '';
@@ -3653,6 +3709,35 @@ function renderMcLog() {
             <td class="px-4 py-2.5 text-xs text-gray-600">${m.area||'—'}</td>
             <td class="px-4 py-2.5 text-sm text-gray-700 font-medium">${m.editedBy||'—'}</td>
             <td class="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">${dateStr}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderMcLogHistory() {
+    const tbody = document.getElementById('log-mc-hist-tbody');
+    const empty = document.getElementById('log-mc-hist-empty');
+    if (!tbody) return;
+    const rows = (_allBdLog || []).filter(isMcLog).sort((a, b) =>
+        String(b.time||'').localeCompare(String(a.time||''))
+    );
+    const countEl = document.getElementById('log-mc-hist-count');
+    if (countEl) countEl.textContent = `${rows.length} รายการ`;
+    if (!rows.length) {
+        tbody.innerHTML = '';
+        if (empty) empty.classList.remove('hidden');
+        return;
+    }
+    if (empty) empty.classList.add('hidden');
+    const ACT_CLS = { 'เพิ่มทะเบียน':'bg-blue-100 text-blue-700', 'แก้ไขทะเบียน':'bg-yellow-100 text-yellow-700', 'ลบทะเบียน':'bg-red-100 text-red-600' };
+    tbody.innerHTML = rows.map(r => {
+        const time = String(r.time||'').replace('T',' ').slice(0,16) || '—';
+        const act  = String(r.action||'—');
+        const by   = String(r.byName||'—');
+        const cls  = ACT_CLS[act] || 'bg-gray-100 text-gray-600';
+        return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+            <td class="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">${time}</td>
+            <td class="px-4 py-2.5"><span class="inline-block text-xs font-bold px-2 py-0.5 rounded-full ${cls}">${act}</span></td>
+            <td class="px-4 py-2.5 text-sm text-gray-700">${by}</td>
         </tr>`;
     }).join('');
 }

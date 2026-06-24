@@ -249,7 +249,7 @@
                 <div class="sidebar-subitem" id="sni-cl-hub" onclick="goChecklist()">ภาพรวม</div>
                 <div class="sidebar-subitem" id="sni-cl-daily" onclick="goClForm('daily')">รายวัน</div>
                 <div class="sidebar-subitem" id="sni-cl-pm" onclick="goClForm('pm')">PM Checklist</div>
-                <div class="sidebar-subitem" id="sni-cl-list" onclick="switchTab('cl-list')">รายการ</div>
+                <div class="sidebar-subitem" id="sni-cl-list" onclick="switchTab('cl-list')">ประวัติ Checklist</div>
                 <div class="sidebar-subitem" id="sni-cl-summary" onclick="switchTab('cl-summary')">สรุป / KPI</div>
                 <div class="sidebar-subitem" id="sni-cl-calendar" onclick="switchTab('cl-calendar')">ปฏิทิน PM</div>
                 <div class="sidebar-subitem" id="sni-cl-schedule" onclick="switchTab('cl-schedule')">รายละเอียดตรวจสอบ</div>
@@ -535,85 +535,113 @@
     </div>
 </div>
 
-<!-- Factory Dashboard -->
-<div class="max-w-5xl mx-auto px-4 md:px-8 py-6 space-y-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="hub-fac-dash">
-        <!-- โรงงาน 1 -->
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <p class="text-sm font-bold text-gray-700 mb-3">🏭 Factory 1 - RTE Factory</p>
-            <div class="flex items-center gap-4">
-                <div class="relative flex-shrink-0" style="width:110px;height:110px">
-                    <canvas id="dash-chart-f1"></canvas>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span class="text-xl font-bold text-gray-800" id="dash-f1-total">—</span>
-                        <span class="text-[10px] text-gray-400">เครื่อง</span>
-                    </div>
-                </div>
-                <div class="flex-1 grid grid-cols-2 gap-2">
-                    <div class="rounded-lg p-3 text-center" style="background:#eafaf1">
-                        <p class="text-2xl font-bold" style="color:#27ae60" id="dash-f1-run">—</p>
-                        <p class="text-xs text-gray-500 mt-1">กำลังใช้งาน</p>
-                    </div>
-                    <div class="rounded-lg p-3 text-center" style="background:#fdecea">
-                        <p class="text-2xl font-bold" style="color:var(--mms-red)" id="dash-f1-bd">—</p>
-                        <p class="text-xs text-gray-500 mt-1">Breakdown</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- โรงงาน 2 -->
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <p class="text-sm font-bold text-gray-700 mb-3">🏭 Factory 2 - BAK Factory</p>
-            <div class="flex items-center gap-4">
-                <div class="relative flex-shrink-0" style="width:110px;height:110px">
-                    <canvas id="dash-chart-f2"></canvas>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span class="text-xl font-bold text-gray-800" id="dash-f2-total">—</span>
-                        <span class="text-[10px] text-gray-400">เครื่อง</span>
-                    </div>
-                </div>
-                <div class="flex-1 grid grid-cols-2 gap-2">
-                    <div class="rounded-lg p-3 text-center" style="background:#eafaf1">
-                        <p class="text-2xl font-bold" style="color:#27ae60" id="dash-f2-run">—</p>
-                        <p class="text-xs text-gray-500 mt-1">กำลังใช้งาน</p>
-                    </div>
-                    <div class="rounded-lg p-3 text-center" style="background:#fdecea">
-                        <p class="text-2xl font-bold" style="color:var(--mms-red)" id="dash-f2-bd">—</p>
-                        <p class="text-xs text-gray-500 mt-1">Breakdown</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- summary row -->
+<!-- Home Dashboard Body -->
+<div class="px-4 md:px-8 py-5 space-y-4">
+
+    <!-- Summary bar -->
     <div class="grid grid-cols-3 gap-3">
         <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
-            <p class="text-xl font-bold" style="color:var(--mms-green)" id="hub-count-machines">—</p>
+            <p class="text-xl font-bold text-green-600" id="hub-count-machines">—</p>
             <p class="text-xs text-gray-500 mt-0.5">เครื่องจักรทั้งหมด</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
-            <p class="text-xl font-bold" style="color:var(--mms-red)" id="hub-count-bd">—</p>
+            <p class="text-xl font-bold text-red-500" id="hub-count-bd">—</p>
             <p class="text-xs text-gray-500 mt-0.5">Breakdown เดือนนี้</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-3 text-center">
-            <p class="text-xl font-bold" style="color:var(--mms-blue)" id="hub-count-wip">—</p>
+            <p class="text-xl font-bold text-blue-500" id="hub-count-wip">—</p>
             <p class="text-xs text-gray-500 mt-0.5">กำลังดำเนินการ</p>
         </div>
     </div>
 
-    <!-- Daily Checklist Dashboard -->
-    <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h2 class="text-sm font-bold text-gray-800">📋 สถานะการตรวจประจำวัน (Daily Checklist)</h2>
-                <p id="home-cldash-date" class="text-xs text-gray-400 mt-0.5"></p>
+    <!-- Factory 1 - RTE Factory -->
+    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="px-5 py-3 flex items-center gap-3" style="background:linear-gradient(135deg,#1a3a5c,#2980b9)">
+            <span class="text-white text-xl">🏭</span>
+            <div class="flex-1">
+                <h2 class="text-white font-bold">Factory 1 - RTE Factory</h2>
+                <p class="text-blue-200 text-xs">โรงงาน 1</p>
             </div>
-            <button onclick="loadClDailyDash()" class="mms-btn text-xs" style="background:#f0f2f5;color:var(--mms-text)">🔄</button>
+            <p id="home-dash-date" class="text-blue-200 text-xs hidden md:block"></p>
+            <button onclick="loadHomeDash()" class="text-white/70 hover:text-white text-lg leading-none" title="รีเฟรช">🔄</button>
         </div>
-        <div id="home-cldash-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="text-center text-gray-400 py-8 col-span-2 text-sm">กำลังโหลด...</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+            <div class="p-4">
+                <p class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">🚨 Breakdown</p>
+                <div class="flex items-center gap-3">
+                    <div class="relative flex-shrink-0" style="width:88px;height:88px">
+                        <canvas id="dash-chart-f1"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-lg font-bold text-gray-800" id="dash-f1-total">—</span>
+                            <span class="text-[9px] text-gray-400">เครื่อง</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 space-y-2">
+                        <div class="rounded-lg p-2 text-center bg-green-50">
+                            <p class="text-2xl font-bold text-green-600" id="dash-f1-run">—</p>
+                            <p class="text-xs text-gray-500">ใช้งาน</p>
+                        </div>
+                        <div class="rounded-lg p-2 text-center bg-red-50">
+                            <p class="text-2xl font-bold text-red-500" id="dash-f1-bd">—</p>
+                            <p class="text-xs text-gray-500">BD</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4">
+                <p class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">📋 Daily Checklist วันนี้</p>
+                <div id="home-f1-daily"><div class="text-xs text-gray-400">กำลังโหลด...</div></div>
+            </div>
+            <div class="p-4">
+                <p class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">🔧 PM เดือนนี้</p>
+                <div id="home-f1-pm"><div class="text-xs text-gray-400">กำลังโหลด...</div></div>
+            </div>
         </div>
     </div>
+
+    <!-- Factory 2 - BAK Factory -->
+    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="px-5 py-3 flex items-center gap-3" style="background:linear-gradient(135deg,#4a1f5c,#8e44ad)">
+            <span class="text-white text-xl">🏭</span>
+            <div class="flex-1">
+                <h2 class="text-white font-bold">Factory 2 - BAK Factory</h2>
+                <p class="text-purple-200 text-xs">โรงงาน 2</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+            <div class="p-4">
+                <p class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">🚨 Breakdown</p>
+                <div class="flex items-center gap-3">
+                    <div class="relative flex-shrink-0" style="width:88px;height:88px">
+                        <canvas id="dash-chart-f2"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-lg font-bold text-gray-800" id="dash-f2-total">—</span>
+                            <span class="text-[9px] text-gray-400">เครื่อง</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 space-y-2">
+                        <div class="rounded-lg p-2 text-center bg-green-50">
+                            <p class="text-2xl font-bold text-green-600" id="dash-f2-run">—</p>
+                            <p class="text-xs text-gray-500">ใช้งาน</p>
+                        </div>
+                        <div class="rounded-lg p-2 text-center bg-red-50">
+                            <p class="text-2xl font-bold text-red-500" id="dash-f2-bd">—</p>
+                            <p class="text-xs text-gray-500">BD</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4">
+                <p class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">📋 Daily Checklist วันนี้</p>
+                <div id="home-f2-daily"><div class="text-xs text-gray-400">กำลังโหลด...</div></div>
+            </div>
+            <div class="p-4">
+                <p class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">🔧 PM เดือนนี้</p>
+                <div id="home-f2-pm"><div class="text-xs text-gray-400">กำลังโหลด...</div></div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 </div><!-- end panel-home -->
@@ -1074,6 +1102,11 @@
             <input type="month" id="cll-month" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
         </div>
         <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">รหัส / ชื่อเครื่อง</label>
+            <input type="text" id="cll-machine-q" placeholder="ค้นหา..." oninput="filterClListTable()"
+                class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none w-36">
+        </div>
+        <div>
             <label class="text-xs font-bold text-gray-500 block mb-1">เลยกำหนด</label>
             <select id="cll-overdue" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
                 <option value="">—</option>
@@ -1083,6 +1116,7 @@
             </select>
         </div>
         <button onclick="loadClList()" class="mms-btn mms-btn-green">🔍 ค้นหา</button>
+        <span id="cll-count" class="text-xs text-gray-400 self-end pb-2"></span>
     </div>
     <div class="mms-card overflow-hidden">
         <table class="w-full text-sm">
@@ -3091,7 +3125,7 @@ const PAGE_TITLE = {
     log:            '📋 Log ระบบ (Admin)',
     'cl-hub':       '✅ ระบบ Check list',
     'cl-form':      '📋 บันทึก Checklist',
-    'cl-list':      '📁 รายการ Checklist',
+    'cl-list':      '📁 ประวัติ Checklist',
     'cl-summary':   '📊 สรุป / KPI',
     'cl-calendar':  '📅 ปฏิทิน PM',
     'cl-schedule':  '🔧 รายละเอียดตรวจสอบ',
@@ -3503,7 +3537,7 @@ function switchTab(name) {
     updateNavActive(name);
 
     if (name === 'summary') checkSummarySetup();
-    if (name === 'home') loadClDailyDash();
+    if (name === 'home') loadHomeDash();
     if (name === 'records') checkRecordsSetup();
     if (name === 'cl-hub') initClHub();
     if (name === 'cl-list') initClList();
@@ -3806,6 +3840,7 @@ async function refreshDashboard() {
     } catch(e) {}
     if (chip) { chip.disabled = false; chip.textContent = '🔄 รีเฟรช'; }
     initHubStats();
+    if (typeof renderHomeDash === 'function') renderHomeDash(); // อัปเดต BD cards บนหน้าแรกโดยไม่รีโหลด CL
 }
 
 function initHubStats() {
@@ -5602,7 +5637,7 @@ window.addEventListener('DOMContentLoaded', () => {
     loadMachines().then(async () => {
         initHubStats();
         await refreshDashboard(); // โหลด getAll → _dashRecords → initHubStats
-        loadClDailyDash();        // daily checklist dashboard บนหน้าแรก
+        loadHomeDash();           // daily + PM checklist dashboard บนหน้าแรก
     });
 
     // Year options (current ± 2)
@@ -5798,10 +5833,11 @@ function clHubFacChange() {
     clFillAreaSelect('cl-hub-area', fac, '');
 }
 
-// ---- DAILY DASHBOARD ----
-let _clDashRows = [];   // today's daily checklists for dashboard
-const _CLDASH_GRIDS = ['cldash-grid', 'home-cldash-grid'];
-const _CLDASH_DATES = ['cldash-date', 'home-cldash-date'];
+// ---- DAILY DASHBOARD (cl-hub only) ----
+let _clDashRows  = [];   // today's daily checklists
+let _clPmDashRows = [];  // this month's PM checklists
+const _CLDASH_GRIDS = ['cldash-grid'];
+const _CLDASH_DATES = ['cldash-date'];
 
 async function loadClDailyDash() {
     const todayBKK = new Date(Date.now() + 7*3600000).toISOString().slice(0,10);
@@ -5908,6 +5944,139 @@ function renderClDailyDash() {
 
     _CLDASH_GRIDS.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
 }
+
+// ---- HOME PAGE COMBINED DASHBOARD ----
+async function loadHomeDash() {
+    const todayBKK = new Date(Date.now() + 7*3600000).toISOString().slice(0,10);
+    const yr = todayBKK.slice(0,4), mo = todayBKK.slice(5,7);
+    const dateEl = document.getElementById('home-dash-date');
+    if (dateEl) dateEl.textContent = `วันที่ ${todayBKK}`;
+
+    // set loading placeholders
+    ['home-f1-daily','home-f2-daily','home-f1-pm','home-f2-pm'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="text-xs text-gray-400 py-1">กำลังโหลด...</div>';
+    });
+
+    try {
+        if (!machineMaster.length) await loadMachineMaster();
+        if (!Object.keys(_clPmPlans).length) {
+            const p = await clFetch({ action:'getPmPlans', factory:'', area:'' });
+            (p.data||[]).forEach(r => _clPmPlans[r.machineId] = r);
+        }
+        const [dailyRes, pmRes] = await Promise.all([
+            clFetch({ action:'getChecklists', factory:'', area:'', type:'daily', month:mo, year:yr }),
+            clFetch({ action:'getChecklists', factory:'', area:'', type:'pm',   month:mo, year:yr }),
+        ]);
+        _clDashRows    = (dailyRes.data||[]).filter(r => r.date === todayBKK);
+        _clPmDashRows  = pmRes.data || [];
+    } catch(e) {
+        ['home-f1-daily','home-f2-daily','home-f1-pm','home-f2-pm'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '<div class="text-xs text-red-400 py-1">โหลดล้มเหลว</div>';
+        });
+        return;
+    }
+    renderHomeDash();
+}
+
+function renderHomeDash() {
+    const todayBKK = new Date(Date.now() + 7*3600000).toISOString().slice(0,10);
+    const yr = Number(todayBKK.slice(0,4)), mo = Number(todayBKK.slice(5,7));
+
+    const FACS = [
+        { key:'โรงงาน 1', dailyId:'home-f1-daily', pmId:'home-f1-pm' },
+        { key:'โรงงาน 2', dailyId:'home-f2-daily', pmId:'home-f2-pm' },
+    ];
+
+    // daily done sets: 'fac|shift' → Set<machineId>
+    const dailyDone = {};
+    _clDashRows.forEach(r => {
+        const mid = String(r.machineId||r.machine||'').trim();
+        const fac = String(r.factory||'').trim();
+        const shift = String(r.shift||'').trim();
+        if (!mid||!fac||!shift) return;
+        const key = `${fac}|${shift}`;
+        if (!dailyDone[key]) dailyDone[key] = new Set();
+        dailyDone[key].add(mid);
+    });
+
+    // PM done sets: fac → Set<machineId>
+    const pmDone = {};
+    _clPmDashRows.forEach(r => {
+        const mid = String(r.machineId||r.machine||'').trim();
+        const fac = String(r.factory||'').trim();
+        if (!mid||!fac) return;
+        if (!pmDone[fac]) pmDone[fac] = new Set();
+        pmDone[fac].add(mid);
+    });
+
+    const SHIFTS = [{ k:'เช้า', icon:'🌅' }, { k:'ดึก', icon:'🌙' }];
+
+    FACS.forEach(({ key: fac, dailyId, pmId }) => {
+        // ── Daily ──
+        const dailyM = clMachinesFor(fac, '').filter(m => {
+            const id = String(m.id||m.machineId||m.machine_id||'').trim();
+            const plan = _clPmPlans[id] || {};
+            return plan.dailyEnabled !== false && plan.dailyEnabled !== 0 && plan.dailyEnabled !== '0';
+        });
+        const dailyTotal = dailyM.length;
+        const dailyHtml = dailyTotal === 0
+            ? '<p class="text-xs text-gray-400">ไม่มีเครื่องในแผน</p>'
+            : SHIFTS.map(({ k, icon }) => {
+                const done = dailyDone[`${fac}|${k}`]?.size || 0;
+                const pct  = Math.round(done / dailyTotal * 100);
+                const rem  = dailyTotal - done;
+                const bar  = pct === 100 ? '#27ae60' : pct > 0 ? '#e67e22' : '#bdc3c7';
+                const tc   = pct === 100 ? 'text-green-600' : pct > 0 ? 'text-orange-500' : 'text-gray-400';
+                return `<div class="mb-3 last:mb-0">
+                    <div class="flex justify-between mb-1 text-xs">
+                        <span class="font-bold text-gray-700">${icon} กะ${k}</span>
+                        <span class="font-bold ${tc}">${done}/${dailyTotal}</span>
+                    </div>
+                    <div class="relative h-5 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all" style="width:${pct}%;background:${bar}"></div>
+                        <span class="absolute inset-0 flex items-center justify-center text-xs font-bold ${pct>45?'text-white':'text-gray-500'}">${pct}%</span>
+                    </div>
+                    <div class="flex justify-between mt-1 text-xs">
+                        <span class="text-green-600">✅ ${done} เครื่อง</span>
+                        <span class="${rem>0?'text-red-400':'text-gray-300'}">⏳ ${rem} เครื่อง</span>
+                    </div>
+                </div>`;
+            }).join('');
+        const dEl = document.getElementById(dailyId);
+        if (dEl) dEl.innerHTML = dailyHtml;
+
+        // ── PM ──
+        const pmM = clMachinesFor(fac, '').filter(m => {
+            const id = String(m.id||m.machineId||m.machine_id||'').trim();
+            return clIsPmDueInMonth(id, yr, mo - 1);
+        });
+        const pmTotal = pmM.length;
+        const pmDoneCount = pmDone[fac]?.size || 0;
+        const pmPct = pmTotal ? Math.round(pmDoneCount / pmTotal * 100) : 0;
+        const pmRem = pmTotal - pmDoneCount;
+        const pmBar = pmPct === 100 ? '#27ae60' : pmPct > 0 ? '#e67e22' : '#bdc3c7';
+        const pmTc  = pmPct === 100 ? 'text-green-600' : pmPct > 0 ? 'text-orange-500' : 'text-gray-400';
+        const pmHtml = pmTotal === 0
+            ? '<p class="text-xs text-gray-400">ไม่มี PM กำหนดเดือนนี้</p>'
+            : `<div class="flex justify-between mb-1 text-xs">
+                <span class="font-bold text-gray-700">🔧 PM กำหนดเดือนนี้</span>
+                <span class="font-bold ${pmTc}">${pmDoneCount}/${pmTotal}</span>
+            </div>
+            <div class="relative h-5 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all" style="width:${pmPct}%;background:${pmBar}"></div>
+                <span class="absolute inset-0 flex items-center justify-center text-xs font-bold ${pmPct>45?'text-white':'text-gray-500'}">${pmPct}%</span>
+            </div>
+            <div class="flex justify-between mt-1 text-xs">
+                <span class="text-green-600">✅ เสร็จ ${pmDoneCount} เครื่อง</span>
+                <span class="${pmRem>0?'text-red-400':'text-gray-300'}">⏳ ค้าง ${pmRem} เครื่อง</span>
+            </div>`;
+        const pEl = document.getElementById(pmId);
+        if (pEl) pEl.innerHTML = pmHtml;
+    });
+}
+
 async function loadClHubRecent() {
     const el = document.getElementById('cl-hub-recent');
     if (!el) return;
@@ -6257,7 +6426,37 @@ async function saveChecklistConfirm() {
 }
 
 // ---- LIST ----
-let _clListRows = [];   // cache สำหรับ openClDetail by index (ป้องกัน JSON.stringify ใน onclick)
+let _clListRows = [];   // cache rows after GAS fetch (for filterClListTable + openClDetail)
+
+function filterClListTable() {
+    const q = (document.getElementById('cll-machine-q')?.value || '').trim().toLowerCase();
+    const tbody = document.getElementById('cll-body');
+    if (!tbody || !_clListRows.length) return;
+    const visible = q
+        ? _clListRows.filter(r =>
+            String(r.machineId || r.machine || '').toLowerCase().includes(q) ||
+            String(r.machineName || '').toLowerCase().includes(q))
+        : _clListRows;
+    const countEl = document.getElementById('cll-count');
+    if (countEl) countEl.textContent = `${visible.length} / ${_clListRows.length} รายการ`;
+    if (!visible.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบข้อมูล</td></tr>';
+        return;
+    }
+    // re-index against _clListRows so openClDetail still works
+    tbody.innerHTML = visible.map(r => {
+        const idx = _clListRows.indexOf(r);
+        return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+            <td class="px-4 py-2 font-mono text-xs text-gray-500">${r.id||'—'}</td>
+            <td class="px-3 py-2 text-xs">${r.type==='pm'?'🔧 PM':'📋 Daily'}</td>
+            <td class="px-3 py-2 text-xs">${r.date||'—'}</td>
+            <td class="px-3 py-2 text-xs">${r.machineName||r.machine||'—'}</td>
+            <td class="px-3 py-2 text-xs">${r.inspector||'—'}</td>
+            <td class="px-3 py-2 text-center">${clResultBadge(r.overallResult)}</td>
+            <td class="px-3 py-2 text-center"><button onclick="openClDetail(_clListRows[${idx}])" class="text-xs text-blue-500 hover:underline">ดู</button></td>
+        </tr>`;
+    }).join('');
+}
 
 async function initClList() {
     if (!machineMaster.length) await loadMachineMaster();
@@ -6333,16 +6532,7 @@ async function loadClList() {
         const data = await clFetch({ action:'getChecklists', factory:fac, area, type, month:mon||'', year:year||'' });
         _clListRows = data.data || [];
         if (!_clListRows.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบข้อมูล</td></tr>'; return; }
-        tbody.innerHTML = _clListRows.map((r, idx) => `
-            <tr class="border-b border-gray-100 hover:bg-gray-50">
-                <td class="px-4 py-2 font-mono text-xs text-gray-500">${r.id||'—'}</td>
-                <td class="px-3 py-2 text-xs">${r.type==='pm'?'🔧 PM':'📋 Daily'}</td>
-                <td class="px-3 py-2 text-xs">${r.date||'—'}</td>
-                <td class="px-3 py-2 text-xs">${r.machineName||r.machine||'—'}</td>
-                <td class="px-3 py-2 text-xs">${r.inspector||'—'}</td>
-                <td class="px-3 py-2 text-center">${clResultBadge(r.overallResult)}</td>
-                <td class="px-3 py-2 text-center"><button onclick="openClDetail(_clListRows[${idx}])" class="text-xs text-blue-500 hover:underline">ดู</button></td>
-            </tr>`).join('');
+        filterClListTable(); // render + apply machine search filter
     } catch(e) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center text-red-400 py-8">โหลดข้อมูลล้มเหลว</td></tr>';
     }

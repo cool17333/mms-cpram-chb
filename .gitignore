@@ -18,3 +18,12 @@ desktop.ini
 # Exported reports (generated files)
 BD_*.pdf
 BD_*.png
+
+# เอกสาร/ — เอกสาร/ข้อมูล/อ้างอิง (ไม่ใช่โปรแกรม) เก็บ local เท่านั้น
+# ยกเว้น plan/ ที่ยังแชร์ผ่าน git ได้
+# หมายเหตุ: ใช้ "เอกสาร/*" (ไม่ใช่ "เอกสาร/") เพื่อให้ git ยัง descend เข้าไป re-include plan/ ได้
+เอกสาร/*
+!เอกสาร/plan/
+
+# graphify-out/ — output ของ skill
+graphify-out/

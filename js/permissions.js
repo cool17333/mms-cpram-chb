@@ -23,11 +23,10 @@ function applyPermissions() {
 
     // elements ที่ logic ไม่ตรงไปตรงมา — จัดการแยก
     const loggedIn = Boolean(currentUser.username);
-    document.getElementById('login-row')?.classList.toggle('hidden', loggedIn);
-    document.getElementById('logout-btn')?.classList.toggle('hidden', !loggedIn);
-    document.getElementById('more-login-row')?.classList.toggle('hidden', loggedIn);
-    document.getElementById('more-logout-btn')?.classList.toggle('hidden', !loggedIn);
+    document.getElementById('sidebar-login-btn')?.classList.toggle('hidden', loggedIn);
     document.getElementById('sidebar-logout')?.classList.toggle('hidden', !loggedIn);
+    document.getElementById('more-login-btn')?.classList.toggle('hidden', loggedIn);
+    document.getElementById('more-logout-btn')?.classList.toggle('hidden', !loggedIn);
 
     const name = currentUser.name || (loggedIn ? currentUser.level : 'ไม่ได้เข้าสู่ระบบ');
     const el1 = document.getElementById('role-display');

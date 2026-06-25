@@ -270,7 +270,8 @@
             <span class="nav-icon">⚙️</span><span>ตั้งค่า</span>
         </div>
         <div class="px-2 py-1.5">
-            <p class="text-xs text-gray-500">บทบาท: <span id="sidebar-role" class="text-gray-300 font-bold">User</span></p>
+            <p class="text-xs text-gray-500">บทบาท: <span id="sidebar-role" class="text-gray-300 font-bold">ไม่ได้เข้าสู่ระบบ</span></p>
+            <button id="sidebar-login-btn" onclick="openLogin()" class="text-xs font-bold text-orange-400 hover:text-orange-300 underline mt-0.5">เข้าสู่ระบบ</button>
             <button id="sidebar-logout" onclick="doLogout()" class="hidden text-xs text-red-400 hover:text-red-300 underline mt-0.5">ออกจากระบบ</button>
         </div>
     </div>
@@ -316,17 +317,7 @@
                     <p class="text-sm font-bold text-gray-800" id="more-role-display">User (ทั่วไป)</p>
                 </div>
                 <div class="flex-shrink-0">
-                    <div id="more-login-row" class="flex flex-col gap-1">
-                        <input id="more-login-user" type="text" placeholder="Username..."
-                               autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('more-login-pin').focus()"
-                               class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-36 outline-none focus:border-orange-500">
-                        <div class="flex gap-2">
-                            <input id="more-login-pin" type="password" placeholder="PIN..."
-                                   autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()"
-                                   class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-24 outline-none focus:border-orange-500">
-                            <button onclick="doLogin()" class="px-3 py-1.5 bg-gray-900 text-white text-xs font-bold rounded-lg whitespace-nowrap">เข้า</button>
-                        </div>
-                    </div>
+                    <button id="more-login-btn" onclick="openLogin();closeMoreSheet()" class="px-4 py-2 text-white text-xs font-bold rounded-lg whitespace-nowrap" style="background:#c0392b">เข้าสู่ระบบ</button>
                     <button id="more-logout-btn" onclick="doLogout()" class="hidden text-xs font-bold text-red-600 hover:text-red-800 underline">ออกจากระบบ</button>
                 </div>
             </div>
@@ -378,29 +369,50 @@
             <button onclick="resetGasUrl()" class="text-xs font-bold text-gray-400 hover:text-gray-700 underline whitespace-nowrap">↺ คืนค่าเริ่มต้น</button>
         </div>
 
-        <!-- LOGIN / ROLE -->
-        <div class="mt-5 pt-5 border-t border-gray-200">
-            <label class="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-1">เข้าสู่ระบบ</label>
-            <p class="text-xs text-gray-400 mb-2">บทบาทปัจจุบัน: <span id="role-display" class="font-bold text-gray-700">ไม่ได้เข้าสู่ระบบ</span></p>
-            <div id="login-row" class="flex flex-col gap-2">
-                <input id="login-user" type="text" placeholder="Username..." autocomplete="off"
-                       onkeydown="if(event.key==='Enter')document.getElementById('login-pin').focus()"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 transition-colors">
-                <div class="flex gap-2">
-                    <input id="login-pin" type="password" placeholder="PIN..." autocomplete="off"
-                           onkeydown="if(event.key==='Enter')doLogin()"
-                           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 transition-colors">
-                    <button onclick="doLogin()" class="px-5 py-2 bg-gray-900 hover:bg-orange-500 text-white font-bold rounded-lg text-sm transition-colors whitespace-nowrap">เข้าสู่ระบบ</button>
-                </div>
-            </div>
-            <button id="logout-btn" onclick="doLogout()" class="hidden text-xs font-bold text-red-600 hover:text-red-800 underline mt-2">ออกจากระบบ</button>
-        </div>
-
         <p class="text-xs text-gray-400 mt-5 pt-5 border-t border-gray-200">🛠️ จัดการ <b>ทะเบียนเครื่องจักร</b> (นำเข้า Excel / เพิ่ม / แก้ไข / ลบ) ได้ที่เมนู "ทะเบียนเครื่องจักร" หน้าแรก (เฉพาะ Admin)</p>
 
         <div class="flex gap-3 justify-end mt-5">
             <button onclick="closeSettings()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">ปิด</button>
             <button id="btn-save-url" data-perm="ua.perm" onclick="saveSettings()" class="hidden px-6 py-2 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-lg text-sm transition-colors">บันทึก URL</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== LOGIN MODAL ==================== -->
+<div id="login-modal" class="modal-bg hidden" onclick="if(event.target===this)closeLogin()">
+    <div style="background:white;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:360px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#c0392b,#962d22);padding:28px 24px 20px;text-align:center">
+            <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.2);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:24px">🔐</div>
+            <p style="color:white;font-size:18px;font-weight:700;margin:0">เข้าสู่ระบบ</p>
+            <p style="color:rgba(255,255,255,0.7);font-size:11px;margin:4px 0 0">CMMS · CPRAM Chonburi</p>
+        </div>
+        <div style="padding:24px">
+            <div style="margin-bottom:14px">
+                <label style="font-size:11px;font-weight:700;color:#7f8c8d;text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">Username</label>
+                <div style="position:relative">
+                    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">👤</span>
+                    <input id="lm-user" type="text" placeholder="กรอก Username..." autocomplete="off" autocapitalize="none"
+                           onkeydown="if(event.key==='Enter')document.getElementById('lm-pin').focus()"
+                           style="width:100%;border:1.5px solid #e0e4e8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;outline:none;box-sizing:border-box"
+                           onfocus="this.style.borderColor='#c0392b'" onblur="this.style.borderColor='#e0e4e8'">
+                </div>
+            </div>
+            <div style="margin-bottom:20px">
+                <label style="font-size:11px;font-weight:700;color:#7f8c8d;text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">PIN</label>
+                <div style="position:relative">
+                    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">🔑</span>
+                    <input id="lm-pin" type="password" placeholder="PIN..." maxlength="8" autocomplete="off"
+                           onkeydown="if(event.key==='Enter')doLogin()"
+                           style="width:100%;border:1.5px solid #e0e4e8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;outline:none;box-sizing:border-box"
+                           onfocus="this.style.borderColor='#c0392b'" onblur="this.style.borderColor='#e0e4e8'">
+                </div>
+            </div>
+            <button onclick="doLogin()"
+                    style="width:100%;background:#c0392b;color:white;font-weight:700;font-size:15px;padding:12px;border-radius:12px;border:none;cursor:pointer"
+                    onmouseover="this.style.background='#962d22'" onmouseout="this.style.background='#c0392b'">
+                เข้าสู่ระบบ
+            </button>
+            <p style="text-align:center;font-size:11px;color:#9ca3af;margin:12px 0 0">ไม่เข้าสู่ระบบ = Visitor (ดูอย่างเดียว)</p>
         </div>
     </div>
 </div>

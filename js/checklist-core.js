@@ -162,7 +162,7 @@ async function clFetch(params) {
 async function clPost(body) {
     const res = await fetch(GAS_URL, {
         method:'POST',
-        body: JSON.stringify({ ...body, pw: sessionPw || '' }),
+        body: JSON.stringify({ ...body, username: currentUser.username, pin: currentUser.pin }),
     });
     return res.json();
 }
@@ -687,7 +687,7 @@ async function saveChecklistForm() {
     if (!machineId) { showToast('กรุณาเลือกเครื่องจักร', 'warn'); return; }
     if (!inspector) { showToast('กรุณากรอกชื่อผู้ตรวจสอบ', 'warn'); return; }
     if (type === 'daily' && !document.querySelector('input[name="clf-shift"]:checked')) { showToast('กรุณาเลือกกะ', 'warn'); return; }
-    if (!sessionPw && !_clKiosk) { showToast('กรุณาเข้าสู่ระบบก่อนบันทึก', 'warn'); return; }
+    if (!currentUser.username && !_clKiosk) { showToast('กรุณาเข้าสู่ระบบก่อนบันทึก', 'warn'); return; }
     if (type === 'daily' && _clfOverallImages.length < 2) { showToast('กรุณาแนบรูปถ่ายรวมอย่างน้อย 2 รูป', 'warn'); return; }
     const items = clfGetItems();
     const answered = items.filter(i => document.querySelector(`input[name="clf_item_${i.id}"]:checked`));

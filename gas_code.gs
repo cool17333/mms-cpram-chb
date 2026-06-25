@@ -12,14 +12,73 @@
 
 const SPREADSHEET_ID = '1knVTnZf7Ecu-LxOYv4911J-QHwr-PuSgrd44JY_UFqc'; // ID ของ Google Sheet
 
-// รหัสผ่านตามบทบาท (เก็บฝั่ง server — ไม่โผล่ในหน้าเว็บ)
-const ROLE_PW = {
-  'engineer123456': 'engineer',
-  'cpram123456':    'admin',
-};
-
 // Token สำหรับ Daily Check ผ่าน QR (ฝังใน URL ของ QR เท่านั้น)
 const DAILY_TOKEN = 'cprdaily2026';
+
+// ============================================================
+// SHA-256 helper
+// ============================================================
+function sha256hex(text) {
+  const raw = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8);
+  return raw.map(b => ('0' + (b < 0 ? b + 256 : b).toString(16)).slice(-2)).join('');
+}
+
+// ============================================================
+// PERMISSIONS MATRIX — 6 roles × 29 codes (อ้างอิง SPEC-user-access.md)
+// ============================================================
+const PERM_MATRIX = {
+  Visitor:       {'bd.view':1,'bd.export':1,'bd.report':0,'bd.accept':0,'bd.editdoc':0,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':0,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Production:    {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':0,'bd.editdoc':0,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':1,'cl.pm':0,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Technician:    {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':1,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Engineer:      {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':1,'bd.whywhy':1,'bd.manual':1,'bd.cancel':0,'mc.view':1,'mc.edit':1,'mc.delete':1,'mc.add':1,'mc.import':1,'mc.backup':1,'mc.restore':1,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':1,'cl.edit':1,'cl.calendar':1,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Supervisor:    {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':1,'bd.whywhy':1,'bd.manual':1,'bd.cancel':1,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':0,'cl.edit':1,'cl.calendar':1,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Administrator: {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':1,'bd.whywhy':1,'bd.manual':1,'bd.cancel':1,'mc.view':1,'mc.edit':1,'mc.delete':1,'mc.add':1,'mc.import':1,'mc.backup':1,'mc.restore':1,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':1,'cl.pm':1,'cl.edit':1,'cl.calendar':1,'ua.add':1,'ua.del':1,'ua.level':1,'ua.perm':1,'ua.log':1},
+};
+
+// Tools → Run → seedPermissions  (รัน 1 ครั้งจาก GAS Editor)
+function seedPermissions() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('_Permissions') || ss.insertSheet('_Permissions');
+  sh.clearContents();
+  sh.getRange(1,1,1,3).setValues([['role','perm_code','allow']]).setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
+  const ROLES = ['Visitor','Production','Technician','Engineer','Supervisor','Administrator'];
+  const CODES = ['bd.view','bd.export','bd.report','bd.accept','bd.editdoc','bd.close','bd.whywhy','bd.manual','bd.cancel','mc.view','mc.edit','mc.delete','mc.add','mc.import','mc.backup','mc.restore','cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar','ua.add','ua.del','ua.level','ua.perm','ua.log'];
+  const rows = [];
+  ROLES.forEach(function(role) { CODES.forEach(function(code) { rows.push([role, code, PERM_MATRIX[role][code] || 0]); }); });
+  sh.getRange(2,1,rows.length,3).setValues(rows);
+  sh.setFrozenRows(1);
+  sh.autoResizeColumns(1,3);
+  Logger.log('Seeded ' + rows.length + ' rows');  // expect 174
+}
+
+// Tools → Run → seedInitialAdmin  (รัน 1 ครั้ง — เปลี่ยน PIN หลัง setup!)
+function seedInitialAdmin() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('_Users') || ss.insertSheet('_Users');
+  if (sh.getLastRow() > 1) { Logger.log('Already has users — skipped'); return; }
+  sh.getRange(1,1,1,9).setValues([['id','name','username','pin_hash','salt','level','active','createdAt','createdBy']]).setBackground('#c0392b').setFontColor('#fff').setFontWeight('bold');
+  sh.setFrozenRows(1);
+  var INITIAL_PIN = '0000';   // เปลี่ยนหลัง login ครั้งแรก (ผ่าน _Users sheet หรือ P3 UI)
+  var salt = Utilities.getUuid();
+  var now  = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss');
+  sh.appendRow(['uid-admin-001','ผู้ดูแลระบบ','admin', sha256hex(salt+INITIAL_PIN), salt, 'Administrator', true, now, 'seed']);
+  Logger.log('Admin created. PIN: ' + INITIAL_PIN + ' — CHANGE THIS IMMEDIATELY!');
+}
+
+function ensureAccessLog(ss) {
+  var sh = ss.getSheetByName('_AccessLog');
+  if (!sh) {
+    sh = ss.insertSheet('_AccessLog');
+    sh.getRange(1,1,1,4).setValues([['timestamp','username','action','detail']]).setBackground('#27ae60').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function writeAccessLog(ss, username, action, detail) {
+  var sh = ensureAccessLog(ss);
+  sh.appendRow([Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss'), username||'', action||'', detail||'']);
+}
 
 const HEADERS = [
   'วันที่บันทึก',
@@ -52,6 +111,38 @@ const HEADERS = [
   'ประเภทเหตุการณ์',     // index 31 (Breakdown / Adjustment)
   'เหตุผลยกเลิก',        // index 32
 ];
+
+// ============================================================
+// USER AUTH
+// ============================================================
+function getUserRow(ss, username) {
+  var sh = ss.getSheetByName('_Users');
+  if (!sh || sh.getLastRow() < 2) return null;
+  var u = String(username).trim().toLowerCase();
+  var rows = sh.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][2]).trim().toLowerCase() === u) return rows[i];
+  }
+  return null;
+}
+
+function verifyPin(row, pin) {
+  return sha256hex(String(row[4]) + String(pin)) === String(row[3]);
+}
+
+function userCan(ss, username, pin, perm) {
+  var row = getUserRow(ss, username);
+  if (!row || !row[6]) return false;
+  if (!verifyPin(row, pin)) return false;
+  var m = PERM_MATRIX[String(row[5]).trim()];
+  return m ? Boolean(m[perm]) : false;
+}
+
+function getPermsForLevel(level) {
+  var m = PERM_MATRIX[String(level).trim()];
+  if (!m) return [];
+  return Object.keys(m).filter(function(k) { return m[k] === 1; });
+}
 
 // ============================================================
 // POST — บันทึก / อัปเดต
@@ -96,8 +187,8 @@ function doPost(e) {
 
     // ---- SET machines (เขียนทับแท็บ _Machines — มีสำรอง + กันลบทั้งหมด) ----
     if (data.action === 'setMachines') {
-      if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Admin เท่านั้น' });
+      if (!userCan(ss, data.username, data.pin, 'mc.backup'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ mc.backup' });
       const incoming = (data.machines || []).filter(m => m && String(m.id).trim());
       let sh = ss.getSheetByName('_Machines');
       const existingCount = sh ? Math.max(0, sh.getLastRow() - 1) : 0;
@@ -125,8 +216,8 @@ function doPost(e) {
 
     // ---- RESTORE machines จาก _Machines_bak (กู้คืน) ----
     if (data.action === 'restoreMachines') {
-      if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Admin เท่านั้น' });
+      if (!userCan(ss, data.username, data.pin, 'mc.restore'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ mc.restore' });
       const bak = ss.getSheetByName('_Machines_bak');
       if (!bak || bak.getLastRow() < 2) return jsonOut({ success: false, error: 'ไม่มีข้อมูลสำรอง' });
       let sh = ss.getSheetByName('_Machines') || ss.insertSheet('_Machines');
@@ -138,8 +229,8 @@ function doPost(e) {
 
     // ---- UPSERT เครื่องจักรรายตัว (Admin) ----
     if (data.action === 'upsertMachine') {
-      if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Admin เท่านั้น' });
+      if (!userCan(ss, data.username, data.pin, 'mc.edit'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ mc.edit' });
       const m = data.machine || {};
       if (!String(m.id || '').trim()) return jsonOut({ success: false, error: 'ไม่มีรหัสเครื่องจักร' });
       let sh = ss.getSheetByName('_Machines');
@@ -161,8 +252,8 @@ function doPost(e) {
 
     // ---- ลบเครื่องจักรรายตัว (Admin) ----
     if (data.action === 'deleteMachineRow') {
-      if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Admin เท่านั้น' });
+      if (!userCan(ss, data.username, data.pin, 'mc.delete'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ mc.delete' });
       const sh = ss.getSheetByName('_Machines');
       if (!sh) return jsonOut({ success: false, error: 'ไม่พบทะเบียน' });
       const vals = sh.getDataRange().getValues();
@@ -178,34 +269,36 @@ function doPost(e) {
 
     // ---- ACCEPT job (Engineer / Admin รับงาน) ----
     if (data.action === 'accept') {
-      const role = ROLE_PW[(data.pw || '').trim()];
-      if (role !== 'engineer' && role !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin เท่านั้น' });
+      if (!userCan(ss, data.username, data.pin, 'bd.accept'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ bd.accept' });
       const sheet = ss.getSheetByName(data.sheetName);
       if (!sheet || !data.rowIndex) throw new Error('Sheet or rowIndex not found');
       sheet.getRange(data.rowIndex, 7).setValue('รับงานแล้ว');
       sheet.getRange(data.rowIndex, 27).setValue(data.acceptedBy || '');
       writeLog(ss, data.tracking, 'รับงาน — ' + (data.acceptedBy || ''), data.acceptedBy, 'รับงานแล้ว');
+      writeAccessLog(ss, data.username, 'accept', 'รับงาน: ' + (data.tracking || ''));
       return jsonOut({ success: true, action: 'accepted' });
     }
 
     // ---- CANCEL record (เปลี่ยนสถานะเป็น "ยกเลิกงาน" — Admin เท่านั้น) ----
     if (data.action === 'cancel') {
-      if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Admin เท่านั้น' });
+      if (!userCan(ss, data.username, data.pin, 'bd.cancel'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ bd.cancel' });
       const sheet = ss.getSheetByName(data.sheetName);
       if (!sheet || !data.rowIndex) throw new Error('Sheet or rowIndex not found');
       sheet.getRange(data.rowIndex, 7).setValue('ยกเลิกงาน');           // col 7 = สถานะ
       sheet.getRange(data.rowIndex, 33).setValue(data.cancelReason || ''); // col 33 = เหตุผลยกเลิก
       writeLog(ss, data.tracking, 'ยกเลิกงาน — ' + (data.cancelReason || ''), data.byName, 'ยกเลิกงาน');
+      writeAccessLog(ss, data.username, 'cancel', 'ยกเลิกงาน: ' + (data.tracking || ''));
       return jsonOut({ success: true, action: 'cancelled' });
     }
 
     // ---- SAVE Checklist record ----
     if (data.action === 'saveChecklist') {
-      const role    = ROLE_PW[(data.pw || '').trim()];
+      const clPerm  = data.type === 'pm' ? 'cl.pm' : 'cl.daily';
       const tokenOk = String(data.token || '') === DAILY_TOKEN && (data.type === 'daily');
-      if (!role && !tokenOk) return jsonOut({ success: false, error: 'ต้องเข้าสู่ระบบก่อน' });
+      const authed  = tokenOk || userCan(ss, data.username, data.pin, clPerm);
+      if (!authed) return jsonOut({ success: false, error: 'ต้องเข้าสู่ระบบก่อน' });
       // Upload per-item images to Drive (Checklist_Images folder)
       data.results = saveChecklistItemImgs(data.results || []);
       let sh = ss.getSheetByName('_Checklists');
@@ -239,9 +332,8 @@ function doPost(e) {
 
     // ---- COPY machine items (engineer+admin) ----
     if (data.action === 'copyMachineItems') {
-      const role = ROLE_PW[(data.pw || '').trim()];
-      if (role !== 'engineer' && role !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin' });
+      if (!userCan(ss, data.username, data.pin, 'cl.edit'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ cl.edit' });
       const sourceId  = String(data.sourceId || '').trim();
       const targetIds = (data.targetIds || []).map(id => String(id).trim()).filter(Boolean);
       const type      = data.type || 'daily';
@@ -291,9 +383,8 @@ function doPost(e) {
 
     // ---- SAVE PM Plans (engineer+admin) — per-row UPSERT, item cols preserved ----
     if (data.action === 'savePmPlans') {
-      const role = ROLE_PW[(data.pw || '').trim()];
-      if (role !== 'engineer' && role !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin' });
+      if (!userCan(ss, data.username, data.pin, 'cl.edit'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ cl.edit' });
       const PM_HDR = ['machineId','machineName','factory','area','dailyEnabled','pmFreqMonths','pmStartMonth','dailyItemsJSON','pmItemsJSON','dailyEditedBy','dailyEditedAt','pmEditedBy','pmEditedAt','dailyMergeDefault'];
       let sh = ss.getSheetByName('_PmPlans');
       if (!sh) {
@@ -350,9 +441,8 @@ function doPost(e) {
 
     // ---- SAVE Daily Default items (engineer+admin) ----
     if (data.action === 'saveDailyDefault') {
-      const role = ROLE_PW[(data.pw || '').trim()];
-      if (role !== 'engineer' && role !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin' });
+      if (!userCan(ss, data.username, data.pin, 'cl.edit'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ cl.edit' });
       let sh = ss.getSheetByName('_DailyDefault');
       if (!sh) {
         sh = ss.insertSheet('_DailyDefault');
@@ -371,9 +461,8 @@ function doPost(e) {
 
     // ---- SAVE per-machine items (engineer+admin) ----
     if (data.action === 'saveMachineItems') {
-      const role = ROLE_PW[(data.pw || '').trim()];
-      if (role !== 'engineer' && role !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Engineer หรือ Admin' });
+      if (!userCan(ss, data.username, data.pin, 'cl.edit'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ cl.edit' });
       const machineId = String(data.machineId || '').trim();
       const type = data.type || 'daily'; // 'daily' | 'pm'
       if (!machineId) return jsonOut({ success: false, error: 'machineId required' });
@@ -432,8 +521,8 @@ function doPost(e) {
 
     // ---- SAVE PM Specific Dates ----
     if (data.action === 'savePmDates') {
-      const role = ROLE_PW[(data.pw || '').trim()];
-      if (!role) return jsonOut({ success: false, error: 'ต้องเข้าสู่ระบบก่อน' });
+      if (!userCan(ss, data.username, data.pin, 'cl.calendar'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ cl.calendar' });
       let sh = ss.getSheetByName('_PmDates');
       if (!sh) {
         sh = ss.insertSheet('_PmDates');
@@ -458,8 +547,8 @@ function doPost(e) {
 
     // ---- DELETE row (Admin เท่านั้น — เช็ครหัสฝั่ง server) ----
     if (data.action === 'delete') {
-      if (ROLE_PW[(data.pw || '').trim()] !== 'admin')
-        return jsonOut({ success: false, error: 'ต้องเป็น Admin เท่านั้น' });
+      if (!userCan(ss, data.username, data.pin, 'bd.cancel'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ bd.cancel' });
       const sheet = ss.getSheetByName(data.sheetName);
       if (!sheet || !data.rowIndex) throw new Error('Sheet or rowIndex not found');
       // ลบไฟล์รูปใน Drive ที่ผูกกับเอกสารนี้ (ก่อน/หลัง) ก่อนลบแถว
@@ -681,8 +770,16 @@ function doGet(e) {
     const machineId = e.parameter.machineId || '';
 
     if (action === 'login') {
-      const role = ROLE_PW[(e.parameter.pw || '').trim()] || '';
-      return jsonOut(role ? { success: true, role } : { success: false, error: 'รหัสผ่านไม่ถูกต้อง' });
+      var uname = (e.parameter.user || '').trim();
+      var pin   = (e.parameter.pin  || '').trim();
+      if (!uname || !pin) return jsonOut({ success: false, error: 'กรุณากรอก username และ PIN' });
+      var ss2 = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var row  = getUserRow(ss2, uname);
+      if (!row)    return jsonOut({ success: false, error: 'ไม่พบ username' });
+      if (!row[6]) return jsonOut({ success: false, error: 'บัญชีถูกระงับ' });
+      if (!verifyPin(row, pin)) return jsonOut({ success: false, error: 'PIN ไม่ถูกต้อง' });
+      var perms = getPermsForLevel(row[5]);
+      return jsonOut({ success: true, name: String(row[1]).trim(), level: String(row[5]).trim(), perms: perms });
     }
     if (action === 'getLog') {
       return doGetLog(e.parameter.tracking || '');
@@ -710,6 +807,18 @@ function doGet(e) {
     }
     if (action === 'getDailyDefault') {
       return doGetDailyDefault();
+    }
+    if (action === 'getUsers') {
+      var ss2 = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var sh  = ss2.getSheetByName('_Users');
+      if (!sh || sh.getLastRow() < 2) return jsonOut({ success: true, data: [] });
+      var data = sh.getDataRange().getValues().slice(1).map(function(r) {
+        return { id:r[0], name:r[1], username:r[2], level:r[5], active:r[6], createdAt:r[7] };
+      });
+      return jsonOut({ success: true, data: data });
+    }
+    if (action === 'getPermissions') {
+      return jsonOut({ success: true, data: PERM_MATRIX });
     }
     return jsonOut({ success: false, error: 'Unknown action' });
 

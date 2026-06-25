@@ -36,7 +36,7 @@ function closeSettings() {
     document.getElementById('settings-modal').classList.add('hidden');
 }
 function saveSettings() {
-    if (userRole !== 'admin') { showToast('⚠️ ต้องเข้าสู่ระบบเป็น Admin เพื่อแก้ไข URL', 'error'); return; }
+    if (!can('ua.perm')) { showToast('⚠️ ต้องมีสิทธิ์ Administrator เพื่อแก้ไข URL', 'error'); return; }
     GAS_URL = document.getElementById('gas-url-input').value.trim();
     localStorage.setItem('gas_url', GAS_URL);
     closeSettings();
@@ -44,63 +44,47 @@ function saveSettings() {
 }
 
 // ============================================================
-// ROLES / LOGIN  (User → Engineer → Admin)
-//   เช็ครหัสฝั่ง GAS, เก็บ role+รหัสไว้เฉพาะ session (รีโหลด = ออกจากระบบ)
+// ROLES / LOGIN — v2.6 ใช้ permissions.js (currentUser, can, applyPermissions)
 // ============================================================
-let userRole  = 'user';   // 'user' | 'engineer' | 'admin'
-let sessionPw = '';       // ส่งไปกับ op ที่ server ต้องตรวจ (delete)
-
-function roleLabel(r) {
-    return r === 'admin' ? 'Administrator' : r === 'engineer' ? 'Engineer' : 'User (ทั่วไป)';
-}
+// backwards compat shims — ไฟล์อื่นที่ยังอ่าน userRole/sessionPw
+Object.defineProperty(window, 'userRole',  { get: () => currentUser.level, set: () => {} });
+Object.defineProperty(window, 'sessionPw', { get: () => currentUser.pin,   set: () => {} });
 
 async function doLogin() {
-    const pw = (document.getElementById('login-pw')?.value || document.getElementById('more-login-pw')?.value || '').trim();
-    if (!pw) return;
+    const username = (
+        document.getElementById('login-user')?.value ||
+        document.getElementById('more-login-user')?.value || ''
+    ).trim();
+    const pin = (
+        document.getElementById('login-pin')?.value ||
+        document.getElementById('more-login-pin')?.value || ''
+    ).trim();
+    if (!username || !pin) { showToast('⚠️ กรอก Username และ PIN', 'error'); return; }
     if (!GAS_URL) { showToast('⚠️ ตั้งค่า Web App URL ก่อน', 'error'); return; }
     try {
-        const res  = await fetch(`${GAS_URL}?action=login&pw=${encodeURIComponent(pw)}`);
+        const res  = await fetch(`${GAS_URL}?action=login&user=${encodeURIComponent(username)}&pin=${encodeURIComponent(pin)}`);
         const json = await res.json();
         if (!json.success) {
-            const msg = /unknown action/i.test(json.error || '')
-                ? '⚠️ GAS ยังไม่ได้อัปเดต — กรุณา redeploy เวอร์ชันใหม่'
-                : '❌ รหัสผ่านไม่ถูกต้อง';
-            showToast(msg, 'error'); return;
+            showToast(/unknown action/i.test(json.error||'') ? '⚠️ GAS ยังไม่ได้ redeploy' : `❌ ${json.error||'เข้าสู่ระบบไม่สำเร็จ'}`, 'error');
+            return;
         }
-        userRole = json.role; sessionPw = pw;
-        document.getElementById('login-pw').value = '';
-        if (document.getElementById('more-login-pw')) document.getElementById('more-login-pw').value = '';
-        closeMoreSheet();
-        applyRole();
-        showToast(`✅ เข้าสู่ระบบเป็น ${roleLabel(userRole)}`, 'success');
+        currentUser = { username, name: json.name, level: json.level, perms: new Set(json.perms||[]), pin };
+        document.getElementById('login-user') && (document.getElementById('login-user').value = '');
+        document.getElementById('login-pin')  && (document.getElementById('login-pin').value  = '');
+        document.getElementById('more-login-user') && (document.getElementById('more-login-user').value = '');
+        document.getElementById('more-login-pin')  && (document.getElementById('more-login-pin').value  = '');
+        if (typeof closeMoreSheet === 'function') closeMoreSheet();
+        applyPermissions();
+        showToast(`✅ เข้าสู่ระบบเป็น ${json.name} (${json.level})`, 'success');
     } catch (err) {
         showToast('❌ เข้าสู่ระบบไม่สำเร็จ: ' + err.message, 'error');
     }
 }
 
 function doLogout() {
-    userRole = 'user'; sessionPw = '';
-    applyRole();
+    initVisitorPerms();
     showToast('ออกจากระบบแล้ว', 'info');
 }
 
-// ปรับ UI ตามบทบาท: Manual Create (eng/admin) + ปุ่มแก้ไข/ลบในรายการ
-function applyRole() {
-    const isAdmin = userRole === 'admin';
-    document.getElementById('role-display').textContent = roleLabel(userRole);
-    document.getElementById('login-row').classList.toggle('hidden', userRole !== 'user');
-    document.getElementById('logout-btn').classList.toggle('hidden', userRole === 'user');
-    // Manual Report + QR BD card ใน bd-hub (เฉพาะ engineer/admin)
-    document.getElementById('bdhub-card-manual')?.classList.toggle('hidden', userRole === 'user');
-    document.getElementById('bdhub-card-qr')?.classList.toggle('hidden', userRole === 'user');
-    // แก้ URL ได้เฉพาะ Admin
-    const urlInput = document.getElementById('gas-url-input');
-    if (urlInput) urlInput.disabled = !isAdmin;
-    document.getElementById('btn-save-url')?.classList.toggle('hidden', !isAdmin);
-    document.getElementById('url-lock-hint')?.classList.toggle('hidden', isAdmin);
-    // Log card — Admin only
-    document.getElementById('hub-card-log')?.classList.toggle('hidden', !isAdmin);
-    if (_lastRecords.length) applyRecordFilter();   // re-render ปุ่มตาม role
-    updateNavRole();
-}
+function applyRole() { applyPermissions(); }   // backwards compat — เรียกจาก bootstrap.js
 

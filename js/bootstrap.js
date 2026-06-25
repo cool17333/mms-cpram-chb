@@ -15,7 +15,7 @@ window.addEventListener('DOMContentLoaded', () => {
     addPartRow();
     resetWhyTree();
     setFormStage('report');  // ฟอร์มเริ่มต้น = แจ้งใหม่ (ย่อ)
-    applyRole();             // เริ่มเป็น User → ซ่อน Manual Create/แก้ไข/ลบ
+    initVisitorPerms();      // เริ่มเป็น Visitor — permissions.js จัดการ UI
 
     // เปิดแอปมาที่หน้าเลือกเมนู (Hub) หรือ QR Kiosk ถ้ามี URL param
     const _qp = new URLSearchParams(location.search);

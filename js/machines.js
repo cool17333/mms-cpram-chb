@@ -205,7 +205,7 @@ async function machSaveModal() {
     showLoading('กำลังบันทึก…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-            body: JSON.stringify({ action:'upsertMachine', pw: sessionPw, machine: rec, byName: editedBy }) });
+            body: JSON.stringify({ action:'upsertMachine', username: currentUser.username, pin: currentUser.pin, machine: rec, byName: editedBy }) });
         const json = await res.json();
         if (!json.success) { showToast('❌ บันทึกล้มเหลว: ' + (json.error||''), 'error'); return; }
         const full = { ...rec, editedBy, editedAt: new Date().toISOString() };
@@ -255,7 +255,7 @@ async function confirmMachDelete() {
     showLoading('กำลังลบ…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-            body: JSON.stringify({ action:'deleteMachineRow', pw: sessionPw, machineId: m.id, byName }) });
+            body: JSON.stringify({ action:'deleteMachineRow', username: currentUser.username, pin: currentUser.pin, machineId: m.id, byName }) });
         const json = await res.json();
         if (!json.success) { showToast('❌ ลบล้มเหลว: ' + (json.error||''), 'error'); return; }
         machineMaster.splice(_machDelIdx, 1);
@@ -273,7 +273,7 @@ async function saveMachines() {
     if (!confirm(`บันทึกทะเบียนเครื่องจักรทั้งหมด ${clean.length} รายการ?\n(ของเดิมจะถูกสำรองไว้ให้อัตโนมัติ)`)) return;
     try {
         const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-            body: JSON.stringify({ action:'setMachines', pw: sessionPw, machines: clean }) });
+            body: JSON.stringify({ action:'setMachines', username: currentUser.username, pin: currentUser.pin, machines: clean }) });
         const json = await res.json();
         if (json && json.success) { showToast(`✅ บันทึก ${json.count} เครื่องจักรแล้ว`, 'success'); machineList=[]; loadMachines(); }
         else showToast('❌ บันทึกไม่สำเร็จ: ' + (json && json.error || ''), 'error');
@@ -286,7 +286,7 @@ async function restoreMachines() {
     if (!confirm('กู้คืนทะเบียนเครื่องจักรจากข้อมูลสำรองล่าสุด?\n(เขียนทับรายการปัจจุบัน)')) return;
     try {
         const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-            body: JSON.stringify({ action:'restoreMachines', pw: sessionPw }) });
+            body: JSON.stringify({ action:'restoreMachines', username: currentUser.username, pin: currentUser.pin }) });
         const json = await res.json();
         if (json && json.success) { showToast(`✅ กู้คืน ${json.count} เครื่องจักรแล้ว`, 'success'); loadMachineMaster(); machineList=[]; loadMachines(); }
         else showToast('❌ กู้คืนไม่สำเร็จ: ' + (json && json.error || ''), 'error');
@@ -417,7 +417,7 @@ async function confirmCancel() {
         await fetch(GAS_URL, {
             method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'cancel', sheetName: item.sheetName, rowIndex: item.rowIndex,
-                tracking: item.tracking, pw: sessionPw, byName, cancelReason: reason }),
+                tracking: item.tracking, username: currentUser.username, pin: currentUser.pin, byName, cancelReason: reason }),
         });
         showToast('🚫 ยกเลิกงานเรียบร้อย — กำลังรีโหลด', 'info');
         setTimeout(loadRecords, 900);

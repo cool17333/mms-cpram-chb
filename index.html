@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Machine Management System - CPRAM Chonburi</title>
+    <title>CMMS - CPRAM Chonburi</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -232,7 +232,7 @@
             </div>
             <div class="nav-submenu" id="sub-bd">
                 <div class="sidebar-subitem" id="sni-bd-hub" onclick="goBdHub()">ภาพรวม</div>
-                <div class="sidebar-subitem" id="sni-bd-form" onclick="openReportPopup()">แจ้ง Breakdown</div>
+                <div class="sidebar-subitem" id="sni-bd-form" data-perm="bd.report" onclick="openReportPopup()">แจ้ง Breakdown</div>
                 <div class="sidebar-subitem" id="sni-bd-records" onclick="goRecords()">รายการ</div>
                 <div class="sidebar-subitem" id="sni-bd-summary" onclick="goSummary()">สรุป</div>
             </div>
@@ -247,8 +247,8 @@
             </div>
             <div class="nav-submenu" id="sub-cl">
                 <div class="sidebar-subitem" id="sni-cl-hub" onclick="goChecklist()">ภาพรวม</div>
-                <div class="sidebar-subitem" id="sni-cl-daily" onclick="goClForm('daily')">รายวัน</div>
-                <div class="sidebar-subitem" id="sni-cl-pm" onclick="goClForm('pm')">PM Checklist</div>
+                <div class="sidebar-subitem" id="sni-cl-daily" data-perm="cl.daily" onclick="goClForm('daily')">รายวัน</div>
+                <div class="sidebar-subitem" id="sni-cl-pm" data-perm="cl.pm" onclick="goClForm('pm')">PM Checklist</div>
                 <div class="sidebar-subitem" id="sni-cl-list" onclick="switchTab('cl-list')">ประวัติ Checklist</div>
                 <div class="sidebar-subitem" id="sni-cl-summary" onclick="switchTab('cl-summary')">สรุป / KPI</div>
                 <div class="sidebar-subitem" id="sni-cl-calendar" onclick="switchTab('cl-calendar')">ปฏิทิน PM</div>
@@ -316,11 +316,16 @@
                     <p class="text-sm font-bold text-gray-800" id="more-role-display">User (ทั่วไป)</p>
                 </div>
                 <div class="flex-shrink-0">
-                    <div id="more-login-row" class="flex gap-2">
-                        <input id="more-login-pw" type="password" placeholder="รหัสผ่าน..."
-                               autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()"
-                               class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-28 outline-none focus:border-orange-500">
-                        <button onclick="doLogin()" class="px-3 py-1.5 bg-gray-900 text-white text-xs font-bold rounded-lg whitespace-nowrap">เข้า</button>
+                    <div id="more-login-row" class="flex flex-col gap-1">
+                        <input id="more-login-user" type="text" placeholder="Username..."
+                               autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('more-login-pin').focus()"
+                               class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-36 outline-none focus:border-orange-500">
+                        <div class="flex gap-2">
+                            <input id="more-login-pin" type="password" placeholder="PIN..."
+                                   autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()"
+                                   class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-24 outline-none focus:border-orange-500">
+                            <button onclick="doLogin()" class="px-3 py-1.5 bg-gray-900 text-white text-xs font-bold rounded-lg whitespace-nowrap">เข้า</button>
+                        </div>
                     </div>
                     <button id="more-logout-btn" onclick="doLogout()" class="hidden text-xs font-bold text-red-600 hover:text-red-800 underline">ออกจากระบบ</button>
                 </div>
@@ -375,13 +380,18 @@
 
         <!-- LOGIN / ROLE -->
         <div class="mt-5 pt-5 border-t border-gray-200">
-            <label class="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-1">เข้าสู่ระบบ (Engineer / Admin)</label>
-            <p class="text-xs text-gray-400 mb-2">บทบาทปัจจุบัน: <span id="role-display" class="font-bold text-gray-700">User (ทั่วไป)</span></p>
-            <div id="login-row" class="flex gap-2">
-                <input id="login-pw" type="password" placeholder="รหัสผ่าน..." autocomplete="off"
-                       onkeydown="if(event.key==='Enter')doLogin()"
-                       class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 transition-colors">
-                <button onclick="doLogin()" class="px-5 py-2 bg-gray-900 hover:bg-orange-500 text-white font-bold rounded-lg text-sm transition-colors whitespace-nowrap">เข้าสู่ระบบ</button>
+            <label class="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-1">เข้าสู่ระบบ</label>
+            <p class="text-xs text-gray-400 mb-2">บทบาทปัจจุบัน: <span id="role-display" class="font-bold text-gray-700">ไม่ได้เข้าสู่ระบบ</span></p>
+            <div id="login-row" class="flex flex-col gap-2">
+                <input id="login-user" type="text" placeholder="Username..." autocomplete="off"
+                       onkeydown="if(event.key==='Enter')document.getElementById('login-pin').focus()"
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 transition-colors">
+                <div class="flex gap-2">
+                    <input id="login-pin" type="password" placeholder="PIN..." autocomplete="off"
+                           onkeydown="if(event.key==='Enter')doLogin()"
+                           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 transition-colors">
+                    <button onclick="doLogin()" class="px-5 py-2 bg-gray-900 hover:bg-orange-500 text-white font-bold rounded-lg text-sm transition-colors whitespace-nowrap">เข้าสู่ระบบ</button>
+                </div>
             </div>
             <button id="logout-btn" onclick="doLogout()" class="hidden text-xs font-bold text-red-600 hover:text-red-800 underline mt-2">ออกจากระบบ</button>
         </div>
@@ -390,7 +400,7 @@
 
         <div class="flex gap-3 justify-end mt-5">
             <button onclick="closeSettings()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">ปิด</button>
-            <button id="btn-save-url" onclick="saveSettings()" class="hidden px-6 py-2 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-lg text-sm transition-colors">บันทึก URL</button>
+            <button id="btn-save-url" data-perm="ua.perm" onclick="saveSettings()" class="hidden px-6 py-2 bg-orange-500 hover:bg-orange-400 text-white font-bold rounded-lg text-sm transition-colors">บันทึก URL</button>
         </div>
     </div>
 </div>
@@ -550,7 +560,7 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">CPRAM Chonburi</p>
-                <h1 class="text-2xl md:text-3xl font-bold text-white">Machine Management System</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-white">CMMS <span class="text-base font-normal text-white/60">Computerized Maintenance Management</span></h1>
                 <p class="text-white/60 text-sm mt-1" id="hub-datetime"></p>
             </div>
             <div class="flex flex-wrap gap-2 items-center">
@@ -720,7 +730,7 @@
         </div>
 
         <!-- QR แจ้ง Breakdown (Engineer/Admin) -->
-        <div id="bdhub-card-qr" class="hidden mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #27ae60" onclick="openBdQrGenModal()">
+        <div id="bdhub-card-qr" data-perm="bd.manual" class="hidden mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #27ae60" onclick="openBdQrGenModal()">
             <div class="text-4xl mb-3">📱</div>
             <h3 class="font-bold mb-1" style="color:var(--mms-text)">QR แจ้ง Breakdown</h3>
             <p class="text-xs mb-4" style="color:var(--mms-text-sub)">สร้าง QR Code สำหรับแจ้งเครื่องเสีย</p>
@@ -728,7 +738,7 @@
         </div>
 
         <!-- Manual Report (Admin only) -->
-        <div id="bdhub-card-manual" class="hidden mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #8e44ad" onclick="goManualCreate()">
+        <div id="bdhub-card-manual" data-perm="bd.manual" class="hidden mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #8e44ad" onclick="goManualCreate()">
             <div class="text-4xl mb-3">✍️</div>
             <h3 class="font-bold mb-1" style="color:var(--mms-text)">Manual Report</h3>
             <p class="text-xs mb-4" style="color:var(--mms-text-sub)">สร้างเอกสารปิดจบทีเดียว</p>
@@ -1761,7 +1771,7 @@
                 class="hidden bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-4 px-8 rounded-full shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center text-sm">
             ✏️ <span class="ml-2">แก้ไข Report</span>
         </button>
-        <button id="btn-close-job" onclick="closeJob()"
+        <button id="btn-close-job" data-perm="bd.close" onclick="closeJob()"
                 class="hidden bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition-all transform hover:-translate-y-1 inline-flex items-center text-sm">
             ✅ <span class="ml-2">ปิดงาน</span>
         </button>
@@ -2643,6 +2653,7 @@
 
 </div><!-- end app-content -->
 
+<script src="js/permissions.js"></script>
 <script src="js/core.js"></script>
 <script src="js/machines.js"></script>
 <script src="js/breakdown-report.js"></script>

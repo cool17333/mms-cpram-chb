@@ -215,7 +215,7 @@ async function confirmAccept() {
                 rowIndex:  item.rowIndex,
                 tracking:  item.tracking,
                 acceptedBy,
-                pw: sessionPw,
+                username: currentUser.username, pin: currentUser.pin,
             }),
         });
         showToast('✅ รับงานเรียบร้อย — ' + acceptedBy, 'success');
@@ -436,18 +436,9 @@ function updateNavActive(panel) {
     document.getElementById('sidebar-subnav')?.classList.toggle('hidden', !isSubPanel);
 }
 function updateNavRole() {
-    const isAdmin = userRole === 'admin';
-    const isEng   = isAdmin || userRole === 'engineer';
-    const label   = isAdmin ? 'Admin' : isEng ? 'Engineer' : 'User (ทั่วไป)';
-    const sideRole = document.getElementById('sidebar-role');
-    if (sideRole) sideRole.textContent = label;
-    const moreRole = document.getElementById('more-role-display');
-    if (moreRole) moreRole.textContent = label;
-    document.getElementById('sidebar-logout')?.classList.toggle('hidden', !isEng);
-    document.getElementById('more-logout-btn')?.classList.toggle('hidden', !isEng);
-    document.getElementById('more-login-row')?.classList.toggle('hidden', isEng);
-    document.getElementById('sidebar-admin-section')?.classList.toggle('hidden', !isAdmin);
-    document.getElementById('more-log-item')?.classList.toggle('hidden', !isAdmin);
+    // applyPermissions() (permissions.js) จัดการ UI login/logout/role-display แล้ว
+    document.getElementById('sidebar-admin-section')?.classList.toggle('hidden', !can('ua.log'));
+    document.getElementById('more-log-item')?.classList.toggle('hidden', !can('ua.log'));
 }
 // ========================
 
@@ -469,6 +460,7 @@ function switchTab(name) {
     if (name === 'cl-calendar') initClCalendar();
     if (name === 'cl-schedule') initClSchedule();
     if (name === 'cl-status') initClStatus();
+    if (name === 'ua') { loadUaUsers?.(); loadUaLog?.(); }
     window.scrollTo(0, 0);
 }
 

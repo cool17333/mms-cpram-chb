@@ -21,6 +21,71 @@ const ROLE_PW = {
 // Token สำหรับ Daily Check ผ่าน QR (ฝังใน URL ของ QR เท่านั้น)
 const DAILY_TOKEN = 'cprdaily2026';
 
+// ============================================================
+// SHA-256 helper
+// ============================================================
+function sha256hex(text) {
+  const raw = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8);
+  return raw.map(b => ('0' + (b < 0 ? b + 256 : b).toString(16)).slice(-2)).join('');
+}
+
+// ============================================================
+// PERMISSIONS MATRIX — 6 roles × 29 codes (อ้างอิง SPEC-user-access.md)
+// ============================================================
+const PERM_MATRIX = {
+  Visitor:       {'bd.view':1,'bd.export':1,'bd.report':0,'bd.accept':0,'bd.editdoc':0,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':0,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Production:    {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':0,'bd.editdoc':0,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':1,'cl.pm':0,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Technician:    {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':1,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Engineer:      {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':1,'bd.whywhy':1,'bd.manual':1,'bd.cancel':0,'mc.view':1,'mc.edit':1,'mc.delete':1,'mc.add':1,'mc.import':1,'mc.backup':1,'mc.restore':1,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':1,'cl.edit':1,'cl.calendar':1,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Supervisor:    {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':1,'bd.whywhy':1,'bd.manual':1,'bd.cancel':1,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':0,'cl.edit':1,'cl.calendar':1,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Administrator: {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':1,'bd.whywhy':1,'bd.manual':1,'bd.cancel':1,'mc.view':1,'mc.edit':1,'mc.delete':1,'mc.add':1,'mc.import':1,'mc.backup':1,'mc.restore':1,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':1,'cl.pm':1,'cl.edit':1,'cl.calendar':1,'ua.add':1,'ua.del':1,'ua.level':1,'ua.perm':1,'ua.log':1},
+};
+
+// Tools → Run → seedPermissions  (รัน 1 ครั้งจาก GAS Editor)
+function seedPermissions() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('_Permissions') || ss.insertSheet('_Permissions');
+  sh.clearContents();
+  sh.getRange(1,1,1,3).setValues([['role','perm_code','allow']]).setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
+  const ROLES = ['Visitor','Production','Technician','Engineer','Supervisor','Administrator'];
+  const CODES = ['bd.view','bd.export','bd.report','bd.accept','bd.editdoc','bd.close','bd.whywhy','bd.manual','bd.cancel','mc.view','mc.edit','mc.delete','mc.add','mc.import','mc.backup','mc.restore','cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar','ua.add','ua.del','ua.level','ua.perm','ua.log'];
+  const rows = [];
+  ROLES.forEach(function(role) { CODES.forEach(function(code) { rows.push([role, code, PERM_MATRIX[role][code] || 0]); }); });
+  sh.getRange(2,1,rows.length,3).setValues(rows);
+  sh.setFrozenRows(1);
+  sh.autoResizeColumns(1,3);
+  Logger.log('Seeded ' + rows.length + ' rows');  // expect 174
+}
+
+// Tools → Run → seedInitialAdmin  (รัน 1 ครั้ง — เปลี่ยน PIN หลัง setup!)
+function seedInitialAdmin() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('_Users') || ss.insertSheet('_Users');
+  if (sh.getLastRow() > 1) { Logger.log('Already has users — skipped'); return; }
+  sh.getRange(1,1,1,9).setValues([['id','name','username','pin_hash','salt','level','active','createdAt','createdBy']]).setBackground('#c0392b').setFontColor('#fff').setFontWeight('bold');
+  sh.setFrozenRows(1);
+  var INITIAL_PIN = '0000';   // เปลี่ยนหลัง login ครั้งแรก (ผ่าน _Users sheet หรือ P3 UI)
+  var salt = Utilities.getUuid();
+  var now  = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss');
+  sh.appendRow(['uid-admin-001','ผู้ดูแลระบบ','admin', sha256hex(salt+INITIAL_PIN), salt, 'Administrator', true, now, 'seed']);
+  Logger.log('Admin created. PIN: ' + INITIAL_PIN + ' — CHANGE THIS IMMEDIATELY!');
+}
+
+function ensureAccessLog(ss) {
+  var sh = ss.getSheetByName('_AccessLog');
+  if (!sh) {
+    sh = ss.insertSheet('_AccessLog');
+    sh.getRange(1,1,1,4).setValues([['timestamp','username','action','detail']]).setBackground('#27ae60').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function writeAccessLog(ss, username, action, detail) {
+  var sh = ensureAccessLog(ss);
+  sh.appendRow([Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss'), username||'', action||'', detail||'']);
+}
+
 const HEADERS = [
   'วันที่บันทึก',
   'ชื่อเครื่องจักร',
@@ -52,6 +117,38 @@ const HEADERS = [
   'ประเภทเหตุการณ์',     // index 31 (Breakdown / Adjustment)
   'เหตุผลยกเลิก',        // index 32
 ];
+
+// ============================================================
+// USER AUTH
+// ============================================================
+function getUserRow(ss, username) {
+  var sh = ss.getSheetByName('_Users');
+  if (!sh || sh.getLastRow() < 2) return null;
+  var u = String(username).trim().toLowerCase();
+  var rows = sh.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][2]).trim().toLowerCase() === u) return rows[i];
+  }
+  return null;
+}
+
+function verifyPin(row, pin) {
+  return sha256hex(String(row[4]) + String(pin)) === String(row[3]);
+}
+
+function userCan(ss, username, pin, perm) {
+  var row = getUserRow(ss, username);
+  if (!row || !row[6]) return false;
+  if (!verifyPin(row, pin)) return false;
+  var m = PERM_MATRIX[String(row[5]).trim()];
+  return m ? Boolean(m[perm]) : false;
+}
+
+function getPermsForLevel(level) {
+  var m = PERM_MATRIX[String(level).trim()];
+  if (!m) return [];
+  return Object.keys(m).filter(function(k) { return m[k] === 1; });
+}
 
 // ============================================================
 // POST — บันทึก / อัปเดต
@@ -681,8 +778,16 @@ function doGet(e) {
     const machineId = e.parameter.machineId || '';
 
     if (action === 'login') {
-      const role = ROLE_PW[(e.parameter.pw || '').trim()] || '';
-      return jsonOut(role ? { success: true, role } : { success: false, error: 'รหัสผ่านไม่ถูกต้อง' });
+      var uname = (e.parameter.user || '').trim();
+      var pin   = (e.parameter.pin  || '').trim();
+      if (!uname || !pin) return jsonOut({ success: false, error: 'กรุณากรอก username และ PIN' });
+      var ss2 = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var row  = getUserRow(ss2, uname);
+      if (!row)    return jsonOut({ success: false, error: 'ไม่พบ username' });
+      if (!row[6]) return jsonOut({ success: false, error: 'บัญชีถูกระงับ' });
+      if (!verifyPin(row, pin)) return jsonOut({ success: false, error: 'PIN ไม่ถูกต้อง' });
+      var perms = getPermsForLevel(row[5]);
+      return jsonOut({ success: true, name: String(row[1]).trim(), level: String(row[5]).trim(), perms: perms });
     }
     if (action === 'getLog') {
       return doGetLog(e.parameter.tracking || '');
@@ -710,6 +815,18 @@ function doGet(e) {
     }
     if (action === 'getDailyDefault') {
       return doGetDailyDefault();
+    }
+    if (action === 'getUsers') {
+      var ss2 = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var sh  = ss2.getSheetByName('_Users');
+      if (!sh || sh.getLastRow() < 2) return jsonOut({ success: true, data: [] });
+      var data = sh.getDataRange().getValues().slice(1).map(function(r) {
+        return { id:r[0], name:r[1], username:r[2], level:r[5], active:r[6], createdAt:r[7] };
+      });
+      return jsonOut({ success: true, data: data });
+    }
+    if (action === 'getPermissions') {
+      return jsonOut({ success: true, data: PERM_MATRIX });
     }
     return jsonOut({ success: false, error: 'Unknown action' });
 

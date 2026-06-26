@@ -152,8 +152,7 @@ function problemStageLabel() {
 }
 function composeProblem(byName) {
     const fresh = (document.getElementById('inp-problem-new')?.value || '').trim();
-    const line  = fresh ? `${fresh} *${byName||'ไม่ระบุ'} - ${problemStageLabel()}` : '';
-    return [_problemLocked, line].filter(Boolean).join('\n');
+    return [_problemLocked, fresh].filter(Boolean).join('\n');
 }
 
 // ล้างค่าฟิลด์ทั้งหมดให้เป็นฟอร์มเปล่า
@@ -591,11 +590,13 @@ function compressImage(dataUrl, cb) {
 }
 
 function addImage(event, side) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => compressImage(reader.result, d => { imgList[side].push({ data: d, id: '' }); renderImageSide(side); });
-    reader.readAsDataURL(file);
+    const files = [...event.target.files];
+    if (!files.length) return;
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => compressImage(reader.result, d => { imgList[side].push({ data: d, id: '' }); renderImageSide(side); });
+        reader.readAsDataURL(file);
+    });
     event.target.value = '';   // เผื่อเลือกไฟล์เดิมซ้ำ
 }
 

@@ -53,9 +53,27 @@ function setFormMode(mode) {
     document.querySelectorAll('.stage-fix').forEach(el => el.classList.toggle('hidden', !full));
 }
 
+// แปลง ISO datetime → "yyyy-MM-dd HH:mm น." สำหรับ accept modal (จอ ไม่ใช่ export)
+function fmtDateTimeTH(iso) {
+    if (!iso) return '—';
+    const [d, t = ''] = String(iso).split('T');
+    const hhmm = t.slice(0, 5);
+    return hhmm ? `${d} ${hhmm} น.` : d;
+}
+
 // ล็อกช่องเวลาเริ่ม BD (ตอนปิดงานห้ามแก้)
 function setBdStartLocked(locked) {
     ['bd-start-date', 'bd-start-time'].forEach(id => {
+        const el = document.getElementById(id); if (!el) return;
+        el.disabled = locked;
+        el.classList.toggle('bg-gray-100', locked);
+        el.classList.toggle('cursor-not-allowed', locked);
+    });
+}
+
+// ล็อกช่องเวลาเสร็จ BD (ซ่อมสำเร็จกรอกแล้ว ขั้น edit/whyedit ห้ามแก้)
+function setBdEndLocked(locked) {
+    ['bd-end-date', 'bd-end-time'].forEach(id => {
         const el = document.getElementById(id); if (!el) return;
         el.disabled = locked;
         el.classList.toggle('bg-gray-100', locked);
@@ -93,6 +111,7 @@ function setFormStage(stage) {
     document.getElementById('close-missing').classList.add('hidden');
     setFormMode(stage === 'report' ? 'report' : 'full');
     setBdStartLocked(stage === 'edit' || stage === 'whyedit');   // ห้ามแก้เวลาเริ่ม
+    setBdEndLocked(stage === 'edit' || stage === 'whyedit');     // ห้ามแก้เวลาเสร็จ (ซ่อมสำเร็จกรอกแล้ว)
 
     // ล็อกข้อมูลที่ User แจ้งไว้ (ชื่อเครื่อง, โรงงาน, พื้นที่) ห้ามแก้ตอน edit/whyedit
     if (stage === 'edit' || stage === 'whyedit') {
@@ -177,6 +196,24 @@ function closeTrackingModal() {
     goHome();
 }
 
+// ปิดแท็บ; ถ้าปิดไม่ได้ (แท็บที่ผู้ใช้เปิดเอง/จาก QR) → แสดงหน้าจบเต็มจอ
+function closeAppOrFallback() {
+    document.getElementById('tracking-modal')?.classList.add('hidden');
+    window.close();
+    setTimeout(() => document.getElementById('app-done-screen')?.classList.remove('hidden'), 300);
+}
+
+// helper กลาง: เปิด tracking-modal พร้อม title/label ที่กำหนดเอง (ใช้ร่วมกับ BD + Checklist)
+function showSavedModal(number, title, label) {
+    const t = document.getElementById('tracking-modal-title');
+    const l = document.getElementById('tracking-modal-label');
+    const n = document.getElementById('tracking-modal-no');
+    if (t) t.textContent = title || 'บันทึกสำเร็จ';
+    if (l) l.textContent = label || 'เลขอ้างอิง';
+    if (n) n.textContent = number || '';
+    document.getElementById('tracking-modal').classList.remove('hidden');
+}
+
 // ============================================================
 // รับงาน (Engineer / Admin)
 // ============================================================
@@ -195,7 +232,7 @@ function acceptRecord(item) {
       <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm space-y-1.5">
         <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">เครื่องจักร</span><span class="col-span-2 font-bold">${esc(item.machineName)} <span class="text-gray-400 font-normal text-xs">${esc(item.machineId)}</span></span></div>
         <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">โรงงาน/พื้นที่</span><span class="col-span-2">${esc(item.factory)} / ${esc(item.area)}</span></div>
-        <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">เวลาเริ่ม</span><span class="col-span-2">${esc((item.bdStart||'').replace('T',' '))||'—'}</span></div>
+        <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">เวลาเริ่ม</span><span class="col-span-2">${esc(fmtDateTimeTH(item.bdStart))}</span></div>
         <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">ประเภท</span><span class="col-span-2">${esc(item.bdType)||'—'}</span></div>
         <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">ปัญหาที่พบ</span><span class="col-span-2 text-gray-800 whitespace-pre-line">${esc(item.problem)||'—'}</span></div>
         <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">ผู้แจ้ง</span><span class="col-span-2 font-bold text-blue-700">${esc(item.byName)||'—'}</span></div>
@@ -207,13 +244,15 @@ function acceptRecord(item) {
       </div>`;
     const firstImg = String(item.imgBefore||'').split('|').map(s=>s.trim()).filter(Boolean)[0];
     if (firstImg && GAS_URL) {
+        showLoading('กำลังโหลดรูป…');
         fetch(`${GAS_URL}?action=getImage&id=${encodeURIComponent(firstImg)}`)
             .then(r => r.json())
             .then(j => { if (j && j.success && j.dataUrl) {
                 document.getElementById('accept-photo').src = j.dataUrl;
                 document.getElementById('accept-photo-wrap').classList.remove('hidden');
             }})
-            .catch(()=>{});
+            .catch(()=>{})
+            .finally(() => hideLoading());
     }
     document.getElementById('accept-modal').classList.remove('hidden');
 }
@@ -253,10 +292,35 @@ async function confirmAccept() {
 // ซ่อมสำเร็จ — บันทึก bdEnd + เปลี่ยนสถานะ (quick action จาก records)
 // ============================================================
 let _repairItem = null;
+let _repairAfterImgs = [];   // [{data}] รูปหลังแก้ไขที่จะส่งไป GAS
+
+function repairAddAfter(ev) {
+    const files = [...ev.target.files];
+    ev.target.value = '';
+    files.forEach(f => {
+        const r = new FileReader();
+        r.onload = () => compressImage(r.result, d => { _repairAfterImgs.push({ data: d }); renderRepairAfter(); });
+        r.readAsDataURL(f);
+    });
+}
+function renderRepairAfter() {
+    const box = document.getElementById('repair-after-thumbs');
+    if (!box) return;
+    box.innerHTML = _repairAfterImgs.map((im, i) =>
+        `<div class="relative w-16 h-12 rounded-lg overflow-hidden border border-gray-200">
+            <img src="${im.data}" class="w-full h-full object-cover">
+            <button type="button" onclick="repairRmAfter(${i})" class="absolute top-0 right-0 bg-black/60 text-white w-4 h-4 text-xs leading-none rounded-bl">×</button>
+        </div>`).join('');
+}
+function repairRmAfter(i) { _repairAfterImgs.splice(i, 1); renderRepairAfter(); }
 
 function repairCompleteRecord(item) {
     if (!can('bd.editdoc')) { showToast('⚠️ ไม่มีสิทธิ์', 'error'); return; }
     _repairItem = item;
+    _repairAfterImgs = [];
+    renderRepairAfter();
+    const corr = document.getElementById('repair-corrective');
+    if (corr) corr.value = '';
     document.getElementById('repair-tracking-display').textContent =
         (item.tracking || '') + (item.machineName ? ' — ' + item.machineName : '');
     const bu = document.getElementById('repair-byuser');
@@ -273,6 +337,7 @@ function repairCompleteRecord(item) {
 function closeRepairCompleteModal() {
     document.getElementById('repair-complete-modal').classList.add('hidden');
     _repairItem = null;
+    _repairAfterImgs = [];
 }
 
 async function confirmRepairComplete() {
@@ -281,10 +346,13 @@ async function confirmRepairComplete() {
     const time = document.getElementById('repair-end-time').value;
     if (!date || !time) { showToast('⚠️ กรุณาระบุวันที่และเวลาซ่อมเสร็จ', 'error'); return; }
     const item = _repairItem;
+    const corrective = (document.getElementById('repair-corrective')?.value || '').trim();
+    const imgAfter = _repairAfterImgs.map(im => im.data).join('|');
     closeRepairCompleteModal();
+    showLoading('กำลังบันทึก…');
     try {
-        await fetch(GAS_URL, {
-            method: 'POST', mode: 'no-cors',
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
                 action: 'repairComplete',
@@ -292,14 +360,24 @@ async function confirmRepairComplete() {
                 rowIndex:  item.rowIndex,
                 tracking:  item.tracking,
                 bdEnd:     `${date}T${time}`,
+                bdStart:   item.bdStart || '',
+                corrective,
+                imgAfter,
                 byName:    currentUser.name,
                 username:  currentUser.username, pin: currentUser.pin,
             }),
         });
-        showToast('🔨 บันทึกซ่อมสำเร็จเรียบร้อย', 'success');
-        setTimeout(() => loadRecords(), 700);
+        const json = await res.json();
+        if (json && json.success) {
+            showToast('🔨 บันทึกซ่อมสำเร็จเรียบร้อย', 'success');
+            setTimeout(() => loadRecords(), 700);
+        } else {
+            showToast('❌ บันทึกไม่สำเร็จ: ' + (json?.error || ''), 'error');
+        }
     } catch (err) {
         showToast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
+    } finally {
+        hideLoading();
     }
 }
 
@@ -482,8 +560,7 @@ async function submitReportPopup() {
         const json = await res.json();
         if (json && json.success) {
             closeReportModal();
-            document.getElementById('tracking-modal-no').textContent = json.tracking || '';
-            document.getElementById('tracking-modal').classList.remove('hidden');
+            showSavedModal(json.tracking || '', 'แจ้ง Breakdown สำเร็จ', 'เลข Tracking Breakdown');
         } else {
             showToast('❌ แจ้งไม่สำเร็จ: ' + (json && json.error || 'ไม่ทราบสาเหตุ'), 'error');
         }

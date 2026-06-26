@@ -33,8 +33,6 @@ let _clDailyDefault = [];   // global default daily items from _DailyDefault she
 let _clDailyItems   = {};   // deprecated localStorage cache (kept for compat)
 let _clfItemImages  = {};   // { itemId: [{data: dataURL}] } — per-item images in cl-form
 let _clfOverallImages = []; // รูปถ่ายรวม daily check (≥2 บังคับ)
-let _clKiosk      = false;  // QR kiosk mode
-let _clKioskToken = '';     // token จาก URL param
 let _clCopyType     = '';   // 'daily' | 'pm' — active copy modal type
 let _clCopySourceId = '';   // source machineId for copy
 let _clCalYear    = new Date().getFullYear();
@@ -461,9 +459,8 @@ function renderClHubRecent() {
     el.innerHTML = `<table class="w-full text-sm"><thead><tr class="bg-gray-50"><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">Tracking</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">ประเภท</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">วันที่</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">เครื่องจักร</th><th class="text-left px-3 py-2 text-xs font-bold text-gray-400">ผล</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
-// ---- QR KIOSK ----
+// ---- QR KIOSK (legacy redirect — ส่งต่อเข้า scan flow แทน) ----
 async function enterDailyKiosk(machineId, token) {
-    _clKiosk = true; _clKioskToken = token;
     document.body.classList.add('kiosk-mode');
     showLoading('กำลังโหลดฟอร์ม…');
     try {
@@ -503,7 +500,7 @@ async function goClForm(type, prefillFac, prefillArea) {
     document.getElementById('clf-date').value = new Date().toISOString().slice(0,10);
     clFillFacSelect('clf-fac', fac);
     clfFacChange(area);
-    document.getElementById('clf-inspector').value = '';
+    document.getElementById('clf-inspector').value = currentUser.name || '';
     document.getElementById('clf-remark').value = '';
     // กะเช้า/ดึก — แสดงเฉพาะ daily, ตั้งค่า default ตามเวลา
     document.getElementById('clf-shift-wrap').classList.toggle('hidden', type !== 'daily');
@@ -687,7 +684,7 @@ async function saveChecklistForm() {
     if (!machineId) { showToast('กรุณาเลือกเครื่องจักร', 'warn'); return; }
     if (!inspector) { showToast('กรุณากรอกชื่อผู้ตรวจสอบ', 'warn'); return; }
     if (type === 'daily' && !document.querySelector('input[name="clf-shift"]:checked')) { showToast('กรุณาเลือกกะ', 'warn'); return; }
-    if (!currentUser.username && !_clKiosk) { showToast('กรุณาเข้าสู่ระบบก่อนบันทึก', 'warn'); return; }
+    if (!currentUser.username) { showToast('กรุณาเข้าสู่ระบบก่อนบันทึก', 'warn'); openLogin(); return; }
     if (type === 'daily' && _clfOverallImages.length < 2) { showToast('กรุณาแนบรูปถ่ายรวมอย่างน้อย 2 รูป', 'warn'); return; }
     const items = clfGetItems();
     const answered = items.filter(i => document.querySelector(`input[name="clf_item_${i.id}"]:checked`));
@@ -707,12 +704,11 @@ async function saveChecklistForm() {
         <span class="text-yellow-600 font-bold">🔧 FIX ${fix}</span><br>
         ผลรวม: ${ng>0?'<span class="text-red-600 font-bold">❌ FAIL</span>':fix>0?'<span class="text-yellow-600 font-bold">🔧 FIX</span>':'<span class="text-green-600 font-bold">✅ PASS</span>'}
         ${totalImgs ? `<br>รูปถ่าย: <span class="text-blue-600 font-bold">📷 ${totalImgs} รูป</span>` : ''}`;
-    document.getElementById('clf-confirm-name').value = inspector;
     document.getElementById('modal-clf-confirm').classList.remove('hidden');
 }
 async function saveChecklistConfirm() {
-    const inspector = (document.getElementById('clf-confirm-name')?.value || '').trim();
-    if (!inspector) { showToast('กรุณาระบุชื่อผู้ตรวจสอบ', 'warn'); return; }
+    const inspector = currentUser.name;
+    if (!inspector) { showToast('กรุณาเข้าสู่ระบบก่อนบันทึก', 'warn'); return; }
     document.getElementById('modal-clf-confirm').classList.add('hidden');
     const machineId   = document.getElementById('clf-machine')?.value || '';
     const fac         = document.getElementById('clf-fac')?.value || '';
@@ -746,19 +742,9 @@ async function saveChecklistConfirm() {
             action:'saveChecklist', type, date,
             shift: (document.querySelector('input[name="clf-shift"]:checked')?.value || '-'),
             factory:fac, area, machineId, machineName, inspector, remark,
-            token: _clKiosk ? _clKioskToken : undefined,
             results: resultsArr, ok, ng, fix, na, overallResult,
         });
         if (res.success) {
-            if (_clKiosk) {
-                document.body.innerHTML = `<div style="padding:48px 24px;text-align:center;font-family:sans-serif">
-                    <div style="font-size:64px">✅</div>
-                    <h2 style="color:#16a085;margin:12px 0">บันทึกสำเร็จ</h2>
-                    <p style="color:#666">${res.tracking}</p>
-                    <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#16a085;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer">ตรวจอีกครั้ง</button>
-                </div>`;
-                return;
-            }
             showToast(`✅ บันทึกสำเร็จ — ${res.tracking}`, 'success');
             switchTab('cl-hub');
         } else {
@@ -1216,7 +1202,6 @@ async function saveClPmDates() {
             const m = machineMaster.find(x => (x.id||x.machineId||x.machine_id||'') === inp.dataset.id) || {};
             return (m.name || m.machineName || inp.dataset.id) + ` (${inp.dataset.orig} → ${inp.value.trim()||'ล้างออก'})`;
         }).join('\n');
-        if (!confirm(`ยืนยันการเลื่อนวัน PM ของ ${wasSet.length} เครื่อง?\n\n${names}`)) return;
     }
     if (!changed.length) { document.getElementById('modal-cl-set-dates').classList.add('hidden'); return; }
     const dates = {};

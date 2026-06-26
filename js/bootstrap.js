@@ -17,11 +17,14 @@ window.addEventListener('DOMContentLoaded', () => {
     setFormStage('report');  // ฟอร์มเริ่มต้น = แจ้งใหม่ (ย่อ)
     initVisitorPerms();      // เริ่มเป็น Visitor — permissions.js จัดการ UI
 
-    // เปิดแอปมาที่หน้าเลือกเมนู (Hub) หรือ QR Kiosk ถ้ามี URL param
+    // เปิดแอปมาที่หน้าเลือกเมนู (Hub) หรือ scan flow ถ้ามี URL param
     const _qp = new URLSearchParams(location.search);
-    if (_qp.get('mode') === 'daily' && _qp.get('m')) {
-        enterDailyKiosk(_qp.get('m'), _qp.get('t') || '');
-    } else {
+    const _scanMode = _qp.get('mode');
+    const _scanId   = _qp.get('m');
+    // mode=scan → scan choice popup (new QR scheme)
+    // mode=daily / mode=bd-report → backward compat → ส่งเข้า scan flow
+    const _isScan = _scanId && (_scanMode === 'scan' || _scanMode === 'daily' || _scanMode === 'bd-report');
+    if (!_isScan) {
         switchTab('home');
         initHubDatetime();
     }
@@ -29,8 +32,9 @@ window.addEventListener('DOMContentLoaded', () => {
         initHubStats();
         refreshDashboard(); // fire-and-forget — ไม่ block loadHomeDash
         loadHomeDash();     // ยิงพร้อมกัน ไม่รอ getAll
-        if (_qp.get('mode') === 'bd-report' && _qp.get('m')) {
-            enterBdKiosk(_qp.get('m'), _qp.get('t') || '');
+        if (_isScan) {
+            const _preselect = _scanMode === 'bd-report' ? 'bd' : _scanMode === 'daily' ? 'daily' : '';
+            enterScan(_scanId, _preselect);
         }
     });
 

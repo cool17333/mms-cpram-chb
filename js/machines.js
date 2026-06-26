@@ -192,13 +192,12 @@ async function machSaveModal() {
     const fac      = document.getElementById('mc-factory').value;
     const area     = document.getElementById('mc-area').value;
     const line     = document.getElementById('mc-line').value.trim();
-    const editedBy = document.getElementById('mc-editor').value.trim();
+    const editedBy = currentUser.name;
     if (!id)       { showToast('⚠️ กรุณาระบุรหัสเครื่องจักร', 'error'); return; }
     if (!name)     { showToast('⚠️ กรุณาระบุชื่อเครื่องจักร', 'error'); return; }
     if (!fac)      { showToast('⚠️ กรุณาเลือกโรงงาน', 'error'); return; }
     if (!area)     { showToast('⚠️ กรุณาเลือกพื้นที่', 'error'); return; }
-    if (!editedBy) { showToast('⚠️ กรุณาระบุชื่อผู้แก้ไข', 'error'); return; }
-    if (userRole !== 'admin') { showToast('⚠️ ต้องเป็น Admin', 'error'); return; }
+    if (!editedBy) { showToast('⚠️ กรุณาเข้าสู่ระบบก่อนแก้ไข', 'error'); openLogin(); return; }
     if (!GAS_URL)  { showToast('⚠️ ตั้งค่า URL ก่อน', 'error'); return; }
     const idx = parseInt(document.getElementById('mc-edit-idx').value, 10);
     const rec = { id, name, factory: fac, area, line };
@@ -247,8 +246,8 @@ function closeMachDelModal() {
     _machDelIdx = -1;
 }
 async function confirmMachDelete() {
-    const byName = document.getElementById('mach-del-by').value.trim();
-    if (!byName) { showToast('⚠️ กรุณาระบุชื่อผู้ดำเนินการ', 'error'); return; }
+    const byName = currentUser.name;
+    if (!byName) { showToast('⚠️ กรุณาเข้าสู่ระบบก่อนดำเนินการ', 'error'); openLogin(); return; }
     if (userRole !== 'admin') { showToast('⚠️ ต้องเป็น Admin', 'error'); return; }
     const m = machineMaster[_machDelIdx];
     if (!m) { closeMachDelModal(); return; }
@@ -397,7 +396,6 @@ function cancelRecord(item) {
     document.getElementById('cancel-tracking-display').textContent =
         (item.tracking || '') + (item.machineName ? ' — ' + item.machineName : '');
     document.getElementById('cancel-reason').value  = '';
-    document.getElementById('cancel-byname').value  = '';
     document.getElementById('cancel-modal').classList.remove('hidden');
 }
 
@@ -408,9 +406,9 @@ function closeCancelModal() {
 
 async function confirmCancel() {
     const reason = document.getElementById('cancel-reason').value.trim();
-    const byName = document.getElementById('cancel-byname').value.trim();
+    const byName = currentUser.name;
     if (!reason) { showToast('⚠️ กรุณาระบุเหตุผลการยกเลิก', 'error'); return; }
-    if (!byName) { showToast('⚠️ กรุณายืนยันชื่อผู้ดำเนินการ', 'error'); return; }
+    if (!byName) { showToast('⚠️ กรุณาเข้าสู่ระบบก่อนดำเนินการ', 'error'); closeCancelModal(); openLogin(); return; }
     const item = _cancelItem;
     closeCancelModal();
     try {

@@ -60,41 +60,90 @@ function _scanGo(type, machineId, machine) {
     const byName      = currentUser.name || '';
 
     if (type === 'daily') {
-        // Checklist รายวัน — autofill
         if (typeof switchTab === 'function') switchTab('cl-form');
         setTimeout(() => {
-            const fFac  = document.getElementById('clf-factory');
+            const fDate = document.getElementById('clf-date');
+            const fFac  = document.getElementById('clf-fac');      // แก้บั๊ก: เดิมอ้าง clf-factory
             const fArea = document.getElementById('clf-area');
             const fMach = document.getElementById('clf-machine');
             const fInsp = document.getElementById('clf-inspector');
-            if (fFac  && factory)     { fFac.value  = factory;  fFac.dispatchEvent(new Event('change')); }
-            if (fArea && area)        { setTimeout(() => { if (fArea) { fArea.value = area; fArea.dispatchEvent(new Event('change')); } }, 300); }
-            if (fMach && machineId)   { setTimeout(() => { if (fMach) { fMach.value = machineId; fMach.dispatchEvent(new Event('change')); } }, 600); }
-            if (fInsp && byName)       fInsp.value = byName;
+            if (fDate) fDate.value = new Date().toISOString().slice(0,10);
+            if (fFac  && factory)   { fFac.value  = factory;  fFac.dispatchEvent(new Event('change')); }
+            if (fInsp && byName)      fInsp.value = byName;
+            setTimeout(() => { if (fArea && area) { fArea.value = area; fArea.dispatchEvent(new Event('change')); } }, 350);
+            setTimeout(() => {
+                if (fMach && machineId) { fMach.value = machineId; fMach.dispatchEvent(new Event('change')); }
+                ['clf-date','clf-fac','clf-area','clf-machine','clf-inspector'].forEach(id => {
+                    const el = document.getElementById(id); if (el) el.disabled = true;
+                });
+            }, 750);
         }, 200);
 
     } else if (type === 'bd' || type === 'adj') {
         const eventType = type === 'adj' ? 'Adjustment' : 'Breakdown';
-        // เปิด Report form
         if (typeof openReportPopup === 'function') openReportPopup();
         setTimeout(() => {
-            // autofill machine fields
+            const facDigit = String(factory).match(/\d/)?.[0] || '';   // "โรงงาน 1" → "1"
             const fFac  = document.getElementById('rm-factory');
             const fArea = document.getElementById('rm-area');
             const fMach = document.getElementById('rm-machine');
-            if (fFac  && factory)   { fFac.value  = factory;  fFac.dispatchEvent(new Event('change')); }
-            if (fArea && area)      { setTimeout(() => { if (fArea) { fArea.value = area; fArea.dispatchEvent(new Event('change')); } }, 300); }
-            if (fMach && machineId) { setTimeout(() => { if (fMach) { fMach.value = machineId; fMach.dispatchEvent(new Event('change')); } }, 600); }
-            // ตั้ง eventType และแสดง notice
-            setTimeout(() => {
-                if (typeof _applyReportEventType === 'function') _applyReportEventType(eventType);
-                const notice = document.getElementById('rm-qr-notice');
-                const ntext  = document.getElementById('rm-qr-notice-text');
-                if (notice) notice.classList.remove('hidden');
-                if (ntext)  ntext.textContent = `สแกน QR — ${machineName} · เหตุการณ์: ${eventType==='Adjustment'?'แจ้งซ่อม (Adjustment)':'Breakdown'}`;
-            }, 800);
-        }, 200);
+            const fDate = document.getElementById('rm-date');
+            const fMid  = document.getElementById('rm-machine-id');
+            if (fFac && facDigit) { fFac.value = facDigit; fFac.dispatchEvent(new Event('change')); }
+            if (fMach) fMach.value = machineName;
+            if (fDate) fDate.value = new Date().toISOString().slice(0,10);
+            if (fMid && machineId) { fMid.value = machineId; document.getElementById('rm-machineid-wrap')?.classList.remove('hidden'); }
+            setTimeout(() => { if (fArea && area) fArea.value = area; lockScanFields(); }, 350);
+            if (typeof _applyReportEventType === 'function') _applyReportEventType(eventType);
+            const notice = document.getElementById('rm-qr-notice');
+            const ntext  = document.getElementById('rm-qr-notice-text');
+            if (notice) notice.classList.remove('hidden');
+            if (ntext)  ntext.textContent = `สแกน QR — ${machineName} · เหตุการณ์: ${eventType==='Adjustment'?'แจ้งซ่อม (Adjustment)':'Breakdown'}`;
+        }, 250);
     }
+}
+
+function lockScanFields() {
+    ['rm-machine','rm-factory','rm-area','rm-date','rm-machine-id'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.disabled = true;
+    });
+}
+
+// ---- QR Picker modal ----
+function openQrPicker() {
+    const list = typeof machineMaster !== 'undefined' ? machineMaster : [];
+    const box  = document.getElementById('qr-pick-list');
+    if (!list.length) { showToast('⚠️ ยังไม่มีข้อมูลเครื่องจักร', 'warn'); return; }
+    const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    box.innerHTML = list.map(m => {
+        const id = m.id || m.machineId || m.machine_id || '';
+        if (!id) return '';
+        return `<label class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm">
+            <input type="checkbox" class="qr-pick-cb w-4 h-4" value="${esc(id)}" onchange="qrPickerCount()">
+            <span class="font-bold text-gray-800">${esc(m.name||id)}</span>
+            <span class="text-gray-400 text-xs">${esc(id)}</span>
+            <span class="ml-auto text-gray-400 text-xs">${esc(m.factory||'')} ${esc(m.area||'')}</span>
+        </label>`;
+    }).join('');
+    document.getElementById('qr-pick-all').checked = false;
+    qrPickerCount();
+    document.getElementById('qr-picker-modal').classList.remove('hidden');
+}
+function closeQrPicker() { document.getElementById('qr-picker-modal').classList.add('hidden'); }
+function qrPickerToggleAll(cb) {
+    document.querySelectorAll('.qr-pick-cb').forEach(x => { x.checked = cb.checked; });
+    qrPickerCount();
+}
+function qrPickerCount() {
+    const n = document.querySelectorAll('.qr-pick-cb:checked').length;
+    document.getElementById('qr-pick-count').textContent = `เลือก ${n} เครื่อง`;
+}
+function qrPickerGenerate() {
+    const ids = [...document.querySelectorAll('.qr-pick-cb:checked')].map(x => x.value);
+    if (!ids.length) { showToast('⚠️ เลือกเครื่องอย่างน้อย 1 เครื่อง', 'warn'); return; }
+    const size = parseFloat(document.getElementById('qr-pick-size').value) || 40;
+    closeQrPicker();
+    generateMachineQrPdf(ids, size);
 }
 
 // ---- QR generate (ย้ายจาก checklist-status → machines) ----

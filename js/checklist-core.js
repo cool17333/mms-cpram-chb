@@ -487,6 +487,10 @@ async function enterDailyKiosk(machineId, token) {
 // ---- FORM ----
 async function goClForm(type, prefillFac, prefillArea) {
     if (!machineMaster.length) await loadMachineMaster();
+    // ปลดล็อก clf-* ที่อาจค้าง disabled จากการสแกน QR รอบก่อน
+    ['clf-date','clf-fac','clf-area','clf-machine','clf-inspector'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.disabled = false;
+    });
     const fac  = prefillFac  || document.getElementById('cl-hub-fac')?.value  || '';
     const area = prefillArea || document.getElementById('cl-hub-area')?.value || '';
     document.getElementById('clf-type').value = type; // เซ็ตก่อน switchTab เพื่อให้ updateNavActive ไฮไลต์ถูก

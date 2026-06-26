@@ -41,6 +41,9 @@ function applyPermissions() {
     if (urlInput) urlInput.disabled = !can('ua.perm');
     document.getElementById('url-lock-hint')?.classList.toggle('hidden', can('ua.perm'));
 
+    // sidebar admin section + more-log (ผูกกับ ua.log) — updateNavRole() อยู่ js/breakdown-report.js
+    if (typeof updateNavRole === 'function') updateNavRole();
+
     // re-render records ที่ขึ้นกับ role
     if (typeof applyRecordFilter === 'function' && typeof _lastRecords !== 'undefined' && _lastRecords?.length) {
         applyRecordFilter();

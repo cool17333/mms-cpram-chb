@@ -362,14 +362,36 @@ function doPost(e) {
       return jsonOut({ success: true, action: 'accepted' });
     }
 
-    // ---- REPAIR COMPLETE (บันทึกซ่อมสำเร็จ — อัปเดตเฉพาะ status + bdEnd) ----
+    // ---- REPAIR COMPLETE (status + bdEnd + downtime + corrective + imgAfter) ----
     if (data.action === 'repairComplete') {
       if (!userCan(ss, data.username, data.pin, 'bd.editdoc'))
         return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ bd.editdoc' });
       const sheet = ss.getSheetByName(data.sheetName);
       if (!sheet || !data.rowIndex) throw new Error('Sheet or rowIndex not found');
-      sheet.getRange(data.rowIndex, 7).setValue('ซ่อมสำเร็จ');    // col 7 = status
-      sheet.getRange(data.rowIndex, 9).setValue(data.bdEnd || ''); // col 9 = bdEnd
+      // อ่าน row เพื่อ merge corrective + imgAfter + คำนวณ downtime จาก bdStart
+      const row = sheet.getRange(data.rowIndex, 1, 1, 31).getValues()[0];
+      const bdStartVal     = row[7]  || '';  // col 8  = bdStart
+      const prevCorrective = row[18] || '';  // col 19 = corrective
+      const prevImgAfter   = row[29] || '';  // col 30 = imgAfter
+      // คำนวณ downtime (นาที)
+      let downtimeMin = 0;
+      if (bdStartVal && data.bdEnd) {
+        const s = new Date(String(bdStartVal).replace(' ', 'T'));
+        const e = new Date(String(data.bdEnd).replace(' ', 'T'));
+        if (!isNaN(s) && !isNaN(e)) downtimeMin = Math.round((e - s) / 60000);
+      }
+      // merge corrective (เพิ่มต่อท้ายถ้ามีข้อมูลเดิม)
+      const newCorr = (data.corrective || '').trim();
+      const mergedCorr = [prevCorrective, newCorr].filter(Boolean).join('\n');
+      // upload รูป imgAfter ขึ้น Drive แล้ว merge กับเดิม
+      const newImgAfterIds = data.imgAfter ? saveImgList(data.imgAfter) : '';
+      const mergedImgAfter = [prevImgAfter, newImgAfterIds].filter(Boolean).join('|');
+      // เขียนกลับ
+      sheet.getRange(data.rowIndex, 7).setValue('ซ่อมสำเร็จ');       // col 7  = status
+      sheet.getRange(data.rowIndex, 9).setValue(data.bdEnd || '');    // col 9  = bdEnd
+      if (downtimeMin > 0) sheet.getRange(data.rowIndex, 10).setValue(downtimeMin);  // col 10 = downtime
+      sheet.getRange(data.rowIndex, 19).setValue(mergedCorr);         // col 19 = corrective
+      if (mergedImgAfter) sheet.getRange(data.rowIndex, 30).setValue(mergedImgAfter); // col 30 = imgAfter
       writeLog(ss, data.tracking, 'ซ่อมสำเร็จ — เวลาเสร็จ: ' + (data.bdEnd || ''), data.byName, 'ซ่อมสำเร็จ');
       writeAccessLog(ss, data.username, 'repairComplete', 'ซ่อมสำเร็จ: ' + (data.tracking || ''));
       return jsonOut({ success: true, action: 'repairComplete' });

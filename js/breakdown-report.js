@@ -180,7 +180,7 @@ function acceptRecord(item) {
     _acceptItem = item;
     document.getElementById('accept-tracking-display').textContent =
         (item.tracking || '') + (item.machineName ? ' — ' + item.machineName : '');
-    document.getElementById('accept-byname').value = '';
+    const _byu = document.getElementById('accept-byuser'); if (_byu) _byu.textContent = currentUser.name || '—';
     const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     document.getElementById('accept-detail').innerHTML = `
       <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm space-y-1.5">
@@ -189,8 +189,23 @@ function acceptRecord(item) {
         <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">เวลาเริ่ม</span><span class="col-span-2">${esc((item.bdStart||'').replace('T',' '))||'—'}</span></div>
         <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">ประเภท</span><span class="col-span-2">${esc(item.bdType)||'—'}</span></div>
         <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">ปัญหาที่พบ</span><span class="col-span-2 text-gray-800 whitespace-pre-line">${esc(item.problem)||'—'}</span></div>
+        <div class="grid grid-cols-3 gap-1"><span class="text-gray-500">ผู้แจ้ง</span><span class="col-span-2 font-bold text-blue-700">${esc(item.byName)||'—'}</span></div>
         ${item.device?`<div class="grid grid-cols-3 gap-1"><span class="text-gray-500">อุปกรณ์</span><span class="col-span-2">${esc(item.device)}</span></div>`:''}
+      </div>
+      <div id="accept-photo-wrap" class="mt-3 hidden">
+        <p class="text-xs text-gray-500 mb-1">รูปที่แจ้ง</p>
+        <img id="accept-photo" class="w-full max-h-56 object-contain rounded-lg border border-gray-200 bg-gray-50">
       </div>`;
+    const firstImg = String(item.imgBefore||'').split('|').map(s=>s.trim()).filter(Boolean)[0];
+    if (firstImg && GAS_URL) {
+        fetch(`${GAS_URL}?action=getImage&id=${encodeURIComponent(firstImg)}`)
+            .then(r => r.json())
+            .then(j => { if (j && j.success && j.dataUrl) {
+                document.getElementById('accept-photo').src = j.dataUrl;
+                document.getElementById('accept-photo-wrap').classList.remove('hidden');
+            }})
+            .catch(()=>{});
+    }
     document.getElementById('accept-modal').classList.remove('hidden');
 }
 
@@ -289,10 +304,12 @@ function onMachineIdLookup() {
 
 function openReportPopup() {
     window._scanEventType = 'Breakdown';   // default — scan flow จะ override ทีหลัง
-    // re-enable fields ที่อาจถูก lock จาก QR kiosk
-    ['rm-machine','rm-factory','rm-area','rm-line','rm-date','rm-time'].forEach(id => {
+    // re-enable fields ที่อาจถูก lock จาก QR scan
+    ['rm-machine','rm-factory','rm-area','rm-line','rm-date','rm-time','rm-machine-id'].forEach(id => {
         const el = document.getElementById(id); if (el) el.disabled = false;
     });
+    const mid = document.getElementById('rm-machine-id'); if (mid) mid.value = '';
+    document.getElementById('rm-machineid-wrap')?.classList.add('hidden');
     document.getElementById('rm-qr-notice')?.classList.add('hidden');
     document.getElementById('rm-factory').value = '';
     rmUpdateArea();
@@ -303,7 +320,13 @@ function openReportPopup() {
     const titleEl = document.getElementById('rm-modal-title');
     const btnEl   = document.getElementById('rm-submit');
     if (titleEl) titleEl.textContent = '🚨 แจ้ง Breakdown';
-    if (btnEl)   btnEl.textContent   = '🚨 แจ้ง Breakdown';
+    if (btnEl) {
+        btnEl.textContent = '🚨 แจ้ง Breakdown';
+        btnEl.classList.add('bg-red-500','hover:bg-red-600');
+        btnEl.classList.remove('bg-orange-500','hover:bg-orange-600');
+    }
+    document.getElementById('rm-header')?.classList.add('bg-red-600');
+    document.getElementById('rm-header')?.classList.remove('bg-orange-500');
     document.getElementById('report-modal').classList.remove('hidden');
     loadMachines();   // รีเฟรช master ทุกครั้งที่เปิด
 }
@@ -313,8 +336,14 @@ function _applyReportEventType(et) {
     const isAdj = et === 'Adjustment';
     const t = document.getElementById('rm-modal-title');
     const b = document.getElementById('rm-submit');
+    const h = document.getElementById('rm-header');
     if (t) t.textContent = isAdj ? '🔧 แจ้งซ่อม (Adjustment)' : '🚨 แจ้ง Breakdown';
-    if (b) b.textContent = isAdj ? '🔧 แจ้งซ่อม' : '🚨 แจ้ง Breakdown';
+    if (b) {
+        b.textContent = isAdj ? '🔧 แจ้งซ่อม' : '🚨 แจ้ง Breakdown';
+        b.classList.toggle('bg-orange-500', isAdj);   b.classList.toggle('hover:bg-orange-600', isAdj);
+        b.classList.toggle('bg-red-500', !isAdj);      b.classList.toggle('hover:bg-red-600', !isAdj);
+    }
+    if (h) { h.classList.toggle('bg-orange-500', isAdj); h.classList.toggle('bg-red-600', !isAdj); }
 }
 
 function openReportPopupType(eventType) {
@@ -323,8 +352,8 @@ function openReportPopupType(eventType) {
 }
 
 function closeReportModal() {
-    // re-enable ก่อน hide — กันกรณี QR kiosk ล็อก field ค้างไว้
-    ['rm-machine','rm-factory','rm-area','rm-line','rm-date','rm-time'].forEach(id => {
+    // re-enable ก่อน hide — กันกรณี QR scan ล็อก field ค้างไว้
+    ['rm-machine','rm-factory','rm-area','rm-line','rm-date','rm-time','rm-machine-id'].forEach(id => {
         const el = document.getElementById(id); if (el) el.disabled = false;
     });
     document.getElementById('rm-qr-notice')?.classList.add('hidden');
@@ -368,12 +397,13 @@ async function submitReportPopup() {
     if (!area)       return showToast('⚠️ กรุณาเลือกพื้นที่', 'error');
     if (!date)       return showToast('⚠️ กรุณาระบุเวลาเริ่ม Breakdown', 'error');
     if (!problem)    return showToast('⚠️ กรุณาระบุปัญหา/อาการ', 'error');
+    if (!imgList.before.length) return showToast('⚠️ กรุณาแนบรูปอย่างน้อย 1 รูป', 'error');
     if (!byName)     { showToast('⚠️ กรุณาเข้าสู่ระบบก่อนแจ้ง', 'error'); openLogin(); return; }
     if (!GAS_URL)    return showToast('⚠️ ยังไม่ได้ตั้งค่า Web App URL', 'error');
 
     const data = {
         timestamp: new Date().toISOString(), tracking: '',
-        machineName: machine, factory, area, machineId: '', line,
+        machineName: machine, factory, area, machineId: (document.getElementById('rm-machine-id')?.value || ''), line,
         status: 'รอรับงาน', bdStart: `${date}T${time || '00:00'}`, bdEnd: '', downtimeMin: 0,
         bdType: '', eventType: window._scanEventType || 'Breakdown',
         problem: `${problem} *${byName} - ${(window._scanEventType||'Breakdown')==='Adjustment'?'แจ้งซ่อม':'แจ้ง Breakdown'}`, device: '', whys: [''],

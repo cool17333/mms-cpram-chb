@@ -817,9 +817,7 @@ function showAddDataConfirm() {
 
     document.getElementById('confirm-title').textContent     = title;
     document.getElementById('confirm-btn-label').textContent = btnLb;
-    document.getElementById('confirm-name-label').innerHTML  =
-        '👤 ยืนยันชื่อ' + nameL + ' <span class="text-red-500">*</span>';
-    document.getElementById('confirm-name').value = '';   // ว่างทุกครั้ง — กันใส่ชื่อซ้ำคนเดิม
+    document.getElementById('confirm-name-label').textContent = nameL;
 
     const isEditStage = (formStage === 'edit' || formStage === 'whyedit');
     document.getElementById('confirm-summary').innerHTML = `

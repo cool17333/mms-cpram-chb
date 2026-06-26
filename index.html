@@ -546,9 +546,7 @@
         </h2>
         <div id="confirm-summary" class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm space-y-2 mb-4"></div>
         <div class="mb-5">
-            <label id="confirm-name-label" class="text-xs font-bold text-gray-700 block mb-1">👤 ยืนยันชื่อผู้ดำเนินการ <span class="text-red-500">*</span></label>
-            <input id="confirm-name" type="text" placeholder="ระบุชื่อผู้คีย์ข้อมูล..." autocomplete="off"
-                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 transition-colors">
+            <p class="text-xs text-gray-500">👤 <span id="confirm-name-label">ผู้ดำเนินการ</span>: บันทึกจากชื่อที่เข้าสู่ระบบอัตโนมัติ</p>
         </div>
         <div class="flex gap-3 justify-end">
             <button onclick="closeConfirm()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">ยกเลิก</button>
@@ -781,49 +779,6 @@
 
 </div><!-- end panel-bd-hub -->
 
-<!-- ==================== BD QR KIOSK PANEL ==================== -->
-<div id="panel-bd-kiosk" class="tab-panel hidden">
-<div class="min-h-screen flex items-start justify-center py-8 px-4" style="background:linear-gradient(135deg,#7f1d1d,#1f2937)">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="px-6 py-4" style="background:#dc2626">
-            <h2 class="text-lg font-bold text-white flex items-center gap-2">🚨 แจ้ง Breakdown</h2>
-            <p id="bdk-machine-label" class="text-red-200 text-sm mt-0.5">—</p>
-        </div>
-        <div class="p-5 space-y-4">
-            <!-- Machine info read-only -->
-            <div class="bg-gray-50 rounded-xl p-4 space-y-2 text-sm border border-gray-100">
-                <div class="flex justify-between"><span class="text-gray-500">รหัสเครื่องจักร</span><span class="font-bold font-mono" id="bdk-machine-id">—</span></div>
-                <div class="flex justify-between"><span class="text-gray-500">โรงงาน / พื้นที่</span><span class="font-bold" id="bdk-fac-area">—</span></div>
-                <div class="flex justify-between"><span class="text-gray-500">ไลน์การผลิต</span><span class="font-bold" id="bdk-line">—</span></div>
-                <div class="flex justify-between"><span class="text-gray-500">วันที่แจ้ง</span><span class="font-bold" id="bdk-datetime">—</span></div>
-            </div>
-            <!-- Problem -->
-            <div>
-                <label class="text-sm font-bold text-gray-700 block mb-1">อาการ / ปัญหา <span class="text-red-500">*</span></label>
-                <textarea id="bdk-problem" rows="3" placeholder="ระบุอาการที่พบ..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-200 resize-none"></textarea>
-            </div>
-            <!-- Photo -->
-            <div>
-                <label class="text-sm font-bold text-gray-700 block mb-1">รูปภาพ</label>
-                <div class="relative border-2 border-dashed border-red-300 hover:border-red-500 rounded-xl bg-red-50/40 flex items-center justify-center overflow-hidden" style="height:10rem">
-                    <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" capture="environment" onchange="bdkSetImage(event)">
-                    <img id="bdk-preview" class="absolute inset-0 w-full h-full object-contain bg-white hidden">
-                    <span id="bdk-photo-hint" class="text-red-300 text-sm font-semibold pointer-events-none">📷 ถ่ายรูป / อัปโหลด</span>
-                </div>
-            </div>
-            <!-- Name -->
-            <div>
-                <label class="text-sm font-bold text-gray-700 block mb-1">👤 ชื่อผู้แจ้ง <span class="text-red-500">*</span></label>
-                <input id="bdk-byname" type="text" placeholder="ระบุชื่อ-นามสกุล..." class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-red-500">
-            </div>
-            <!-- Submit -->
-            <button id="bdk-submit" onclick="submitBdKiosk()" class="w-full py-3 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2" style="background:#dc2626">
-                🚨 ยืนยันแจ้ง Breakdown
-            </button>
-        </div>
-    </div>
-</div>
-</div><!-- end panel-bd-kiosk -->
 
 <!-- ==================== PANEL: LOG VIEWER ==================== -->
 <div id="panel-log" class="tab-panel">
@@ -1137,7 +1092,7 @@
         </div>
         <div>
             <label class="text-xs font-bold text-gray-500 block mb-1">ผู้ตรวจสอบ</label>
-            <input type="text" id="clf-inspector" placeholder="ชื่อผู้ตรวจ..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+            <input type="text" id="clf-inspector" readonly placeholder="—" class="w-full border border-gray-200 bg-gray-100 text-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none">
         </div>
     </div>
     <div id="clf-shift-wrap" class="mms-card p-4 mb-4 hidden">
@@ -1913,9 +1868,9 @@
         </div>
         <div class="p-6">
         <div id="accept-detail" class="mb-4"></div>
-        <label class="text-xs font-bold text-gray-500 block mb-1">ชื่อผู้รับงาน <span class="text-red-500">*</span></label>
-        <input id="accept-byname" type="text" placeholder="กรอกชื่อ-นามสกุลผู้รับงาน"
-               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500 transition-colors mb-4">
+        <div class="bg-orange-50 border border-orange-200 rounded-lg px-4 py-2.5 mb-4 text-sm">
+            👤 ผู้รับงาน: <strong id="accept-byuser" class="text-orange-700"></strong>
+        </div>
         <div class="flex gap-3">
             <button onclick="closeAcceptModal()"
                     class="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-colors">
@@ -1927,6 +1882,33 @@
             </button>
         </div>
         </div><!-- /p-6 -->
+    </div>
+</div>
+
+<!-- ==================== QR PICKER MODAL ==================== -->
+<div id="qr-picker-modal" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="bg-blue-600 px-6 py-4 flex-shrink-0">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">📱 Generate QR เครื่องจักร</h2>
+            <p class="text-xs text-blue-200 mt-0.5">เลือกเครื่อง + กำหนดขนาด แล้วสร้าง PDF</p>
+        </div>
+        <div class="px-6 py-3 border-b border-gray-100 flex items-center gap-4 flex-shrink-0">
+            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 cursor-pointer">
+                <input type="checkbox" id="qr-pick-all" onchange="qrPickerToggleAll(this)" class="w-4 h-4"> เลือกทั้งหมด
+            </label>
+            <span id="qr-pick-count" class="text-xs text-gray-500">เลือก 0 เครื่อง</span>
+            <div class="ml-auto flex items-center gap-2">
+                <label class="text-xs font-bold text-gray-600">ขนาด</label>
+                <input id="qr-pick-size" type="number" min="15" max="100" value="40"
+                       class="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center outline-none focus:border-blue-500">
+                <span class="text-xs text-gray-500">mm</span>
+            </div>
+        </div>
+        <div id="qr-pick-list" class="p-4 overflow-y-auto flex-1 space-y-1"></div>
+        <div class="flex gap-3 justify-end px-6 py-4 border-t border-gray-100 flex-shrink-0">
+            <button onclick="closeQrPicker()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900">ยกเลิก</button>
+            <button onclick="qrPickerGenerate()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-sm">📄 สร้าง PDF</button>
+        </div>
     </div>
 </div>
 
@@ -2139,7 +2121,7 @@
 <!-- ==================== REPORT POPUP (แจ้ง Breakdown) ==================== -->
 <div id="report-modal" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[92vh] flex flex-col">
-        <div class="bg-red-600 px-6 py-4 flex-shrink-0">
+        <div id="rm-header" class="bg-red-600 px-6 py-4 flex-shrink-0">
             <h2 id="rm-modal-title" class="text-lg font-bold text-white flex items-center gap-2">🚨 แจ้ง Breakdown</h2>
             <p class="text-xs text-red-200 mt-0.5">กรอกข้อมูลเหตุเครื่องจักรเสีย</p>
         </div>
@@ -2158,6 +2140,11 @@
                 <input list="machine-name-list" id="rm-machine" type="text" autocomplete="off" placeholder="ระบุชื่อเครื่องจักร..." class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-orange-500">
                 <datalist id="machine-name-list"></datalist>
                 <p class="text-[11px] text-gray-400 mt-1">รหัสเครื่องจักรจะระบุตอนรับงาน/ปิดงาน (อิงทะเบียนเครื่องจักร)</p>
+                <div id="rm-machineid-wrap" class="hidden mt-2">
+                    <label class="text-xs font-bold text-gray-600 block mb-1">รหัสเครื่องจักร (จาก QR)</label>
+                    <input id="rm-machine-id" type="text" disabled
+                           class="w-full border border-gray-200 bg-gray-100 text-gray-600 rounded-lg px-3 py-2 outline-none">
+                </div>
             </div>
             <div class="grid grid-cols-3 gap-3">
                 <div>
@@ -2475,7 +2462,7 @@
                 <button onclick="machOpenImport()" class="mms-btn text-sm" style="background:#f0f2f5;color:var(--mms-text)">📥 นำเข้า Excel</button>
                 <button onclick="backupData()" class="mms-btn text-sm" style="background:#eafaf1;color:#1a7a45">💾 สำรองข้อมูล</button>
                 <button onclick="restoreMachines()" class="mms-btn text-sm" style="background:#fef3cd;color:#9a6c00">↩️ กู้คืนสำรอง</button>
-                <button onclick="generateMachineQrPdf(machineMaster.map(m=>m.id||m.machineId||m.machine_id||'').filter(Boolean),40)" class="mms-btn mms-btn-blue text-sm">📱 Generate QR ทุกเครื่อง</button>
+                <button onclick="openQrPicker()" class="mms-btn mms-btn-blue text-sm">📱 Generate QR</button>
             </div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -2793,17 +2780,17 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.8.1"></script>
-<script src="js/core.js?v=2.8.1"></script>
-<script src="js/machines.js?v=2.8.1"></script>
-<script src="js/breakdown-report.js?v=2.8.1"></script>
-<script src="js/breakdown-form.js?v=2.8.1"></script>
-<script src="js/records-summary.js?v=2.8.1"></script>
-<script src="js/export.js?v=2.8.1"></script>
-<script src="js/bootstrap.js?v=2.8.1"></script>
-<script src="js/checklist-core.js?v=2.8.1"></script>
-<script src="js/checklist-status.js?v=2.8.1"></script>
-<script src="js/user-access.js?v=2.8.1"></script>
-<script src="js/scan.js?v=2.8.1"></script>
+<script src="js/permissions.js?v=2.9"></script>
+<script src="js/core.js?v=2.9"></script>
+<script src="js/machines.js?v=2.9"></script>
+<script src="js/breakdown-report.js?v=2.9"></script>
+<script src="js/breakdown-form.js?v=2.9"></script>
+<script src="js/records-summary.js?v=2.9"></script>
+<script src="js/export.js?v=2.9"></script>
+<script src="js/bootstrap.js?v=2.9"></script>
+<script src="js/checklist-core.js?v=2.9"></script>
+<script src="js/checklist-status.js?v=2.9"></script>
+<script src="js/user-access.js?v=2.9"></script>
+<script src="js/scan.js?v=2.9"></script>
 </body>
 </html>

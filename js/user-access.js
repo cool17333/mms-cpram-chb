@@ -204,10 +204,11 @@ async function renderPermMatrix() {
             { label:'✅ Checklist', codes:['cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar'] },
             { label:'👥 User Access', codes:['ua.add','ua.del','ua.level','ua.perm','ua.log'] },
         ];
+        const canEdit = can('ua.perm');
         const shortRole = r => r === 'Administrator' ? 'Admin' : r === 'Production' ? 'Prod' : r === 'Technician' ? 'Tech' : r === 'Supervisor' ? 'Super' : r === 'Engineer' ? 'Eng' : 'Visit';
         let html = `<table class="w-full text-xs border-collapse bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
             <thead><tr class="bg-gray-50">
-                <th class="px-3 py-2 text-left text-gray-500 font-bold uppercase tracking-wider">Permission</th>
+                <th class="px-3 py-2 text-left text-gray-500 font-bold uppercase tracking-wider">Permission${canEdit ? ' <span class="text-[10px] text-orange-400 font-normal normal-case">(คลิกเพื่อแก้)</span>' : ''}</th>
                 ${roles.map(r => `<th class="px-2 py-2 text-center font-bold text-gray-600">${shortRole(r)}</th>`).join('')}
             </tr></thead><tbody>`;
         groups.forEach(g => {
@@ -216,7 +217,10 @@ async function renderPermMatrix() {
                 html += `<tr class="border-t border-gray-100 hover:bg-gray-50">
                     <td class="px-3 py-2 text-gray-700">${PERM_LABEL[code] || code}<div class="text-[10px] text-gray-300 font-mono">${code}</div></td>
                     ${roles.map(r => {
-                        const ok = matrix[r] && matrix[r][code];
+                        const ok = !!(matrix[r] && matrix[r][code]);
+                        if (canEdit) {
+                            return `<td class="px-2 py-2 text-center"><button onclick="setPermissionToggle('${r}','${code}',${ok?1:0})" class="w-7 h-7 rounded-full text-xs font-bold transition-all ${ok ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-400'}" title="${ok ? 'คลิกถอนสิทธิ์' : 'คลิกให้สิทธิ์'}">${ok ? '✓' : '—'}</button></td>`;
+                        }
                         return `<td class="px-2 py-2 text-center">${ok ? '<span class="text-green-500 font-bold">✓</span>' : '<span class="text-gray-200">—</span>'}</td>`;
                     }).join('')}
                 </tr>`;
@@ -225,6 +229,38 @@ async function renderPermMatrix() {
         html += '</tbody></table>';
         el.innerHTML = html;
     } catch (e) { el.innerHTML = '<p class="text-red-400 py-6 text-center">❌ โหลดไม่สำเร็จ: ' + e.message + '</p>'; }
+}
+
+// ---- Permission toggle ----
+async function setPermission(role, code, allow) {
+    if (!GAS_URL) { showToast('⚠️ ยังไม่ได้ตั้งค่า GAS URL', 'warn'); return false; }
+    try {
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'setPermission',
+                username: currentUser.username,
+                pin: currentUser.pin,
+                role, perm_code: code, allow: allow ? 1 : 0
+            })
+        });
+        const json = await res.json();
+        if (!json.success) { showToast('❌ ' + (json.error || 'แก้สิทธิ์ไม่สำเร็จ'), 'error'); return false; }
+        return true;
+    } catch (e) { showToast('❌ Network error: ' + e.message, 'error'); return false; }
+}
+
+async function setPermissionToggle(role, code, currentVal) {
+    const newVal = currentVal ? 0 : 1;
+    const label = PERM_LABEL[code] || code;
+    const verb = newVal ? 'ให้สิทธิ์' : 'ถอนสิทธิ์';
+    showToast(`⏳ ${verb}: ${role} — ${label}`, 'info');
+    const ok = await setPermission(role, code, newVal);
+    if (ok) {
+        showToast(`✅ ${verb}สำเร็จ`, 'success');
+        renderPermMatrix();
+    }
 }
 
 // ---- Access log ----

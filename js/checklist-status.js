@@ -162,7 +162,7 @@ function renderClScDaily(machines) {
     tbody.innerHTML = pageRows.map(m => {
         const id     = m.id || m.machineId || m.machine_id || '';
         const custom = clResolveDailyItems(id);
-        const canEdit = userRole === 'engineer' || userRole === 'admin';
+        const canEdit = can('cl.edit');
         return `<tr class="border-b border-gray-100 hover:bg-gray-50">
             <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${id}</td>
             <td class="px-4 py-2.5 text-sm">${m.name||m.machineName||id}</td>
@@ -187,7 +187,7 @@ function renderClScPm(machines) {
     clScRenderPagBar('pm', _clPmPage, _clPmTotalPages, total, start, ps);
     if (!total) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-400 py-8">ไม่พบเครื่องจักร</td></tr>'; return; }
     // plans already loaded by loadClSchedule()
-    const canEdit = userRole === 'engineer' || userRole === 'admin';
+    const canEdit = can('cl.edit');
     tbody.innerHTML = pageRows.map(m => {
         const id        = m.id || m.machineId || m.machine_id || '';
         const plan      = clGetPmPlan(id);
@@ -213,8 +213,8 @@ function renderClScPm(machines) {
     }).join('');
 }
 async function saveAllPmPlans() {
-    if (!userRole) { showToast('กรุณาเข้าสู่ระบบก่อน', 'warn'); return; }
-    if (userRole !== 'engineer' && userRole !== 'admin') { showToast('ต้องเป็น Engineer หรือ Admin เท่านั้น', 'warn'); return; }
+    if (!currentUser.username) { showToast('กรุณาเข้าสู่ระบบก่อน', 'warn'); return; }
+    if (!can('cl.edit')) { showToast('ไม่มีสิทธิ์แก้ไขรายการตรวจ', 'warn'); return; }
     const fac  = document.getElementById('clsc-fac')?.value  || '';
     const area = document.getElementById('clsc-area')?.value || '';
     const plans = [];
@@ -244,7 +244,7 @@ async function saveAllPmPlans() {
 
 // ---- ITEMS EDITOR (3 modes) ----
 async function openClItemsEditor(mode, machineId) {
-    if (userRole !== 'engineer' && userRole !== 'admin') { showToast('ต้องเป็น Engineer หรือ Admin', 'warn'); return; }
+    if (!can('cl.edit')) { showToast('ไม่มีสิทธิ์แก้ไขรายการตรวจ', 'warn'); return; }
     _clMcdeMode      = mode;
     _clMcdeMachineId = machineId || '';
     const machine    = machineId ? machineMaster.find(m => (m.id||m.machineId||m.machine_id||'') === machineId) : null;
@@ -377,7 +377,7 @@ function mcieAddPmRoot() { addClPmRoot(); }
 async function saveClItemsEditor() {
     const editorName = currentUser.name;
     if (!editorName) { showToast('กรุณาเข้าสู่ระบบก่อนแก้ไข', 'warn'); openLogin(); return; }
-    if (!userRole || userRole === 'user') { showToast('ต้องเป็น Engineer หรือ Admin', 'warn'); return; }
+    if (!can('cl.edit')) { showToast('ไม่มีสิทธิ์แก้ไขรายการตรวจ', 'warn'); return; }
     const mode      = _clMcdeMode;
     const machineId = _clMcdeMachineId;
 
@@ -434,7 +434,7 @@ async function enterBdKiosk(machineId, token) {
 let _mccAllMachines = []; // machines in current scope for copy modal
 
 function openClCopyModal(type, sourceId) {
-    if (userRole !== 'engineer' && userRole !== 'admin') { showToast('ต้องเป็น Engineer หรือ Admin', 'warn'); return; }
+    if (!can('cl.edit')) { showToast('ไม่มีสิทธิ์แก้ไขรายการตรวจ', 'warn'); return; }
     _clCopyType     = type;
     _clCopySourceId = sourceId;
     const fac  = document.getElementById('clsc-fac')?.value  || '';

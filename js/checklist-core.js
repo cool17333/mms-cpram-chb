@@ -1093,7 +1093,7 @@ async function renderClCalendar() {
 
     // hide set-btn for users
     const setBtn = document.getElementById('clcal-set-btn');
-    if (setBtn) setBtn.classList.toggle('hidden', userRole === 'user');
+    if (setBtn) setBtn.classList.toggle('hidden', !can('cl.edit'));
 
     // render calendar
     const firstDay    = new Date(_clCalYear, _clCalMonth, 1).getDay();
@@ -1163,7 +1163,7 @@ function clCalGoPm(machineId, dateStr) {
     }, 100);
 }
 function openClSetDates() {
-    if (userRole === 'user') return;
+    if (!can('cl.edit')) return;
     const fac  = document.getElementById('clcal-fac')?.value  || '';
     const area = document.getElementById('clcal-area')?.value || '';
     const machines = clMachinesDueForPm(fac, area, _clCalYear, _clCalMonth);

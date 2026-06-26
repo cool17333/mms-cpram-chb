@@ -248,7 +248,7 @@ function closeMachDelModal() {
 async function confirmMachDelete() {
     const byName = currentUser.name;
     if (!byName) { showToast('⚠️ กรุณาเข้าสู่ระบบก่อนดำเนินการ', 'error'); openLogin(); return; }
-    if (userRole !== 'admin') { showToast('⚠️ ต้องเป็น Admin', 'error'); return; }
+    if (!can('mc.delete')) { showToast('⚠️ ไม่มีสิทธิ์ลบเครื่องจักร', 'error'); return; }
     const m = machineMaster[_machDelIdx];
     if (!m) { closeMachDelModal(); return; }
     showLoading('กำลังลบ…');
@@ -266,7 +266,7 @@ async function confirmMachDelete() {
 }
 
 async function saveMachines() {
-    if (userRole !== 'admin') { showToast('⚠️ ต้องเป็น Admin', 'error'); return; }
+    if (!can('mc.edit')) { showToast('⚠️ ไม่มีสิทธิ์แก้ไขทะเบียน', 'error'); return; }
     const clean = machineMaster.filter(m => String(m.id).trim());
     if (!clean.length) { showToast('⚠️ รายการว่าง — ไม่บันทึก (กันข้อมูลหาย)', 'error'); return; }
     if (!confirm(`บันทึกทะเบียนเครื่องจักรทั้งหมด ${clean.length} รายการ?\n(ของเดิมจะถูกสำรองไว้ให้อัตโนมัติ)`)) return;
@@ -281,7 +281,7 @@ async function saveMachines() {
 
 // กู้คืนทะเบียนเครื่องจักรจากข้อมูลสำรองล่าสุด (_Machines_bak)
 async function restoreMachines() {
-    if (userRole !== 'admin') { showToast('⚠️ ต้องเป็น Admin', 'error'); return; }
+    if (!can('mc.restore')) { showToast('⚠️ ไม่มีสิทธิ์กู้คืน', 'error'); return; }
     if (!confirm('กู้คืนทะเบียนเครื่องจักรจากข้อมูลสำรองล่าสุด?\n(เขียนทับรายการปัจจุบัน)')) return;
     try {
         const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -391,7 +391,7 @@ function impConfirm() {
 let _cancelItem = null;
 
 function cancelRecord(item) {
-    if (userRole !== 'admin') { showToast('⚠️ ต้องเป็น Admin เท่านั้น', 'error'); return; }
+    if (!can('bd.cancel')) { showToast('⚠️ ไม่มีสิทธิ์ยกเลิกงาน', 'error'); return; }
     _cancelItem = item;
     document.getElementById('cancel-tracking-display').textContent =
         (item.tracking || '') + (item.machineName ? ' — ' + item.machineName : '');

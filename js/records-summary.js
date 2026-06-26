@@ -90,9 +90,9 @@ function renderRecordsTable(rows) {
         const isPending   = !isCancelled && !isWaiting && r.status !== 'ดำเนินการเสร็จสิ้น';
         const isDone      = !isCancelled && r.status === 'ดำเนินการเสร็จสิ้น';
         const j = JSON.stringify(r).replace(/'/g,"&#39;");
-        const isAdmin    = (userRole === 'admin');
-        const canEdit    = (userRole === 'engineer' || userRole === 'admin');
-        const canAccept  = (userRole === 'engineer' || userRole === 'admin');
+        const isAdmin    = can('bd.manual');
+        const canEdit    = can('bd.editdoc');
+        const canAccept  = can('bd.accept');
         const hasWhy  = Array.isArray(r.whys) ? r.whys.some(w => String(w).trim()) : false;
         const canPDF  = isDone && (isAdmin || hasWhy);
         const etBadge = r.eventType === 'Breakdown'  ? 'bg-red-100 text-red-700'  :

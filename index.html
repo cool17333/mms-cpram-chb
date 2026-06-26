@@ -223,7 +223,7 @@
         <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-xl flex items-center justify-center text-base flex-shrink-0" style="background:var(--mms-red)">⚙️</div>
             <div class="min-w-0">
-                <p class="text-white font-bold text-sm leading-tight">MMS</p>
+                <p class="text-white font-bold text-sm leading-tight">CMMS</p>
                 <p class="text-gray-400 text-xs truncate">CPRAM Chonburi</p>
             </div>
         </div>
@@ -242,22 +242,23 @@
         <!-- Breakdown group -->
         <div class="nav-group" id="grp-bd" data-color="red">
             <div class="sidebar-item" id="sn-bd" onclick="clToggleNavGroup('bd')">
-                <span class="nav-icon">🚨</span><span class="flex-1">ระบบ Breakdown</span><span class="nav-chev">›</span>
+                <span class="nav-icon">🚨</span><span class="flex-1">ระบบแจ้งซ่อม & Breakdown</span><span class="nav-chev">›</span>
             </div>
             <div class="nav-submenu" id="sub-bd">
                 <div class="sidebar-subitem" id="sni-bd-hub" onclick="goBdHub()">ภาพรวม</div>
-                <div class="sidebar-subitem" id="sni-bd-form" data-perm="bd.report" onclick="openReportPopup()">แจ้ง Breakdown</div>
+                <div class="sidebar-subitem" id="sni-bd-form" data-perm="bd.report" onclick="openReportPopupType('Breakdown')">แจ้ง Breakdown</div>
+                <div class="sidebar-subitem" data-perm="bd.report" onclick="openReportPopupType('Adjustment')">แจ้งซ่อม</div>
                 <div class="sidebar-subitem" id="sni-bd-records" onclick="goRecords()">รายการ</div>
                 <div class="sidebar-subitem" id="sni-bd-summary" onclick="goSummary()">สรุป</div>
             </div>
         </div>
         <div class="sidebar-item" id="sn-mach" onclick="goMachines()">
-            <span class="nav-icon">🗂️</span><span>ทะเบียนเครื่องจักร</span>
+            <span class="nav-icon">🗂️</span><span>ระบบ Machine List</span>
         </div>
         <!-- Checklist group -->
         <div class="nav-group" id="grp-cl" data-color="green">
             <div class="sidebar-item" id="sn-cl" onclick="clToggleNavGroup('cl')">
-                <span class="nav-icon">✅</span><span class="flex-1">Checklist</span><span class="nav-chev">›</span>
+                <span class="nav-icon">✅</span><span class="flex-1">ระบบ Check List</span><span class="nav-chev">›</span>
             </div>
             <div class="nav-submenu" id="sub-cl">
                 <div class="sidebar-subitem" id="sni-cl-hub" onclick="goChecklist()">ภาพรวม</div>
@@ -300,13 +301,13 @@
         <span class="bnav-icon">🏠</span><span>หน้าหลัก</span>
     </div>
     <div class="bnav-tab" id="bn-bd" onclick="goBdHub()">
-        <span class="bnav-icon">🚨</span><span>Breakdown</span>
+        <span class="bnav-icon">🚨</span><span>แจ้งซ่อม/BD</span>
     </div>
     <div class="bnav-tab" id="bn-mach" onclick="goMachines()">
-        <span class="bnav-icon">🗂️</span><span>ทะเบียน</span>
+        <span class="bnav-icon">🗂️</span><span>Machine List</span>
     </div>
     <div class="bnav-tab" id="bn-cl" onclick="goChecklist()">
-        <span class="bnav-icon">✅</span><span>Checklist</span>
+        <span class="bnav-icon">✅</span><span>Check List</span>
     </div>
     <div class="bnav-tab" id="bn-more" onclick="openMoreSheet()">
         <span class="bnav-icon">☰</span><span>เพิ่มเติม</span>
@@ -418,10 +419,10 @@
                 </div>
             </div>
             <div style="margin-bottom:20px">
-                <label style="font-size:11px;font-weight:700;color:#7f8c8d;text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">PIN</label>
+                <label style="font-size:11px;font-weight:700;color:#7f8c8d;text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">Password</label>
                 <div style="position:relative">
                     <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">🔑</span>
-                    <input id="lm-pin" type="password" placeholder="PIN..." maxlength="8" autocomplete="off"
+                    <input id="lm-pin" type="password" placeholder="Password..." maxlength="12" autocomplete="off"
                            onkeydown="if(event.key==='Enter')doLogin()"
                            style="width:100%;border:1.5px solid #e0e4e8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;outline:none;box-sizing:border-box"
                            onfocus="this.style.borderColor='#c0392b'" onblur="this.style.borderColor='#e0e4e8'">
@@ -432,6 +433,7 @@
                     onmouseover="this.style.background='#962d22'" onmouseout="this.style.background='#c0392b'">
                 เข้าสู่ระบบ
             </button>
+            <button onclick="closeLogin()" style="width:100%;background:transparent;color:#7f8c8d;font-weight:700;font-size:14px;padding:10px;border-radius:12px;border:none;cursor:pointer;margin-top:8px" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">ยกเลิก</button>
             <p style="text-align:center;font-size:11px;color:#9ca3af;margin:12px 0 0">ไม่เข้าสู่ระบบ = Visitor (ดูอย่างเดียว)</p>
         </div>
     </div>
@@ -704,7 +706,7 @@
     <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div>
             <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">ระบบจัดการเครื่องจักร · CPRAM CHB</p>
-            <h1 class="text-xl md:text-2xl font-bold text-white">🚨 ระบบ Breakdown</h1>
+            <h1 class="text-xl md:text-2xl font-bold text-white">🚨 ระบบแจ้งซ่อม & Breakdown</h1>
         </div>
         <div class="flex gap-2 text-sm">
             <span class="mms-stat-chip" id="bdhub-stat-wip">🔧 WIP: —</span>
@@ -736,11 +738,19 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
 
         <!-- แจ้ง Breakdown -->
-        <div class="mms-card mms-card-red p-6 cursor-pointer text-center" onclick="openReportPopup()">
+        <div class="mms-card mms-card-red p-6 cursor-pointer text-center" onclick="openReportPopupType('Breakdown')">
             <div class="text-4xl mb-3">🚨</div>
             <h3 class="font-bold mb-1" style="color:var(--mms-text)">แจ้ง Breakdown</h3>
             <p class="text-xs mb-4" style="color:var(--mms-text-sub)">เปิดใบแจ้งเหตุเครื่องจักรเสีย</p>
-            <button class="mms-btn mms-btn-red w-full justify-center text-sm" onclick="event.stopPropagation();openReportPopup()">+ แจ้ง Breakdown</button>
+            <button class="mms-btn mms-btn-red w-full justify-center text-sm" onclick="event.stopPropagation();openReportPopupType('Breakdown')">+ แจ้ง Breakdown</button>
+        </div>
+
+        <!-- แจ้งซ่อม Adjustment -->
+        <div class="mms-card p-6 cursor-pointer text-center" data-perm="bd.report" style="border-top:5px solid #f39c12" onclick="openReportPopupType('Adjustment')">
+            <div class="text-4xl mb-3">🔧</div>
+            <h3 class="font-bold mb-1" style="color:var(--mms-text)">แจ้งซ่อม</h3>
+            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">ปรับตั้ง / Setup / Adjustment</p>
+            <button class="mms-btn w-full justify-center text-sm" style="background:#f39c12;color:#fff" onclick="event.stopPropagation();openReportPopupType('Adjustment')">🔧 แจ้งซ่อม</button>
         </div>
 
         <!-- รายการ Breakdown -->
@@ -757,14 +767,6 @@
             <h3 class="font-bold mb-1" style="color:var(--mms-text)">สรุป Breakdown</h3>
             <p class="text-xs mb-4" style="color:var(--mms-text-sub)">KPI กราฟ ตารางสรุปรายเดือน</p>
             <button class="mms-btn mms-btn-blue w-full justify-center text-sm" onclick="event.stopPropagation();goSummary()">📊 ดูสรุป</button>
-        </div>
-
-        <!-- QR เครื่องจักร (unified scan QR — Engineer/Admin) -->
-        <div id="bdhub-card-qr" data-perm="bd.manual" class="hidden mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #27ae60" onclick="generateMachineQrPdf(machineMaster.map(m=>m.id||m.machineId||m.machine_id||'').filter(Boolean),40)">
-            <div class="text-4xl mb-3">📱</div>
-            <h3 class="font-bold mb-1" style="color:var(--mms-text)">QR เครื่องจักร</h3>
-            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">สร้าง QR ทุกเครื่อง (Checklist / BD / แจ้งซ่อม)</p>
-            <button class="mms-btn w-full justify-center text-sm" style="background:#27ae60;color:#fff" onclick="event.stopPropagation();generateMachineQrPdf(machineMaster.map(m=>m.id||m.machineId||m.machine_id||'').filter(Boolean),40)">📱 Generate QR</button>
         </div>
 
         <!-- Manual Report (Admin only) -->
@@ -835,11 +837,11 @@
         </button>
         <button id="log-tab-machines" onclick="switchLogTab('machines')"
             class="log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all text-gray-500 hover:text-gray-800">
-            🗂️ ทะเบียนเครื่องจักร
+            🗂️ ระบบ Machine List
         </button>
         <button id="log-tab-cl" onclick="switchLogTab('cl')"
             class="log-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all text-gray-500 hover:text-gray-800">
-            ✅ Checklist
+            ✅ ระบบ Check List
         </button>
     </div>
 
@@ -1410,7 +1412,6 @@
                         <label class="text-xs text-gray-400 font-medium">รายการ</label>
                     </div>
                     <button onclick="openClItemsEditor('default-daily',null)" class="mms-btn mms-btn-green text-xs">⚙️ ตั้งค่า Default รายวัน</button>
-                    <button onclick="generateMachineQrPdf(machineMaster.map(m=>m.id||m.machineId||m.machine_id||'').filter(Boolean),40)" class="mms-btn mms-btn-blue text-xs">📱 Generate QR</button>
                 </div>
             </div>
             <div class="overflow-x-auto">
@@ -1554,7 +1555,7 @@
     <!-- HEADER -->
     <div class="bg-[#18181b] px-6 md:px-8 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div class="flex-1 min-w-0 w-full">
-            <p class="text-orange-500 text-xs font-bold uppercase tracking-widest mb-1">🔴 Breakdown Report — Machine · CPRAM CHB</p>
+            <p id="report-doc-title" class="text-orange-500 text-xs font-bold uppercase tracking-widest mb-1">🔴 Breakdown Report — Machine · CPRAM CHB</p>
             <input type="text" id="machine-name"
                    class="block text-xl md:text-2xl font-bold text-white bg-transparent border-b-2 border-transparent hover:border-gray-600 focus:border-orange-500 outline-none transition-colors p-1 w-full"
                    placeholder="ชื่อเครื่องจักร...">
@@ -1644,7 +1645,7 @@
         </div>
         <div class="stage-fix">
             <label class="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-1">ประเภทเหตุการณ์ <span class="text-red-500">*</span></label>
-            <select id="inp-event-type" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 transition-colors cursor-pointer text-gray-800">
+            <select id="inp-event-type" onchange="setReportDocHeader(this.value)" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 transition-colors cursor-pointer text-gray-800">
                 <option value="">-- บังคับเลือก --</option>
                 <option value="Breakdown">⛔ Breakdown (เครื่องพัง/ชำรุด)</option>
                 <option value="Adjustment">🔧 Adjustment (ปรับตั้ง/Setup)</option>
@@ -1774,7 +1775,7 @@
 
 <div id="photo-gallery" class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200" style="display:none">
     <div class="bg-[#18181b] px-8 py-6">
-        <p class="text-orange-500 text-xs font-bold tracking-widest uppercase mb-1">● BREAKDOWN REPORT — รูปภาพประกอบ WHY-WHY</p>
+        <p id="report-whyimg-title" class="text-orange-500 text-xs font-bold tracking-widest uppercase mb-1">● BREAKDOWN REPORT — รูปภาพประกอบ WHY-WHY</p>
         <h1 id="gallery-title" class="text-white text-2xl md:text-3xl font-bold">ชื่อเครื่องจักร...</h1>
     </div>
     <div id="gallery-wrap" class="p-8"></div>
@@ -2139,7 +2140,7 @@
 <div id="report-modal" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[92vh] flex flex-col">
         <div class="bg-red-600 px-6 py-4 flex-shrink-0">
-            <h2 class="text-lg font-bold text-white flex items-center gap-2">🚨 แจ้ง Breakdown</h2>
+            <h2 id="rm-modal-title" class="text-lg font-bold text-white flex items-center gap-2">🚨 แจ้ง Breakdown</h2>
             <p class="text-xs text-red-200 mt-0.5">กรอกข้อมูลเหตุเครื่องจักรเสีย</p>
         </div>
         <!-- QR scan notice — แสดงเฉพาะเมื่อเปิดจาก QR -->
@@ -2474,6 +2475,7 @@
                 <button onclick="machOpenImport()" class="mms-btn text-sm" style="background:#f0f2f5;color:var(--mms-text)">📥 นำเข้า Excel</button>
                 <button onclick="backupData()" class="mms-btn text-sm" style="background:#eafaf1;color:#1a7a45">💾 สำรองข้อมูล</button>
                 <button onclick="restoreMachines()" class="mms-btn text-sm" style="background:#fef3cd;color:#9a6c00">↩️ กู้คืนสำรอง</button>
+                <button onclick="generateMachineQrPdf(machineMaster.map(m=>m.id||m.machineId||m.machine_id||'').filter(Boolean),40)" class="mms-btn mms-btn-blue text-sm">📱 Generate QR ทุกเครื่อง</button>
             </div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -2647,6 +2649,15 @@
     </div>
     <!-- Pane: Users -->
     <div id="ua-pane-users">
+        <div class="flex flex-wrap gap-2 items-center mb-3">
+            <input id="ua-filter-name" oninput="renderUaUsers()" placeholder="🔍 ค้นหาชื่อ/username" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm flex-1 min-w-[160px]">
+            <select id="ua-filter-level" onchange="renderUaUsers()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+                <option value="">ทุก Level</option>
+                <option>Visitor</option><option>Production</option><option>Technician</option>
+                <option>Engineer</option><option>Supervisor</option><option>Administrator</option>
+            </select>
+            <button onclick="loadUaUsers()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold">🔄 รีเฟรช</button>
+        </div>
         <div class="flex justify-between items-center mb-4">
             <p class="text-sm text-gray-500">รายชื่อผู้ใช้ทั้งหมด</p>
             <button data-perm="ua.add" onclick="openAddUserModal()"
@@ -2700,8 +2711,8 @@
                 <input id="au-user" class="inp-ua" placeholder="ตัวอักษร/ตัวเลข ไม่มีช่องว่าง" autocapitalize="none" autocomplete="off">
             </div>
             <div>
-                <label class="lbl-ua">PIN <span class="text-red-500">*</span></label>
-                <input id="au-pin" type="password" maxlength="8" inputmode="numeric" class="inp-ua" placeholder="4-8 หลัก">
+                <label class="lbl-ua">Password <span class="text-red-500">*</span></label>
+                <input id="au-pin" type="password" maxlength="12" class="inp-ua" placeholder="8-12 ตัว">
             </div>
             <div>
                 <label class="lbl-ua">Level</label>
@@ -2732,8 +2743,8 @@
         </div>
         <div class="p-5 space-y-3">
             <div>
-                <label class="lbl-ua">PIN ใหม่ <span class="text-red-500">*</span></label>
-                <input id="new-pin-val" type="password" maxlength="8" inputmode="numeric" class="inp-ua" placeholder="4-8 หลัก">
+                <label class="lbl-ua">Password ใหม่ <span class="text-red-500">*</span></label>
+                <input id="new-pin-val" type="password" maxlength="12" class="inp-ua" placeholder="8-12 ตัว">
             </div>
             <div class="flex gap-3 justify-end pt-2">
                 <button onclick="closeResetPinModal()" class="px-4 py-2 text-sm font-bold text-gray-500">ยกเลิก</button>
@@ -2782,17 +2793,17 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.7.1"></script>
-<script src="js/core.js?v=2.7.1"></script>
-<script src="js/machines.js?v=2.7.1"></script>
-<script src="js/breakdown-report.js?v=2.7.1"></script>
-<script src="js/breakdown-form.js?v=2.7.1"></script>
-<script src="js/records-summary.js?v=2.7.1"></script>
-<script src="js/export.js?v=2.7.1"></script>
-<script src="js/bootstrap.js?v=2.7.1"></script>
-<script src="js/checklist-core.js?v=2.7.1"></script>
-<script src="js/checklist-status.js?v=2.7.1"></script>
-<script src="js/user-access.js?v=2.7.1"></script>
-<script src="js/scan.js?v=2.7.1"></script>
+<script src="js/permissions.js?v=2.8"></script>
+<script src="js/core.js?v=2.8"></script>
+<script src="js/machines.js?v=2.8"></script>
+<script src="js/breakdown-report.js?v=2.8"></script>
+<script src="js/breakdown-form.js?v=2.8"></script>
+<script src="js/records-summary.js?v=2.8"></script>
+<script src="js/export.js?v=2.8"></script>
+<script src="js/bootstrap.js?v=2.8"></script>
+<script src="js/checklist-core.js?v=2.8"></script>
+<script src="js/checklist-status.js?v=2.8"></script>
+<script src="js/user-access.js?v=2.8"></script>
+<script src="js/scan.js?v=2.8"></script>
 </body>
 </html>

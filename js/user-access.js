@@ -1,6 +1,21 @@
 // ============================================================
 // USER ACCESS MANAGEMENT — panel-ua
 // ============================================================
+const PERM_LABEL = {
+    'bd.view':'ดูรายการ Breakdown (View)','bd.export':'ส่งออก Breakdown (Export)',
+    'bd.report':'แจ้ง Breakdown (Report)','bd.accept':'รับงาน (Accept)',
+    'bd.editdoc':'แก้ไขเอกสาร BD (Edit)','bd.close':'ปิดงาน (Close)',
+    'bd.whywhy':'วิเคราะห์ Why-Why','bd.manual':'สร้างย้อนหลัง (Manual)','bd.cancel':'ยกเลิกงาน (Cancel)',
+    'mc.view':'ดูทะเบียนเครื่องจักร (View)','mc.edit':'แก้ไขเครื่องจักร (Edit)',
+    'mc.delete':'ลบเครื่องจักร (Delete)','mc.add':'เพิ่มเครื่องจักร (Add)',
+    'mc.import':'นำเข้า Excel (Import)','mc.backup':'สำรองข้อมูล (Backup)','mc.restore':'กู้คืนข้อมูล (Restore)',
+    'cl.view':'ดู Checklist (View)','cl.history':'ประวัติ Checklist (History)',
+    'cl.status':'สถานะการตรวจ (Status)','cl.export':'ส่งออก Checklist (Export)',
+    'cl.daily':'ตรวจรายวัน (Daily)','cl.pm':'ตรวจ PM (PM)','cl.edit':'แก้ไขรายการตรวจ (Edit)','cl.calendar':'ปฏิทิน PM (Calendar)',
+    'ua.add':'เพิ่มผู้ใช้ (Add user)','ua.del':'ลบผู้ใช้ (Delete user)','ua.level':'เปลี่ยน Level (Set level)',
+    'ua.perm':'แก้สิทธิ์ (Edit perm)','ua.log':'ดู Log ระบบ (View log)',
+};
+
 let _uaUsers   = [];
 let _uaPending = null;   // { userId, action } สำหรับ reset-pin modal
 
@@ -18,6 +33,7 @@ function uaSwitch(pane) {
 // ---- Load users ----
 async function loadUaUsers() {
     if (!GAS_URL) { document.getElementById('ua-user-tbody').innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">⚠️ ยังไม่ได้ตั้งค่า GAS URL</td></tr>'; return; }
+    if (typeof showLoading === 'function') showLoading('กำลังโหลดผู้ใช้…');
     try {
         const res  = await fetch(`${GAS_URL}?action=getUsers`);
         const json = await res.json();
@@ -25,6 +41,8 @@ async function loadUaUsers() {
         renderUaUsers();
     } catch (e) {
         document.getElementById('ua-user-tbody').innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-red-400">❌ โหลดไม่สำเร็จ: ' + e.message + '</td></tr>';
+    } finally {
+        if (typeof hideLoading === 'function') hideLoading();
     }
 }
 
@@ -32,11 +50,16 @@ function renderUaUsers() {
     const tbody  = document.getElementById('ua-user-tbody');
     const canDel = can('ua.del');
     const canLvl = can('ua.level');
-    if (!_uaUsers.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">ไม่พบข้อมูลผู้ใช้</td></tr>';
+    const fName = (document.getElementById('ua-filter-name')?.value || '').trim().toLowerCase();
+    const fLvl  = document.getElementById('ua-filter-level')?.value || '';
+    const list  = _uaUsers.filter(u =>
+        (!fName || (u.name||'').toLowerCase().includes(fName) || (u.username||'').toLowerCase().includes(fName)) &&
+        (!fLvl  || u.level === fLvl));
+    if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">' + (_uaUsers.length ? 'ไม่พบผู้ใช้ตามเงื่อนไข' : 'ไม่พบข้อมูลผู้ใช้') + '</td></tr>';
         return;
     }
-    tbody.innerHTML = _uaUsers.map(u => {
+    tbody.innerHTML = list.map(u => {
         const active  = u.active === true || u.active === 'TRUE' || u.active === 'true';
         const lvlCls  = 'ua-level-badge ua-level-' + (u.level || 'Visitor');
         const statusBadge = active
@@ -75,7 +98,7 @@ async function submitAddUser() {
     const pin   = (document.getElementById('au-pin')?.value   || '').trim();
     const level = document.getElementById('au-level')?.value  || 'Visitor';
     if (!name || !uname || !pin) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
-    if (pin.length < 4) { showToast('⚠️ PIN ต้องมีอย่างน้อย 4 หลัก', 'error'); return; }
+    if (pin.length < 8 || pin.length > 12) { showToast('⚠️ Password ต้อง 8–12 ตัว', 'error'); return; }
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'addUser', username: currentUser.username, pin: currentUser.pin,
@@ -125,7 +148,7 @@ function closeResetPinModal() { document.getElementById('reset-pin-modal').class
 async function submitResetPin() {
     if (!_uaPending) return;
     const newPin = (document.getElementById('new-pin-val')?.value || '').trim();
-    if (newPin.length < 4) { showToast('⚠️ PIN ต้องมีอย่างน้อย 4 หลัก', 'error'); return; }
+    if (newPin.length < 8 || newPin.length > 12) { showToast('⚠️ Password ต้อง 8–12 ตัว', 'error'); return; }
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'resetUserPin', username: currentUser.username, pin: currentUser.pin,
@@ -191,7 +214,7 @@ async function renderPermMatrix() {
             html += `<tr class="bg-gray-50/60"><td colspan="${roles.length+1}" class="px-3 py-1.5 font-bold text-gray-600 text-xs">${g.label}</td></tr>`;
             g.codes.forEach(code => {
                 html += `<tr class="border-t border-gray-100 hover:bg-gray-50">
-                    <td class="px-3 py-2 font-mono text-gray-500">${code}</td>
+                    <td class="px-3 py-2 text-gray-700">${PERM_LABEL[code] || code}<div class="text-[10px] text-gray-300 font-mono">${code}</div></td>
                     ${roles.map(r => {
                         const ok = matrix[r] && matrix[r][code];
                         return `<td class="px-2 py-2 text-center">${ok ? '<span class="text-green-500 font-bold">✓</span>' : '<span class="text-gray-200">—</span>'}</td>`;

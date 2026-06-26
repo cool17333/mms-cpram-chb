@@ -26,14 +26,14 @@ function showTracking() {
 // ============================================================
 const PAGE_TITLE = {
     home:           '',
-    'bd-hub':       '🚨 ระบบ Breakdown',
+    'bd-hub':       '🚨 ระบบแจ้งซ่อม & Breakdown',
     form:           '🚨 แจ้ง Breakdown',
     records:        '📋 รายการ Breakdown',
     summary:        '📊 สรุปข้อมูล Breakdown',
-    machines:       '🗂️ ระบบทะเบียนเครื่องจักร',
-    checklist:      '✅ ระบบ Check list',
+    machines:       '🗂️ ระบบ Machine List',
+    checklist:      '✅ ระบบ Check List',
     log:            '📋 Log ระบบ (Admin)',
-    'cl-hub':       '✅ ระบบ Check list',
+    'cl-hub':       '✅ ระบบ Check List',
     'cl-form':      '📋 บันทึก Checklist',
     'cl-list':      '📁 ประวัติ Checklist',
     'cl-summary':   '📊 สรุป / KPI',
@@ -174,8 +174,8 @@ function closeTrackingModal() {
 let _acceptItem = null;
 
 function acceptRecord(item) {
-    if (userRole !== 'engineer' && userRole !== 'admin') {
-        showToast('⚠️ ต้องเป็น Engineer หรือ Admin เท่านั้น', 'error'); return;
+    if (!can('bd.accept')) {
+        showToast('⚠️ ไม่มีสิทธิ์รับงาน', 'error'); return;
     }
     _acceptItem = item;
     document.getElementById('accept-tracking-display').textContent =
@@ -288,6 +288,7 @@ function onMachineIdLookup() {
 }
 
 function openReportPopup() {
+    window._scanEventType = 'Breakdown';   // default — scan flow จะ override ทีหลัง
     // re-enable fields ที่อาจถูก lock จาก QR kiosk
     ['rm-machine','rm-factory','rm-area','rm-line','rm-date','rm-time'].forEach(id => {
         const el = document.getElementById(id); if (el) el.disabled = false;
@@ -296,12 +297,29 @@ function openReportPopup() {
     document.getElementById('rm-factory').value = '';
     rmUpdateArea();
     ['rm-machine','rm-line','rm-date','rm-time','rm-problem'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('rm-byname').value = '';   // ว่างทุกครั้ง — กันใส่ชื่อซ้ำคนเดิม
     imgList.before = []; imgList.after = [];
     document.getElementById('rm-preview').classList.add('hidden');
     document.getElementById('rm-photo-hint').classList.remove('hidden');
+    const titleEl = document.getElementById('rm-modal-title');
+    const btnEl   = document.getElementById('rm-submit');
+    if (titleEl) titleEl.textContent = '🚨 แจ้ง Breakdown';
+    if (btnEl)   btnEl.textContent   = '🚨 แจ้ง Breakdown';
     document.getElementById('report-modal').classList.remove('hidden');
     loadMachines();   // รีเฟรช master ทุกครั้งที่เปิด
+}
+
+function _applyReportEventType(et) {
+    window._scanEventType = et;
+    const isAdj = et === 'Adjustment';
+    const t = document.getElementById('rm-modal-title');
+    const b = document.getElementById('rm-submit');
+    if (t) t.textContent = isAdj ? '🔧 แจ้งซ่อม (Adjustment)' : '🚨 แจ้ง Breakdown';
+    if (b) b.textContent = isAdj ? '🔧 แจ้งซ่อม' : '🚨 แจ้ง Breakdown';
+}
+
+function openReportPopupType(eventType) {
+    openReportPopup();
+    _applyReportEventType(eventType || 'Breakdown');
 }
 
 function closeReportModal() {
@@ -357,7 +375,8 @@ async function submitReportPopup() {
         timestamp: new Date().toISOString(), tracking: '',
         machineName: machine, factory, area, machineId: '', line,
         status: 'รอรับงาน', bdStart: `${date}T${time || '00:00'}`, bdEnd: '', downtimeMin: 0,
-        bdType: '', problem: `${problem} *${byName} - แจ้ง Breakdown`, device: '', whys: [''],
+        bdType: '', eventType: window._scanEventType || 'Breakdown',
+        problem: `${problem} *${byName} - ${(window._scanEventType||'Breakdown')==='Adjustment'?'แจ้งซ่อม':'แจ้ง Breakdown'}`, device: '', whys: [''],
         corrective: '', preventive: '', parts: [], byName, action: 'create',
         imgBefore: imgsToStr('before'), imgAfter: '',   // รูปก่อน (จาก popup) → อัปขึ้น Drive
     };
@@ -504,7 +523,7 @@ let _logMcData = [];     // machine list with editedBy
 let _logCurrentTab = 'bd';
 
 function goLog() {
-    if (userRole !== 'admin') { showToast('⚠️ ต้องเป็น Admin เท่านั้น', 'error'); return; }
+    if (!can('ua.log')) { showToast('⚠️ ไม่มีสิทธิ์ดู Log ระบบ', 'error'); return; }
     switchTab('log');
     switchLogTab('bd');
     loadAllLog();

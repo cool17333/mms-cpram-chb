@@ -50,7 +50,7 @@ function closeLogin() {
 function openRegister() {
     closeLogin();
     ['rg-fname','rg-lname','rg-user','rg-pin'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const lv = document.getElementById('rg-level'); if (lv) lv.value = 'Visitor';
+    const lv = document.getElementById('rg-level'); if (lv) lv.value = 'Production';
     document.getElementById('register-modal').classList.remove('hidden');
     setTimeout(() => document.getElementById('rg-fname')?.focus(), 80);
 }

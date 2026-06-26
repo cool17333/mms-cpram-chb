@@ -1,4 +1,15 @@
 // ============================================================
+// REPORT DOC HEADER — dynamic ตาม eventType (7E)
+// ============================================================
+function setReportDocHeader(et) {
+    const isAdj = et === 'Adjustment';
+    const t1 = document.getElementById('report-doc-title');
+    const t2 = document.getElementById('report-whyimg-title');
+    if (t1) t1.textContent = isAdj ? '🔧 Adjustment Report — Machine · CPRAM CHB' : '🔴 Breakdown Report — Machine · CPRAM CHB';
+    if (t2) t2.textContent = isAdj ? '● ADJUSTMENT REPORT — รูปภาพประกอบ WHY-WHY' : '● BREAKDOWN REPORT — รูปภาพประกอบ WHY-WHY';
+}
+
+// ============================================================
 // HUB v2.0 — datetime ticker + quick stats
 // ============================================================
 function initHubDatetime() {
@@ -947,6 +958,7 @@ function openEditMode(item, stage = 'edit') {
     if (typeSel) typeSel.value = item.bdType || '';
     const etSel = document.getElementById('inp-event-type');
     if (etSel) etSel.value = item.eventType || '';
+    setReportDocHeader(item.eventType || 'Breakdown');
 
     // devices
     const dList = document.getElementById('device-list');

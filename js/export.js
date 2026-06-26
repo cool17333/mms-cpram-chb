@@ -117,7 +117,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v2.7.1';
+const EXPORT_VER = 'v2.8';
 
 // html2canvas วาดข้อความฟอนต์ Prompt จมลง ~0.45em (ทุก span/ป้าย/ปุ่ม)
 // → วัดค่าจริงบนเครื่องนี้ครั้งเดียวด้วย probe เล็กๆ แล้วใช้ชดเชยตอน capture จริง
@@ -400,7 +400,7 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
       <div style="background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);padding:16px 28px;flex-shrink:0">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
           <div style="flex:1;min-width:0">
-            <div style="font-size:10px;color:#93c5fd;font-weight:700;letter-spacing:2px;margin-bottom:3px">🔴 BREAKDOWN REPORT • MACHINE • CPRAM CHB</div>
+            <div style="font-size:10px;color:#93c5fd;font-weight:700;letter-spacing:2px;margin-bottom:3px">${d.eventType === 'Adjustment' ? '🔧 ADJUSTMENT REPORT • MACHINE • CPRAM CHB' : '🔴 BREAKDOWN REPORT • MACHINE • CPRAM CHB'}</div>
             <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(d.machineName||'—').replace(/</g,'&lt;')}</div>
             <div style="display:flex;gap:16px;font-size:11px;color:#93c5fd;flex-wrap:wrap">
               <span>🔢 Tracking ID: <strong style="color:#fff">${d.tracking||'—'}</strong></span>

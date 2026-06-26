@@ -85,10 +85,13 @@ function _scanGo(type, machineId, machine) {
             if (fFac  && factory)   { fFac.value  = factory;  fFac.dispatchEvent(new Event('change')); }
             if (fArea && area)      { setTimeout(() => { if (fArea) { fArea.value = area; fArea.dispatchEvent(new Event('change')); } }, 300); }
             if (fMach && machineId) { setTimeout(() => { if (fMach) { fMach.value = machineId; fMach.dispatchEvent(new Event('change')); } }, 600); }
-            // ตั้ง eventType และ bdType field ตามตัวเลือก (แก้ย้อนหลังได้)
+            // ตั้ง eventType และแสดง notice
             setTimeout(() => {
-                const eSel = document.getElementById('inp-event-type');
-                if (eSel) eSel.value = eventType;
+                if (typeof _applyReportEventType === 'function') _applyReportEventType(eventType);
+                const notice = document.getElementById('rm-qr-notice');
+                const ntext  = document.getElementById('rm-qr-notice-text');
+                if (notice) notice.classList.remove('hidden');
+                if (ntext)  ntext.textContent = `สแกน QR — ${machineName} · เหตุการณ์: ${eventType==='Adjustment'?'แจ้งซ่อม (Adjustment)':'Breakdown'}`;
             }, 800);
         }, 200);
     }

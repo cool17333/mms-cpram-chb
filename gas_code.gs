@@ -88,6 +88,23 @@ function seedInitialAdmin() {
   Logger.log('Admin created. PIN: ' + INITIAL_PIN + ' — CHANGE THIS IMMEDIATELY!');
 }
 
+// ============================================================
+// USER REGISTRATION (v2.12) — self-service request → admin approve
+// ============================================================
+var REGISTER_LEVELS = ['Visitor','Production','Technician','Engineer','Supervisor'];       // ขอเองได้ (ไม่รวม Administrator)
+var ALL_LEVELS      = ['Visitor','Production','Technician','Engineer','Supervisor','Administrator'];
+
+function ensurePendingUsers(ss) {
+  var sh = ss.getSheetByName('_PendingUsers');
+  if (!sh) {
+    sh = ss.insertSheet('_PendingUsers');
+    sh.getRange(1,1,1,8).setValues([['id','name','username','pin_hash','salt','level','requestedAt','status']])
+      .setBackground('#e67e22').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
 function ensureAccessLog(ss) {
   var sh = ss.getSheetByName('_AccessLog');
   if (!sh) {
@@ -677,6 +694,32 @@ function doPost(e) {
       return jsonOut({ success: true, action: 'deleted' });
     }
 
+    // ---- REGISTER: คำขอใช้งาน (สาธารณะ ไม่ต้อง login) ----
+    if (data.action === 'registerUser') {
+      var rg = data.newUser || {};
+      var rName  = String(rg.name||'').trim();
+      var rUser  = String(rg.username||'').trim();
+      var rPin   = String(rg.pin||'');
+      var rLevel = String(rg.level||'').trim();
+      if (!rName || !rUser || !rPin) return jsonOut({ success:false, error:'กรอกข้อมูลให้ครบ' });
+      if (!/^[A-Za-z0-9_.]+$/.test(rUser)) return jsonOut({ success:false, error:'username ใช้ได้เฉพาะ a-z 0-9 _ . (ห้ามเว้นวรรค)' });
+      if (rPin.length < 8 || rPin.length > 12) return jsonOut({ success:false, error:'Password ต้อง 8–12 ตัว' });
+      if (REGISTER_LEVELS.indexOf(rLevel) < 0) return jsonOut({ success:false, error:'Level ไม่ถูกต้อง' });
+      if (getUserRow(ss, rUser)) return jsonOut({ success:false, error:'username นี้มีอยู่ในระบบแล้ว' });
+      var shReg = ensurePendingUsers(ss);
+      var uLower = rUser.toLowerCase();
+      var pend = shReg.getDataRange().getValues();
+      for (var ip = 1; ip < pend.length; ip++) {
+        if (String(pend[ip][2]).toLowerCase() === uLower && String(pend[ip][7]) === 'pending')
+          return jsonOut({ success:false, error:'username นี้มีคำขอที่รออนุมัติอยู่แล้ว' });
+      }
+      var rSalt = Utilities.getUuid();
+      var rNow  = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss');
+      shReg.appendRow([Utilities.getUuid(), rName, rUser, sha256hex(rSalt + rPin), rSalt, rLevel, rNow, 'pending']);
+      writeAccessLog(ss, rUser, 'registerUser', 'คำขอใช้งานใหม่: ' + rUser + ' (' + rLevel + ')');
+      return jsonOut({ success:true });
+    }
+
     // ---- USER ACCESS: addUser ----
     if (data.action === 'addUser') {
       if (!userCan(ss, data.username, data.pin, 'ua.add'))
@@ -780,6 +823,49 @@ function doPost(e) {
         }
       }
       return jsonOut({ success:false, error:'ไม่พบ permission row: ' + data.role + '.' + data.perm_code });
+    }
+
+    // ---- USER ACCESS: approveUser (อนุมัติคำขอ → ดึงเข้า _Users) ----
+    if (data.action === 'approveUser') {
+      if (!userCan(ss, data.username, data.pin, 'ua.add'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.add' });
+      var shAp = ensurePendingUsers(ss);
+      var apRows = shAp.getDataRange().getValues();
+      for (var ia = 1; ia < apRows.length; ia++) {
+        if (String(apRows[ia][0]) === String(data.pendingId) && String(apRows[ia][7]) === 'pending') {
+          var pName = apRows[ia][1], pUser = apRows[ia][2], pHash = apRows[ia][3], pSalt = apRows[ia][4];
+          var pLevel = String(apRows[ia][5]);
+          var finalLevel = (data.level && ALL_LEVELS.indexOf(String(data.level)) >= 0) ? String(data.level) : pLevel;
+          if (getUserRow(ss, pUser)) {
+            shAp.getRange(ia+1, 8).setValue('approved');
+            return jsonOut({ success:false, error:'username นี้ถูกสร้างไปแล้ว (ปิดคำขอให้อัตโนมัติ)' });
+          }
+          var shU = ss.getSheetByName('_Users');
+          if (!shU) return jsonOut({ success:false, error:'ไม่พบ sheet _Users' });
+          var apNow = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss');
+          shU.appendRow([Utilities.getUuid(), pName, pUser, pHash, pSalt, finalLevel, true, apNow, 'approve:'+data.username]);
+          shAp.getRange(ia+1, 8).setValue('approved');
+          writeAccessLog(ss, data.username, 'approveUser', 'อนุมัติ: ' + pUser + ' (' + finalLevel + ')');
+          return jsonOut({ success:true });
+        }
+      }
+      return jsonOut({ success:false, error:'ไม่พบคำขอ หรือถูกดำเนินการไปแล้ว' });
+    }
+
+    // ---- USER ACCESS: rejectUser (ปฏิเสธคำขอ) ----
+    if (data.action === 'rejectUser') {
+      if (!userCan(ss, data.username, data.pin, 'ua.add'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.add' });
+      var shRj = ensurePendingUsers(ss);
+      var rjRows = shRj.getDataRange().getValues();
+      for (var ir = 1; ir < rjRows.length; ir++) {
+        if (String(rjRows[ir][0]) === String(data.pendingId) && String(rjRows[ir][7]) === 'pending') {
+          shRj.getRange(ir+1, 8).setValue('rejected');
+          writeAccessLog(ss, data.username, 'rejectUser', 'ปฏิเสธคำขอ: ' + rjRows[ir][2]);
+          return jsonOut({ success:true });
+        }
+      }
+      return jsonOut({ success:false, error:'ไม่พบคำขอ' });
     }
 
     // ---- CREATE new row ----
@@ -1038,6 +1124,15 @@ function doGet(e) {
         return { id:r[0], name:r[1], username:r[2], level:r[5], active:r[6], createdAt:r[7] };
       });
       return jsonOut({ success: true, data: data });
+    }
+    if (action === 'getPendingUsers') {
+      var ssP = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var shP = ssP.getSheetByName('_PendingUsers');
+      if (!shP || shP.getLastRow() < 2) return jsonOut({ success:true, data:[] });
+      var dataP = shP.getDataRange().getValues().slice(1)
+        .filter(function(r){ return String(r[7]) === 'pending'; })
+        .map(function(r){ return { id:r[0], name:r[1], username:r[2], level:r[5], requestedAt:r[6] }; });
+      return jsonOut({ success:true, data: dataP });
     }
     if (action === 'getPermissions') {
       var ssPerm = SpreadsheetApp.openById(SPREADSHEET_ID);

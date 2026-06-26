@@ -45,6 +45,42 @@ function closeLogin() {
     const u = document.getElementById('lm-user'); if (u) u.value = '';
     const p = document.getElementById('lm-pin');  if (p) p.value = '';
 }
+
+// ---- Register (ขอใช้งาน — สาธารณะ) ----
+function openRegister() {
+    closeLogin();
+    ['rg-fname','rg-lname','rg-user','rg-pin'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const lv = document.getElementById('rg-level'); if (lv) lv.value = 'Visitor';
+    document.getElementById('register-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('rg-fname')?.focus(), 80);
+}
+function closeRegister() { document.getElementById('register-modal').classList.add('hidden'); }
+
+async function submitRegister() {
+    const fname = (document.getElementById('rg-fname')?.value || '').trim();
+    const lname = (document.getElementById('rg-lname')?.value || '').trim();
+    const uname = (document.getElementById('rg-user')?.value  || '').trim();
+    const pin   = (document.getElementById('rg-pin')?.value   || '').trim();
+    const level = document.getElementById('rg-level')?.value  || 'Visitor';
+    if (!fname || !lname || !uname || !pin) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
+    if (!/^[A-Za-z0-9_.]+$/.test(uname)) { showToast('⚠️ Username ใช้ a-z 0-9 _ . (ห้ามเว้นวรรค)', 'error'); return; }
+    if (pin.length < 8 || pin.length > 12) { showToast('⚠️ Password ต้อง 8–12 ตัว', 'error'); return; }
+    if (!GAS_URL) { showToast('⚠️ ตั้งค่า Web App URL ก่อน', 'error'); return; }
+    showLoading('กำลังส่งคำขอ…');
+    try {
+        const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
+            action:'registerUser',
+            newUser: { name: `${fname} ${lname}`.trim(), username: uname, pin, level }
+        })});
+        const json = await res.json();
+        if (!json.success) { showToast(/unknown action/i.test(json.error||'') ? '⚠️ GAS ยังไม่ได้ redeploy' : '❌ ' + (json.error||'ส่งคำขอไม่สำเร็จ'), 'error'); return; }
+        closeRegister();
+        showToast('✅ ส่งคำขอแล้ว — รออนุมัติจากผู้ดูแลระบบ', 'success');
+    } catch (e) {
+        showToast('❌ ส่งคำขอไม่สำเร็จ: ' + e.message, 'error');
+    } finally { hideLoading(); }
+}
+
 function saveSettings() {
     if (!can('ua.perm')) { showToast('⚠️ ต้องมีสิทธิ์ Administrator เพื่อแก้ไข URL', 'error'); return; }
     GAS_URL = document.getElementById('gas-url-input').value.trim();

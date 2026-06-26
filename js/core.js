@@ -35,6 +35,16 @@ function openSettings() {
 function closeSettings() {
     document.getElementById('settings-modal').classList.add('hidden');
 }
+
+function openLogin() {
+    document.getElementById('login-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('lm-user')?.focus(), 80);
+}
+function closeLogin() {
+    document.getElementById('login-modal').classList.add('hidden');
+    const u = document.getElementById('lm-user'); if (u) u.value = '';
+    const p = document.getElementById('lm-pin');  if (p) p.value = '';
+}
 function saveSettings() {
     if (!can('ua.perm')) { showToast('⚠️ ต้องมีสิทธิ์ Administrator เพื่อแก้ไข URL', 'error'); return; }
     GAS_URL = document.getElementById('gas-url-input').value.trim();
@@ -51,14 +61,8 @@ Object.defineProperty(window, 'userRole',  { get: () => currentUser.level, set: 
 Object.defineProperty(window, 'sessionPw', { get: () => currentUser.pin,   set: () => {} });
 
 async function doLogin() {
-    const username = (
-        document.getElementById('login-user')?.value ||
-        document.getElementById('more-login-user')?.value || ''
-    ).trim();
-    const pin = (
-        document.getElementById('login-pin')?.value ||
-        document.getElementById('more-login-pin')?.value || ''
-    ).trim();
+    const username = (document.getElementById('lm-user')?.value || '').trim();
+    const pin      = (document.getElementById('lm-pin')?.value  || '').trim();
     if (!username || !pin) { showToast('⚠️ กรอก Username และ PIN', 'error'); return; }
     if (!GAS_URL) { showToast('⚠️ ตั้งค่า Web App URL ก่อน', 'error'); return; }
     try {
@@ -69,10 +73,7 @@ async function doLogin() {
             return;
         }
         currentUser = { username, name: json.name, level: json.level, perms: new Set(json.perms||[]), pin };
-        document.getElementById('login-user') && (document.getElementById('login-user').value = '');
-        document.getElementById('login-pin')  && (document.getElementById('login-pin').value  = '');
-        document.getElementById('more-login-user') && (document.getElementById('more-login-user').value = '');
-        document.getElementById('more-login-pin')  && (document.getElementById('more-login-pin').value  = '');
+        closeLogin();
         if (typeof closeMoreSheet === 'function') closeMoreSheet();
         applyPermissions();
         showToast(`✅ เข้าสู่ระบบเป็น ${json.name} (${json.level})`, 'success');

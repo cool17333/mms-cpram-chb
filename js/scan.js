@@ -93,6 +93,8 @@ function _scanGo(type, machineId, machine) {
             if (fMach) fMach.value = machineName;
             if (fDate) fDate.value = new Date().toISOString().slice(0,10);
             if (fMid && machineId) { fMid.value = machineId; document.getElementById('rm-machineid-wrap')?.classList.remove('hidden'); }
+            const fLine = document.getElementById('rm-line');
+            if (fLine && machine.line) fLine.value = machine.line;
             setTimeout(() => { if (fArea && area) fArea.value = area; lockScanFields(); }, 350);
             if (typeof _applyReportEventType === 'function') _applyReportEventType(eventType);
             const notice = document.getElementById('rm-qr-notice');

@@ -65,6 +65,7 @@ async function doLogin() {
     const pin      = (document.getElementById('lm-pin')?.value  || '').trim();
     if (!username || !pin) { showToast('⚠️ กรอก Username และ PIN', 'error'); return; }
     if (!GAS_URL) { showToast('⚠️ ตั้งค่า Web App URL ก่อน', 'error'); return; }
+    showLoading('กำลังเข้าสู่ระบบ…');
     try {
         const res  = await fetch(`${GAS_URL}?action=login&user=${encodeURIComponent(username)}&pin=${encodeURIComponent(pin)}`);
         const json = await res.json();
@@ -84,6 +85,8 @@ async function doLogin() {
         }
     } catch (err) {
         showToast('❌ เข้าสู่ระบบไม่สำเร็จ: ' + err.message, 'error');
+    } finally {
+        hideLoading();
     }
 }
 

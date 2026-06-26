@@ -749,8 +749,7 @@ async function saveChecklistConfirm() {
             results: resultsArr, ok, ng, fix, na, overallResult,
         });
         if (res.success) {
-            showToast(`✅ บันทึกสำเร็จ — ${res.tracking}`, 'success');
-            switchTab('cl-hub');
+            showSavedModal(res.tracking || '', 'บันทึก Checklist สำเร็จ', 'เลขที่บันทึก');
         } else {
             showToast('บันทึกล้มเหลว: ' + (res.error||'unknown'), 'error');
         }

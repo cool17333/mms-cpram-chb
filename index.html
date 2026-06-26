@@ -522,6 +522,16 @@
                 </label>
             </div>
         </div>
+        <!-- เนื้อหา PNG — แสดงเฉพาะเมื่อเลือก PNG -->
+        <div id="png-content-row" class="hidden mb-4">
+            <p class="text-xs font-bold text-gray-600 mb-1.5">ข้อมูลที่ export</p>
+            <label class="flex items-center gap-2 text-sm mb-1 cursor-pointer">
+                <input type="radio" name="png-content" value="report" checked> เฉพาะข้อมูล Report
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="radio" name="png-content" value="all"> Report + รูปทั้งหมด (หลายไฟล์)
+            </label>
+        </div>
         <p class="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 mb-5">
             💡 PDF = ย่อเนื้อหาให้พอดีในหน้าเดียว &nbsp;•&nbsp; PNG = ภาพความละเอียดสูง วางใน PowerPoint แล้วลาก fit slide
         </p>
@@ -1639,7 +1649,7 @@
             <div class="flex flex-col">
                 <div id="photo-box-before" class="relative border-2 border-dashed border-red-300 hover:border-red-500 rounded-xl bg-red-50/40 flex items-center justify-center overflow-hidden group transition-colors flex-1" style="min-height:11rem;">
                     <div class="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md z-10">ก่อนแก้ไข</div>
-                    <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onchange="addImage(event,'before')">
+                    <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" multiple onchange="addImage(event,'before')">
                     <img id="preview-before" class="absolute inset-0 w-full h-full object-contain bg-white hidden">
                     <div id="prompt-before" class="text-red-300 group-hover:text-red-500 text-center flex flex-col items-center pointer-events-none">
                         <svg class="w-8 h-8 mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -1652,7 +1662,7 @@
             <div class="flex flex-col stage-fix">
                 <div id="photo-box-after" class="relative border-2 border-dashed border-green-300 hover:border-green-500 rounded-xl bg-green-50/40 flex items-center justify-center overflow-hidden group transition-colors flex-1" style="min-height:11rem;">
                     <div class="absolute top-3 left-3 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded shadow-md z-10">หลังแก้ไข</div>
-                    <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" onchange="addImage(event,'after')">
+                    <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" multiple onchange="addImage(event,'after')">
                     <img id="preview-after" class="absolute inset-0 w-full h-full object-contain bg-white hidden">
                     <div id="prompt-after" class="text-green-300 group-hover:text-green-500 text-center flex flex-col items-center pointer-events-none">
                         <svg class="w-8 h-8 mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -1910,6 +1920,17 @@
             <div class="bg-teal-50 border border-teal-200 rounded-lg px-4 py-2.5 mb-4 text-sm">
                 👤 บันทึกโดย: <strong id="repair-byuser" class="text-teal-700"></strong>
             </div>
+            <div class="mb-4">
+                <label class="text-xs font-bold text-gray-500 block mb-1">รูปหลังแก้ไข (เลือกได้หลายรูป)</label>
+                <input type="file" accept="image/*" multiple onchange="repairAddAfter(event)"
+                       class="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-teal-50 file:text-teal-700 file:font-bold">
+                <div id="repair-after-thumbs" class="flex flex-wrap gap-1.5 mt-2"></div>
+            </div>
+            <div class="mb-4">
+                <label class="text-xs font-bold text-gray-500 block mb-1">มาตรการแก้ไข (Corrective)</label>
+                <textarea id="repair-corrective" rows="3" placeholder="ระบุมาตรการแก้ไข..."
+                          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-500"></textarea>
+            </div>
             <div class="flex gap-3">
                 <button onclick="closeRepairCompleteModal()"
                         class="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-colors">
@@ -1951,21 +1972,30 @@
     </div>
 </div>
 
-<!-- ==================== TRACKING RESULT MODAL (หลังแจ้ง BD) ==================== -->
+<!-- ==================== TRACKING RESULT MODAL (หลังแจ้ง BD / Checklist) ==================== -->
 <div id="tracking-modal" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
         <div class="text-5xl mb-3">✅</div>
-        <h2 class="text-lg font-bold text-gray-900 mb-1">แจ้ง Breakdown สำเร็จ</h2>
+        <h2 id="tracking-modal-title" class="text-lg font-bold text-gray-900 mb-1">แจ้ง Breakdown สำเร็จ</h2>
         <p class="text-xs text-gray-500 mb-4">บันทึกเข้าระบบเรียบร้อยแล้ว</p>
         <div class="bg-orange-50 border-2 border-orange-300 rounded-xl py-4 mb-4">
-            <p class="text-xs text-gray-500 mb-1">เลข Tracking Breakdown</p>
+            <p id="tracking-modal-label" class="text-xs text-gray-500 mb-1">เลข Tracking Breakdown</p>
             <p id="tracking-modal-no" class="text-2xl font-bold font-mono text-orange-600 tracking-wider"></p>
         </div>
         <div class="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 mb-5">
-            <p class="text-sm font-bold text-amber-800">📸 กรุณา Capture ภาพหน้าจอเพื่อส่งเลข Tracking แจ้ง Breakdown ให้ผู้รับงานต่อไป</p>
+            <p class="text-sm font-bold text-amber-800">📸 กรุณา Capture ภาพหน้าจอเพื่อส่งเลข Tracking ให้ผู้รับงานต่อไป</p>
         </div>
-        <button onclick="closeTrackingModal()" class="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-lg text-sm transition-colors">รับทราบ</button>
+        <button onclick="closeAppOrFallback()" class="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-lg text-sm transition-colors">รับทราบ</button>
     </div>
+</div>
+
+<!-- ==================== APP DONE SCREEN (fallback เมื่อ window.close() ไม่ได้) ==================== -->
+<div id="app-done-screen" class="hidden fixed inset-0 z-[60] bg-white flex flex-col items-center justify-center text-center px-6">
+    <div class="text-6xl mb-4">✅</div>
+    <h2 class="text-xl font-bold text-gray-900 mb-2">บันทึกเรียบร้อยแล้ว</h2>
+    <p class="text-sm text-gray-500 mb-6">ปิดหน้าจอนี้ได้เลย</p>
+    <button onclick="location.href=location.origin+location.pathname"
+            class="px-6 py-2.5 rounded-full border border-gray-300 text-gray-600 font-bold text-sm hover:bg-gray-50">↩ กลับหน้าหลัก</button>
 </div>
 
 <!-- ==================== CHECKLIST MODALS ==================== -->
@@ -2288,6 +2318,7 @@
                     <option value="แจ้ง Breakdown">🟡 แจ้ง Breakdown (เก่า)</option>
                     <option value="กำลังดำเนินการแก้ไข">🟠 กำลังดำเนินการแก้ไข</option>
                     <option value="รออะไหล่">🟡 รออะไหล่</option>
+                    <option value="ซ่อมสำเร็จ">🔨 ซ่อมสำเร็จ (รอปิดงาน)</option>
                     <option value="ดำเนินการเสร็จสิ้น">🟢 ดำเนินการเสร็จสิ้น</option>
                     <option value="ยกเลิกงาน">⛔ ยกเลิกงาน</option>
                 </select>
@@ -2819,17 +2850,17 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.9.1"></script>
-<script src="js/core.js?v=2.9.1"></script>
-<script src="js/machines.js?v=2.9.1"></script>
-<script src="js/breakdown-report.js?v=2.9.1"></script>
-<script src="js/breakdown-form.js?v=2.9.1"></script>
-<script src="js/records-summary.js?v=2.9.1"></script>
-<script src="js/export.js?v=2.9.1"></script>
-<script src="js/bootstrap.js?v=2.9.1"></script>
-<script src="js/checklist-core.js?v=2.9.1"></script>
-<script src="js/checklist-status.js?v=2.9.1"></script>
-<script src="js/user-access.js?v=2.9.1"></script>
-<script src="js/scan.js?v=2.9.1"></script>
+<script src="js/permissions.js?v=2.10"></script>
+<script src="js/core.js?v=2.10"></script>
+<script src="js/machines.js?v=2.10"></script>
+<script src="js/breakdown-report.js?v=2.10"></script>
+<script src="js/breakdown-form.js?v=2.10"></script>
+<script src="js/records-summary.js?v=2.10"></script>
+<script src="js/export.js?v=2.10"></script>
+<script src="js/bootstrap.js?v=2.10"></script>
+<script src="js/checklist-core.js?v=2.10"></script>
+<script src="js/checklist-status.js?v=2.10"></script>
+<script src="js/user-access.js?v=2.10"></script>
+<script src="js/scan.js?v=2.10"></script>
 </body>
 </html>

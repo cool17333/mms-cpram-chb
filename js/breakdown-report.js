@@ -395,7 +395,8 @@ async function submitReportPopup() {
     if (!machine)    return showToast('⚠️ กรุณาระบุชื่อเครื่องจักร', 'error');
     if (!fSel.value) return showToast('⚠️ กรุณาเลือกโรงงาน', 'error');
     if (!area)       return showToast('⚠️ กรุณาเลือกพื้นที่', 'error');
-    if (!date)       return showToast('⚠️ กรุณาระบุเวลาเริ่ม Breakdown', 'error');
+    if (!date)       return showToast('⚠️ กรุณาระบุวันที่เริ่ม', 'error');
+    if (!time)       return showToast('⚠️ กรุณาระบุเวลาเริ่ม', 'error');
     if (!problem)    return showToast('⚠️ กรุณาระบุปัญหา/อาการ', 'error');
     if (!imgList.before.length) return showToast('⚠️ กรุณาแนบรูปอย่างน้อย 1 รูป', 'error');
     if (!byName)     { showToast('⚠️ กรุณาเข้าสู่ระบบก่อนแจ้ง', 'error'); openLogin(); return; }
@@ -406,7 +407,7 @@ async function submitReportPopup() {
         machineName: machine, factory, area, machineId: (document.getElementById('rm-machine-id')?.value || ''), line,
         status: 'รอรับงาน', bdStart: `${date}T${time || '00:00'}`, bdEnd: '', downtimeMin: 0,
         bdType: '', eventType: window._scanEventType || 'Breakdown',
-        problem: `${problem} *${byName} - ${(window._scanEventType||'Breakdown')==='Adjustment'?'แจ้งซ่อม':'แจ้ง Breakdown'}`, device: '', whys: [''],
+        problem, device: '', whys: [''],
         corrective: '', preventive: '', parts: [], byName, action: 'create',
         imgBefore: imgsToStr('before'), imgAfter: '',   // รูปก่อน (จาก popup) → อัปขึ้น Drive
     };

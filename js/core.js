@@ -77,6 +77,11 @@ async function doLogin() {
         if (typeof closeMoreSheet === 'function') closeMoreSheet();
         applyPermissions();
         showToast(`✅ เข้าสู่ระบบเป็น ${json.name} (${json.level})`, 'success');
+        if (typeof window._afterLoginCallback === 'function') {
+            const cb = window._afterLoginCallback;
+            window._afterLoginCallback = null;
+            cb();
+        }
     } catch (err) {
         showToast('❌ เข้าสู่ระบบไม่สำเร็จ: ' + err.message, 'error');
     }

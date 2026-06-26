@@ -375,8 +375,8 @@ function _renderClPmNode(node, label) {
 function mcieAddPmRoot() { addClPmRoot(); }
 
 async function saveClItemsEditor() {
-    const editorName = document.getElementById('mcie-editor-name')?.value.trim() || '';
-    if (!editorName) { showToast('กรุณาระบุชื่อผู้แก้ไข', 'warn'); return; }
+    const editorName = currentUser.name;
+    if (!editorName) { showToast('กรุณาเข้าสู่ระบบก่อนแก้ไข', 'warn'); openLogin(); return; }
     if (!userRole || userRole === 'user') { showToast('ต้องเป็น Engineer หรือ Admin', 'warn'); return; }
     const mode      = _clMcdeMode;
     const machineId = _clMcdeMachineId;
@@ -425,177 +425,9 @@ async function saveClItemsEditor() {
     loadClSchedule();
 }
 
-// ---- BD QR KIOSK — เปิด report-modal ปกติพร้อม autofill ----
-const BD_QR_TOKEN = 'cprbdreport2026';
-
+// ---- BD KIOSK (legacy stub — ส่งต่อเข้า scan flow) ----
 async function enterBdKiosk(machineId, token) {
-    if (token !== BD_QR_TOKEN) {
-        showToast('❌ QR Code ไม่ถูกต้องหรือหมดอายุ', 'error');
-        return;
-    }
-    const m = machineMaster.find(x => (x.id||x.machineId||x.machine_id||'') === machineId);
-    if (!m) {
-        showToast(`❌ ไม่พบเครื่องจักรรหัส ${machineId}`, 'error');
-        return;
-    }
-    const id   = m.id || m.machineId || m.machine_id || '';
-    const name = m.name || m.machineName || id;
-    const fac  = m.factory || '';
-    const area = m.area    || '';
-    const line = m.line    || m.productionLine || '';
-
-    // Bangkok time
-    const now     = new Date(Date.now() + 7*3600000);
-    const dateStr = now.toISOString().slice(0,10);
-    const timeStr = now.toISOString().slice(11,16);
-
-    // เปิด popup ปกติ (reset + show modal)
-    openReportPopup();
-
-    // รอให้ UI render แล้ว autofill
-    await new Promise(r => setTimeout(r, 60));
-
-    document.getElementById('rm-machine').value = name;
-
-    // factory: machineMaster เก็บ "โรงงาน 1"/"โรงงาน 2" → map เป็น "1"/"2"
-    const facSel = document.getElementById('rm-factory');
-    facSel.value = fac === 'โรงงาน 1' ? '1' : fac === 'โรงงาน 2' ? '2' : fac.replace(/[^0-9]/g,'') || '';
-    rmUpdateArea();
-
-    await new Promise(r => setTimeout(r, 40));
-
-    const areaSel = document.getElementById('rm-area');
-    areaSel.value = area;
-
-    document.getElementById('rm-line').value = line;
-    document.getElementById('rm-date').value = dateStr;
-    document.getElementById('rm-time').value = timeStr;
-
-    // ล็อก field ที่ autofill ไว้ — user กรอกแค่ ปัญหา/รูป/ชื่อ
-    ['rm-machine','rm-line','rm-date','rm-time'].forEach(id => {
-        const el = document.getElementById(id); if (el) el.disabled = true;
-    });
-    facSel.disabled  = true;
-    areaSel.disabled = true;
-
-    // แสดง QR notice banner
-    const notice = document.getElementById('rm-qr-notice');
-    const noticeText = document.getElementById('rm-qr-notice-text');
-    if (notice)     notice.classList.remove('hidden');
-    if (noticeText) noticeText.textContent = `📱 สแกน QR — ${id} ${name}`;
-}
-
-// ---- BD QR GENERATE MODAL ----
-function openBdQrGenModal() {
-    if (userRole !== 'engineer' && userRole !== 'admin') { showToast('ต้องเป็น Engineer หรือ Admin', 'warn'); return; }
-    const machines = machineMaster.slice();
-    document.getElementById('bd-qr-machine-list').innerHTML = machines.map(m => {
-        const id = m.id||m.machineId||m.machine_id||''; const name = m.name||m.machineName||id;
-        return `<label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-            <input type="checkbox" class="bd-qr-cb w-4 h-4" value="${id}" onchange="bdQrUpdateCount()">
-            <span class="text-xs font-mono text-gray-500 shrink-0">${id}</span>
-            <span class="text-sm">${name}</span></label>`;
-    }).join('') || '<p class="text-center text-gray-400 py-6">ไม่พบเครื่องจักร</p>';
-    document.getElementById('bd-qr-select-all').checked = false;
-    bdQrUpdateCount();
-    document.getElementById('modal-bd-qr-gen').classList.remove('hidden');
-}
-function bdQrToggleAll(on) { document.querySelectorAll('.bd-qr-cb').forEach(cb => cb.checked = on); bdQrUpdateCount(); }
-function bdQrUpdateCount() { document.getElementById('bd-qr-sel-count').textContent = 'เลือก ' + document.querySelectorAll('.bd-qr-cb:checked').length; }
-
-function generateBdQrPdf() {
-    const ids = [...document.querySelectorAll('.bd-qr-cb:checked')].map(cb => cb.value);
-    if (!ids.length) { showToast('เลือกเครื่องอย่างน้อย 1 เครื่อง', 'warn'); return; }
-    const sizeMm = Math.min(100, Math.max(15, parseFloat(document.getElementById('bd-qr-size-mm').value)||40));
-    const base   = location.origin + location.pathname;
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
-    const PAGE_W=210, PAGE_H=297, MARGIN=10, LABEL_H=10, GAP=6;
-    const cellW = sizeMm + GAP;
-    const cellH = sizeMm + LABEL_H + GAP;
-    const cols  = Math.max(1, Math.floor((PAGE_W - 2*MARGIN + GAP) / cellW));
-    const rows  = Math.max(1, Math.floor((PAGE_H - 2*MARGIN + GAP) / cellH));
-    const perPage = cols * rows;
-    ids.forEach((id, i) => {
-        if (i > 0 && i % perPage === 0) pdf.addPage();
-        const idx = i % perPage; const r = Math.floor(idx/cols), c = idx % cols;
-        const x = MARGIN + c*cellW, y = MARGIN + r*cellH;
-        const m = machineMaster.find(z => (z.id||z.machineId||z.machine_id||'')===id) || {};
-        const name = m.name||m.machineName||id;
-        const url  = `${base}?mode=bd-report&m=${encodeURIComponent(id)}&t=${encodeURIComponent(BD_QR_TOKEN)}`;
-        pdf.addImage(qrDataUrl(url, Math.round(sizeMm*8)), 'PNG', x, y, sizeMm, sizeMm);
-        pdf.setFontSize(8); pdf.setTextColor(0);
-        pdf.text(String(id), x + sizeMm/2, y + sizeMm + 4, { align:'center', maxWidth: cellW });
-        pdf.setFontSize(6); pdf.setTextColor(80);
-        pdf.text(String(name).slice(0,32), x + sizeMm/2, y + sizeMm + 8, { align:'center', maxWidth: cellW });
-        pdf.setFontSize(5); pdf.setTextColor(180);
-        pdf.text('แจ้ง Breakdown', x + sizeMm/2, y + sizeMm + 11.5, { align:'center' });
-        pdf.setTextColor(0);
-    });
-    pdf.save(`QR_BDReport_${ids.length}เครื่อง.pdf`);
-    document.getElementById('modal-bd-qr-gen').classList.add('hidden');
-}
-
-// ---- QR GENERATE MODAL (Phase E) ----
-const QR_TOKEN = 'cprdaily2026'; // ต้องตรงกับ DAILY_TOKEN ใน gas_code.gs
-function openQrGenModal() {
-    if (userRole !== 'engineer' && userRole !== 'admin') { showToast('ต้องเป็น Engineer หรือ Admin', 'warn'); return; }
-    const fac  = document.getElementById('clsc-fac')?.value  || '';
-    const area = document.getElementById('clsc-area')?.value || '';
-    const machines = clMachinesFor(fac, area);
-    document.getElementById('qr-machine-list').innerHTML = machines.map(m => {
-        const id = m.id||m.machineId||m.machine_id||''; const name = m.name||m.machineName||id;
-        return `<label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-            <input type="checkbox" class="qr-cb w-4 h-4" value="${id}" onchange="qrUpdateCount()">
-            <span class="text-xs font-mono text-gray-500 shrink-0">${id}</span>
-            <span class="text-sm">${name}</span></label>`;
-    }).join('') || '<p class="text-center text-gray-400 py-6">ไม่พบเครื่องจักร</p>';
-    document.getElementById('qr-select-all').checked = false;
-    qrUpdateCount();
-    document.getElementById('modal-qr-gen').classList.remove('hidden');
-}
-function qrToggleAll(on) { document.querySelectorAll('.qr-cb').forEach(cb => cb.checked = on); qrUpdateCount(); }
-function qrUpdateCount() { document.getElementById('qr-sel-count').textContent = 'เลือก ' + document.querySelectorAll('.qr-cb:checked').length; }
-function qrDataUrl(text, pxSize) {
-    const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
-    const count = qr.getModuleCount();
-    const cell  = Math.max(2, Math.floor(pxSize / count));
-    const dim   = cell * count;
-    const cv = document.createElement('canvas'); cv.width = cv.height = dim;
-    const ctx = cv.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,dim,dim); ctx.fillStyle = '#000';
-    for (let r=0;r<count;r++) for (let c=0;c<count;c++) if (qr.isDark(r,c)) ctx.fillRect(c*cell,r*cell,cell,cell);
-    return cv.toDataURL('image/png');
-}
-function generateQrPdf() {
-    const ids = [...document.querySelectorAll('.qr-cb:checked')].map(cb => cb.value);
-    if (!ids.length) { showToast('เลือกเครื่องอย่างน้อย 1 เครื่อง', 'warn'); return; }
-    const sizeMm = Math.min(100, Math.max(15, parseFloat(document.getElementById('qr-size-mm').value)||40));
-    const base   = location.origin + location.pathname;
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
-    const PAGE_W=210, PAGE_H=297, MARGIN=10, LABEL_H=7, GAP=6;
-    const cellW = sizeMm + GAP;
-    const cellH = sizeMm + LABEL_H + GAP;
-    const cols  = Math.max(1, Math.floor((PAGE_W - 2*MARGIN + GAP) / cellW));
-    const rows  = Math.max(1, Math.floor((PAGE_H - 2*MARGIN + GAP) / cellH));
-    const perPage = cols * rows;
-    ids.forEach((id, i) => {
-        if (i > 0 && i % perPage === 0) pdf.addPage();
-        const idx = i % perPage; const r = Math.floor(idx/cols), c = idx % cols;
-        const x = MARGIN + c*cellW, y = MARGIN + r*cellH;
-        const m = machineMaster.find(z => (z.id||z.machineId||z.machine_id||'')===id) || {};
-        const name = m.name||m.machineName||id;
-        const url  = `${base}?mode=daily&m=${encodeURIComponent(id)}&t=${encodeURIComponent(QR_TOKEN)}`;
-        pdf.addImage(qrDataUrl(url, Math.round(sizeMm*8)), 'PNG', x, y, sizeMm, sizeMm);
-        pdf.setFontSize(8); pdf.setTextColor(0);
-        pdf.text(String(id), x + sizeMm/2, y + sizeMm + 4, { align:'center', maxWidth: cellW });
-        pdf.setFontSize(6); pdf.setTextColor(100);
-        pdf.text(String(name).slice(0,30), x + sizeMm/2, y + sizeMm + 4 + 3.5, { align:'center', maxWidth: cellW });
-        pdf.setTextColor(0);
-    });
-    pdf.save(`QR_DailyCheck_${ids.length}เครื่อง.pdf`);
-    document.getElementById('modal-qr-gen').classList.add('hidden');
+    if (typeof enterScan === 'function') enterScan(machineId, 'bd');
 }
 
 // ---- COPY ITEMS MODAL (Phase F) ----
@@ -643,8 +475,8 @@ function mccToggleAll(checked) {
     document.querySelectorAll('.mcc-checkbox').forEach(cb => { cb.checked = checked; });
 }
 async function saveClCopy() {
-    const editorName = (document.getElementById('mcc-editor-name')?.value || '').trim();
-    if (!editorName) { showToast('กรุณาระบุชื่อผู้แก้ไข', 'warn'); return; }
+    const editorName = currentUser.name;
+    if (!editorName) { showToast('กรุณาเข้าสู่ระบบก่อนดำเนินการ', 'warn'); openLogin(); return; }
     const targetIds = [...document.querySelectorAll('.mcc-checkbox:checked')].map(cb => cb.value);
     if (!targetIds.length) { showToast('กรุณาเลือกเครื่องจักรปลายทางอย่างน้อย 1 เครื่อง', 'warn'); return; }
     try {

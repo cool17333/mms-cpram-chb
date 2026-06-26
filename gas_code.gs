@@ -80,6 +80,65 @@ function writeAccessLog(ss, username, action, detail) {
   sh.appendRow([Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss'), username||'', action||'', detail||'']);
 }
 
+// JOB counter — increment-only per (factory+month), ไม่สวมเลขแม้ delete แถว
+function nextJobSeq(ss, key) {
+  var sh = ss.getSheetByName('_Counters');
+  if (!sh) {
+    sh = ss.insertSheet('_Counters');
+    sh.getRange(1,1,1,2).setValues([['key','lastSeq']]).setBackground('#8e44ad').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  var vals = sh.getDataRange().getValues();
+  for (var i = 1; i < vals.length; i++) {
+    if (String(vals[i][0]) === key) {
+      var next = Number(vals[i][1]) + 1;
+      sh.getRange(i + 1, 2).setValue(next);
+      return next;
+    }
+  }
+  // key ใหม่ — หา max seq ในชีต factory+month ก่อน (migration safety)
+  sh.appendRow([key, 1]);
+  return 1;
+}
+
+// รันครั้งเดียวจาก GAS Editor → seed _Counters จาก data ที่มีอยู่แล้ว
+function seedCounters() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sh = ss.getSheetByName('_Counters');
+  if (!sh) {
+    sh = ss.insertSheet('_Counters');
+    sh.getRange(1,1,1,2).setValues([['key','lastSeq']]).setBackground('#8e44ad').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  var allSheets = ss.getSheets();
+  var counts = {};
+  allSheets.forEach(function(s) {
+    var name = s.getName();
+    // ชีตข้อมูล BD รูปแบบ {factory}_{yyyy-MM}
+    if (name.charAt(0) === '_' || name.indexOf('_') < 0) return;
+    if (s.getLastRow() < 2) return;
+    var rows = s.getDataRange().getValues().slice(1);
+    rows.forEach(function(r) {
+      var trk = String(r[24] || '');  // col index 24 = tracking
+      // รองรับทั้ง BD-CHBx-yyyyMM-NNN และ JOB-CHBx-yyyyMM-NNN
+      var m = trk.match(/^(?:BD|JOB)-([A-Z0-9]+)-(\d{6})-(\d+)$/);
+      if (!m) return;
+      var key = m[1] + '_' + m[2];
+      var seq = parseInt(m[3], 10);
+      if (!counts[key] || seq > counts[key]) counts[key] = seq;
+    });
+  });
+  Object.keys(counts).forEach(function(key) {
+    var vals = sh.getDataRange().getValues();
+    var found = false;
+    for (var i = 1; i < vals.length; i++) {
+      if (String(vals[i][0]) === key) { sh.getRange(i+1,2).setValue(counts[key]); found = true; break; }
+    }
+    if (!found) sh.appendRow([key, counts[key]]);
+  });
+  Logger.log('seedCounters done: ' + JSON.stringify(counts));
+}
+
 const HEADERS = [
   'วันที่บันทึก',
   'ชื่อเครื่องจักร',
@@ -295,10 +354,9 @@ function doPost(e) {
 
     // ---- SAVE Checklist record ----
     if (data.action === 'saveChecklist') {
-      const clPerm  = data.type === 'pm' ? 'cl.pm' : 'cl.daily';
-      const tokenOk = String(data.token || '') === DAILY_TOKEN && (data.type === 'daily');
-      const authed  = tokenOk || userCan(ss, data.username, data.pin, clPerm);
-      if (!authed) return jsonOut({ success: false, error: 'ต้องเข้าสู่ระบบก่อน' });
+      const clPerm = data.type === 'pm' ? 'cl.pm' : 'cl.daily';
+      if (!userCan(ss, data.username, data.pin, clPerm))
+        return jsonOut({ success: false, error: 'ต้องเข้าสู่ระบบก่อน' });
       // Upload per-item images to Drive (Checklist_Images folder)
       data.results = saveChecklistItemImgs(data.results || []);
       let sh = ss.getSheetByName('_Checklists');
@@ -561,6 +619,92 @@ function doPost(e) {
       return jsonOut({ success: true, action: 'deleted' });
     }
 
+    // ---- USER ACCESS: addUser ----
+    if (data.action === 'addUser') {
+      if (!userCan(ss, data.username, data.pin, 'ua.add'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.add' });
+      var shU = ss.getSheetByName('_Users');
+      if (!shU) return jsonOut({ success:false, error:'ไม่พบ sheet _Users' });
+      var existRows = shU.getDataRange().getValues().slice(1);
+      if (existRows.some(function(r){ return String(r[2]).toLowerCase() === String((data.newUser||{}).username||'').toLowerCase(); }))
+        return jsonOut({ success:false, error:'username นี้มีอยู่แล้ว' });
+      var salt = Utilities.getUuid();
+      var nowStr = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss');
+      shU.appendRow([Utilities.getUuid(), data.newUser.name, data.newUser.username,
+                     sha256hex(salt + data.newUser.pin), salt, data.newUser.level, true, nowStr, data.username]);
+      writeAccessLog(ss, data.username, 'addUser', 'เพิ่ม user: ' + data.newUser.username + ' (' + data.newUser.level + ')');
+      return jsonOut({ success:true });
+    }
+
+    // ---- USER ACCESS: deleteUser ----
+    if (data.action === 'deleteUser') {
+      if (!userCan(ss, data.username, data.pin, 'ua.del'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.del' });
+      var shD = ss.getSheetByName('_Users');
+      if (!shD) return jsonOut({ success:false, error:'ไม่พบ sheet _Users' });
+      var rowsD = shD.getDataRange().getValues();
+      for (var iD = rowsD.length - 1; iD >= 1; iD--) {
+        if (String(rowsD[iD][0]) === String(data.userId)) {
+          if (String(rowsD[iD][2]).toLowerCase() === 'admin' && String(data.username).toLowerCase() !== 'admin')
+            return jsonOut({ success:false, error:'ลบบัญชี admin หลักไม่ได้' });
+          writeAccessLog(ss, data.username, 'deleteUser', 'ลบ user: ' + rowsD[iD][2]);
+          shD.deleteRow(iD + 1);
+          return jsonOut({ success:true });
+        }
+      }
+      return jsonOut({ success:false, error:'ไม่พบ user' });
+    }
+
+    // ---- USER ACCESS: setUserLevel ----
+    if (data.action === 'setUserLevel') {
+      if (!userCan(ss, data.username, data.pin, 'ua.level'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.level' });
+      var shL = ss.getSheetByName('_Users');
+      var rowsL = shL ? shL.getDataRange().getValues() : [];
+      for (var iL = 1; iL < rowsL.length; iL++) {
+        if (String(rowsL[iL][0]) === String(data.userId)) {
+          shL.getRange(iL + 1, 6).setValue(data.level);
+          writeAccessLog(ss, data.username, 'setUserLevel', rowsL[iL][2] + ' → ' + data.level);
+          return jsonOut({ success:true });
+        }
+      }
+      return jsonOut({ success:false, error:'ไม่พบ user' });
+    }
+
+    // ---- USER ACCESS: resetUserPin ----
+    if (data.action === 'resetUserPin') {
+      if (!userCan(ss, data.username, data.pin, 'ua.level'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.level' });
+      var shP = ss.getSheetByName('_Users');
+      var rowsP = shP ? shP.getDataRange().getValues() : [];
+      for (var iP = 1; iP < rowsP.length; iP++) {
+        if (String(rowsP[iP][0]) === String(data.userId)) {
+          var newSalt = Utilities.getUuid();
+          shP.getRange(iP + 1, 4).setValue(sha256hex(newSalt + String(data.newPin)));
+          shP.getRange(iP + 1, 5).setValue(newSalt);
+          writeAccessLog(ss, data.username, 'resetUserPin', 'รีเซ็ต PIN: ' + rowsP[iP][2]);
+          return jsonOut({ success:true });
+        }
+      }
+      return jsonOut({ success:false, error:'ไม่พบ user' });
+    }
+
+    // ---- USER ACCESS: toggleUserActive ----
+    if (data.action === 'toggleUserActive') {
+      if (!userCan(ss, data.username, data.pin, 'ua.level'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.level' });
+      var shA = ss.getSheetByName('_Users');
+      var rowsA = shA ? shA.getDataRange().getValues() : [];
+      for (var iA = 1; iA < rowsA.length; iA++) {
+        if (String(rowsA[iA][0]) === String(data.userId)) {
+          shA.getRange(iA + 1, 7).setValue(!!data.active);
+          writeAccessLog(ss, data.username, 'toggleUserActive', rowsA[iA][2] + ' → ' + (data.active ? 'เปิด' : 'ปิด'));
+          return jsonOut({ success:true });
+        }
+      }
+      return jsonOut({ success:false, error:'ไม่พบ user' });
+    }
+
     // ---- CREATE new row ----
     // ล็อกกันเลขรันชนกันเวลาหลายคนแจ้งพร้อมกัน
     const lock = LockService.getScriptLock();
@@ -586,11 +730,12 @@ function doPost(e) {
       sheet.setColumnWidth(13, 200);
     }
 
-    // เลขรันต่อเนื่อง แยกตามโรงงาน+เดือน → BD-CHB{n}-{YYYYMM}-{NNN}
-    // seq = จำนวนแถวที่มีอยู่ (header=1 → รายการแรก = 1)
-    const seq = sheet.getLastRow();
-    const ym  = Utilities.formatDate(now, 'Asia/Bangkok', 'yyyyMM');
-    data.tracking = 'BD-' + factoryToCHB(data.factory) + '-' + ym + '-' + String(seq).padStart(3, '0');
+    // เลขรันต่อเนื่อง แยกตามโรงงาน+เดือน → JOB-CHB{n}-{YYYYMM}-{NNN}
+    // ใช้ _Counters (increment-only) ป้องกันสวมเลขเมื่อ delete แถว
+    const ym      = Utilities.formatDate(now, 'Asia/Bangkok', 'yyyyMM');
+    const ctrKey  = factoryToCHB(data.factory) + '_' + ym;
+    const seq     = nextJobSeq(ss, ctrKey);
+    data.tracking = 'JOB-' + factoryToCHB(data.factory) + '-' + ym + '-' + String(seq).padStart(3, '0');
 
     const whys    = data.whys || [];
     const partsStr = buildPartsStr(data.parts);
@@ -819,6 +964,15 @@ function doGet(e) {
     }
     if (action === 'getPermissions') {
       return jsonOut({ success: true, data: PERM_MATRIX });
+    }
+    if (action === 'getAccessLog') {
+      var ssAL = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var shAL = ssAL.getSheetByName('_AccessLog');
+      if (!shAL || shAL.getLastRow() < 2) return jsonOut({ success:true, data:[] });
+      var rowsAL = shAL.getDataRange().getValues().slice(1).reverse().slice(0, 200).map(function(r){
+        return { time:String(r[0]), username:r[1], action:r[2], detail:r[3] };
+      });
+      return jsonOut({ success:true, data: rowsAL });
     }
     return jsonOut({ success: false, error: 'Unknown action' });
 

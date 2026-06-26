@@ -200,8 +200,8 @@ function closeAcceptModal() {
 }
 
 async function confirmAccept() {
-    const acceptedBy = document.getElementById('accept-byname').value.trim();
-    if (!acceptedBy) { showToast('⚠️ กรุณากรอกชื่อผู้รับงาน', 'error'); return; }
+    const acceptedBy = currentUser.name;
+    if (!acceptedBy) { showToast('⚠️ กรุณาเข้าสู่ระบบก่อนรับงาน', 'error'); openLogin(); return; }
     if (!_acceptItem) return;
     const item = _acceptItem;
     closeAcceptModal();
@@ -343,17 +343,16 @@ async function submitReportPopup() {
     const date    = document.getElementById('rm-date').value;
     const time    = document.getElementById('rm-time').value;
     const problem = document.getElementById('rm-problem').value.trim();
-    const byName  = document.getElementById('rm-byname').value.trim();
+    const byName  = currentUser.name;
 
-    if (!machine)   return showToast('⚠️ กรุณาระบุชื่อเครื่องจักร', 'error');
+    if (!machine)    return showToast('⚠️ กรุณาระบุชื่อเครื่องจักร', 'error');
     if (!fSel.value) return showToast('⚠️ กรุณาเลือกโรงงาน', 'error');
     if (!area)       return showToast('⚠️ กรุณาเลือกพื้นที่', 'error');
     if (!date)       return showToast('⚠️ กรุณาระบุเวลาเริ่ม Breakdown', 'error');
     if (!problem)    return showToast('⚠️ กรุณาระบุปัญหา/อาการ', 'error');
-    if (!byName)     return showToast('⚠️ กรุณายืนยันชื่อผู้แจ้ง', 'error');
+    if (!byName)     { showToast('⚠️ กรุณาเข้าสู่ระบบก่อนแจ้ง', 'error'); openLogin(); return; }
     if (!GAS_URL)    return showToast('⚠️ ยังไม่ได้ตั้งค่า Web App URL', 'error');
 
-    localStorage.setItem('last_by_name', byName);
     const data = {
         timestamp: new Date().toISOString(), tracking: '',
         machineName: machine, factory, area, machineId: '', line,
@@ -460,7 +459,7 @@ function switchTab(name) {
     if (name === 'cl-calendar') initClCalendar();
     if (name === 'cl-schedule') initClSchedule();
     if (name === 'cl-status') initClStatus();
-    if (name === 'ua') { loadUaUsers?.(); loadUaLog?.(); }
+    if (name === 'ua') { uaSwitch?.('users'); }
     window.scrollTo(0, 0);
 }
 

@@ -835,14 +835,8 @@ function closeConfirm() {
 }
 
 async function confirmAddData() {
-    // ยืนยันชื่อผู้ทำทุกครั้งก่อนเข้าระบบ
-    const byName = document.getElementById('confirm-name').value.trim();
-    if (!byName) {
-        document.getElementById('confirm-name').focus();
-        showToast('⚠️ กรุณายืนยันชื่อผู้ดำเนินการก่อน', 'error');
-        return;
-    }
-    localStorage.setItem('last_by_name', byName);   // จำไว้เติมครั้งหน้า
+    const byName = currentUser.name;
+    if (!byName) { showToast('⚠️ กรุณาเข้าสู่ระบบก่อนบันทึก', 'error'); openLogin(); return; }
 
     const btn = document.getElementById('confirm-ok-btn');
     btn.disabled = true;

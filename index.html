@@ -198,6 +198,20 @@
         body.kiosk-mode #sidebar,
         body.kiosk-mode #bottom-nav { display:none !important; }
         body.kiosk-mode #app-content { margin:0 !important; padding-bottom:0 !important; }
+        /* User Access panel */
+        .ua-subtab { padding:8px 16px;font-size:13px;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;transition:all .15s;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none; }
+        .ua-subtab.active { color:var(--mms-red);border-bottom-color:var(--mms-red); }
+        .ua-subtab:hover:not(.active) { color:#374151;border-bottom-color:#d1d5db; }
+        .lbl-ua { font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:5px; }
+        .inp-ua { width:100%;border:1.5px solid #e0e4e8;border-radius:10px;padding:9px 12px;font-size:14px;outline:none;box-sizing:border-box;transition:border-color .15s; }
+        .inp-ua:focus { border-color:var(--mms-red); }
+        .ua-level-badge { display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:700; }
+        .ua-level-Administrator { background:#fde8e6;color:#c0392b; }
+        .ua-level-Supervisor { background:#fef3cd;color:#9a6c00; }
+        .ua-level-Engineer { background:#e0f2fe;color:#0369a1; }
+        .ua-level-Technician { background:#dcfce7;color:#166534; }
+        .ua-level-Production { background:#f3e8ff;color:#7e22ce; }
+        .ua-level-Visitor { background:#f1f5f9;color:#64748b; }
     </style>
 </head>
 <body class="selection:bg-orange-200 selection:text-orange-900">
@@ -263,6 +277,9 @@
         <div class="sidebar-item" id="sn-log" onclick="goLog()">
             <span class="nav-icon">📋</span><span>Log ระบบ</span>
         </div>
+        <div class="sidebar-item hidden" data-perm="ua.level" onclick="switchTab('ua')">
+            <span class="nav-icon">👥</span><span>จัดการผู้ใช้</span>
+        </div>
     </div>
     <!-- Footer -->
     <div class="px-3 py-2 border-t border-gray-800 flex-shrink-0 space-y-1">
@@ -309,6 +326,9 @@
         </div>
         <div class="more-item hidden" id="more-log-item" onclick="goLog();closeMoreSheet()">
             <span class="text-lg">📋</span><span class="text-sm font-medium text-gray-800">Log ระบบ (Admin)</span>
+        </div>
+        <div class="more-item hidden" data-perm="ua.level" onclick="switchTab('ua');closeMoreSheet()">
+            <span class="text-lg">👥</span><span class="text-sm font-medium text-gray-800">จัดการผู้ใช้</span>
         </div>
         <div class="mt-3 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between gap-3">
@@ -552,9 +572,7 @@
                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-500 transition-colors"></textarea>
         </div>
         <div class="mb-5">
-            <label class="text-xs font-bold text-gray-700 block mb-1">👤 ยืนยันชื่อผู้ดำเนินการ <span class="text-red-500">*</span></label>
-            <input id="cancel-byname" type="text" placeholder="ระบุชื่อ..." autocomplete="off"
-                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-500 transition-colors">
+            <p class="text-xs text-gray-500">👤 ผู้ดำเนินการ: บันทึกจากชื่อที่เข้าสู่ระบบอัตโนมัติ</p>
         </div>
         <div class="flex gap-3 justify-end">
             <button onclick="closeCancelModal()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">ปิด</button>
@@ -741,12 +759,12 @@
             <button class="mms-btn mms-btn-blue w-full justify-center text-sm" onclick="event.stopPropagation();goSummary()">📊 ดูสรุป</button>
         </div>
 
-        <!-- QR แจ้ง Breakdown (Engineer/Admin) -->
-        <div id="bdhub-card-qr" data-perm="bd.manual" class="hidden mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #27ae60" onclick="openBdQrGenModal()">
+        <!-- QR เครื่องจักร (unified scan QR — Engineer/Admin) -->
+        <div id="bdhub-card-qr" data-perm="bd.manual" class="hidden mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #27ae60" onclick="generateMachineQrPdf(machineMaster.map(m=>m.id||m.machineId||m.machine_id||'').filter(Boolean),40)">
             <div class="text-4xl mb-3">📱</div>
-            <h3 class="font-bold mb-1" style="color:var(--mms-text)">QR แจ้ง Breakdown</h3>
-            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">สร้าง QR Code สำหรับแจ้งเครื่องเสีย</p>
-            <button class="mms-btn w-full justify-center text-sm" style="background:#27ae60;color:#fff" onclick="event.stopPropagation();openBdQrGenModal()">📱 Generate QR</button>
+            <h3 class="font-bold mb-1" style="color:var(--mms-text)">QR เครื่องจักร</h3>
+            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">สร้าง QR ทุกเครื่อง (Checklist / BD / แจ้งซ่อม)</p>
+            <button class="mms-btn w-full justify-center text-sm" style="background:#27ae60;color:#fff" onclick="event.stopPropagation();generateMachineQrPdf(machineMaster.map(m=>m.id||m.machineId||m.machine_id||'').filter(Boolean),40)">📱 Generate QR</button>
         </div>
 
         <!-- Manual Report (Admin only) -->
@@ -1392,7 +1410,7 @@
                         <label class="text-xs text-gray-400 font-medium">รายการ</label>
                     </div>
                     <button onclick="openClItemsEditor('default-daily',null)" class="mms-btn mms-btn-green text-xs">⚙️ ตั้งค่า Default รายวัน</button>
-                    <button onclick="openQrGenModal()" class="mms-btn mms-btn-blue text-xs">📱 Generate QR</button>
+                    <button onclick="generateMachineQrPdf(machineMaster.map(m=>m.id||m.machineId||m.machine_id||'').filter(Boolean),40)" class="mms-btn mms-btn-blue text-xs">📱 Generate QR</button>
                 </div>
             </div>
             <div class="overflow-x-auto">
@@ -1857,9 +1875,7 @@
                 </div>
             </div>
             <div class="mb-4">
-                <label class="text-xs font-bold text-gray-500 block mb-1">ผู้แก้ไข <span class="text-red-500">*</span></label>
-                <input id="mc-editor" type="text" placeholder="ชื่อ-นามสกุลผู้แก้ไข"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400 transition-colors">
+                <p class="text-xs text-gray-500">👤 ผู้แก้ไข: บันทึกจากชื่อที่เข้าสู่ระบบอัตโนมัติ</p>
             </div>
             <input type="hidden" id="mc-edit-idx" value="-1">
             <div class="flex gap-3 justify-end pt-2 border-t border-gray-100">
@@ -1878,9 +1894,7 @@
         </div>
         <div class="p-6">
             <p id="mach-del-desc" class="text-sm text-gray-700 mb-4"></p>
-            <label class="text-xs font-bold text-gray-500 block mb-1">ชื่อผู้ลบ <span class="text-red-500">*</span></label>
-            <input id="mach-del-by" type="text" placeholder="กรอกชื่อ-นามสกุลผู้ดำเนินการ"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-500 mb-4">
+            <p class="text-xs text-gray-500 mb-4">👤 ผู้ดำเนินการ: บันทึกจากชื่อที่เข้าสู่ระบบอัตโนมัติ</p>
             <div class="flex gap-3">
                 <button onclick="closeMachDelModal()" class="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm">ยกเลิก</button>
                 <button onclick="confirmMachDelete()" class="flex-1 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm">🗑️ ยืนยันลบ</button>
@@ -1985,8 +1999,7 @@
         </div>
         <div class="p-6">
             <div id="clf-confirm-summary" class="text-sm text-gray-600 mb-4 leading-relaxed"></div>
-            <label class="text-xs font-bold text-gray-600 block mb-1">ชื่อผู้ตรวจสอบ <span class="text-red-500">*</span></label>
-            <input id="clf-confirm-name" type="text" placeholder="ยืนยันชื่อ..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400 mb-4">
+            <p class="text-xs text-gray-500 mb-4">👤 ผู้ตรวจสอบ: บันทึกจากชื่อที่เข้าสู่ระบบอัตโนมัติ</p>
             <div class="flex gap-3 justify-end">
                 <button onclick="document.getElementById('modal-clf-confirm').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
                 <button onclick="saveChecklistConfirm()" class="mms-btn mms-btn-green">💾 ยืนยันบันทึก</button>
@@ -2017,8 +2030,7 @@
         </div>
         <div id="mcc-machine-list" class="flex-1 overflow-y-auto p-4 space-y-1"></div>
         <div class="p-4 border-t border-gray-100 flex-shrink-0">
-            <label class="text-xs font-bold text-gray-600 block mb-1">ชื่อผู้แก้ไข <span class="text-red-500">*</span></label>
-            <input id="mcc-editor-name" type="text" placeholder="ระบุชื่อ..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 mb-3">
+            <p class="text-xs text-gray-500 mb-3">👤 ผู้แก้ไข: บันทึกจากชื่อที่เข้าสู่ระบบอัตโนมัติ</p>
             <div class="flex gap-3 justify-end">
                 <button onclick="document.getElementById('modal-cl-copy').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
                 <button onclick="saveClCopy()" class="mms-btn" style="background:#4f46e5;color:#fff">📋 Copy</button>
@@ -2062,47 +2074,6 @@
     </div>
 </div>
 
-<!-- modal-qr-gen: Generate QR PDF for Daily Check -->
-<div id="modal-qr-gen" class="modal-bg hidden">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
-    <div class="bg-blue-600 px-6 py-4 flex-shrink-0 flex justify-between items-center">
-      <h2 class="text-base font-bold text-white">📱 Generate QR Code (Daily Check)</h2>
-      <button onclick="document.getElementById('modal-qr-gen').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
-    </div>
-    <div class="p-4 flex-shrink-0 border-b border-gray-100 flex flex-wrap items-end gap-3">
-      <div><label class="text-xs font-bold text-gray-500 block mb-1">ขนาด QR (mm)</label>
-        <input id="qr-size-mm" type="number" min="15" max="100" value="40" class="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" id="qr-select-all" onchange="qrToggleAll(this.checked)"> เลือกทั้งหมด</label>
-      <span id="qr-sel-count" class="text-xs text-gray-500 ml-auto">เลือก 0</span>
-    </div>
-    <div id="qr-machine-list" class="flex-1 overflow-y-auto p-4 space-y-1"></div>
-    <div class="p-4 border-t border-gray-100 flex-shrink-0 flex gap-3 justify-end">
-      <button onclick="document.getElementById('modal-qr-gen').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
-      <button onclick="generateQrPdf()" class="mms-btn mms-btn-blue">📄 สร้าง PDF</button>
-    </div>
-  </div>
-</div>
-
-<!-- modal-bd-qr-gen: Generate QR PDF for BD Report -->
-<div id="modal-bd-qr-gen" class="modal-bg hidden">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
-    <div class="px-6 py-4 flex-shrink-0 flex justify-between items-center" style="background:#dc2626">
-      <h2 class="text-base font-bold text-white">📱 Generate QR Code (แจ้ง Breakdown)</h2>
-      <button onclick="document.getElementById('modal-bd-qr-gen').classList.add('hidden')" class="text-white opacity-70 hover:opacity-100 text-xl font-bold">✕</button>
-    </div>
-    <div class="p-4 flex-shrink-0 border-b border-gray-100 flex flex-wrap items-end gap-3">
-      <div><label class="text-xs font-bold text-gray-500 block mb-1">ขนาด QR (mm)</label>
-        <input id="bd-qr-size-mm" type="number" min="15" max="100" value="40" class="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm"></div>
-      <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" id="bd-qr-select-all" onchange="bdQrToggleAll(this.checked)"> เลือกทั้งหมด</label>
-      <span id="bd-qr-sel-count" class="text-xs text-gray-500 ml-auto">เลือก 0</span>
-    </div>
-    <div id="bd-qr-machine-list" class="flex-1 overflow-y-auto p-4 space-y-1"></div>
-    <div class="p-4 border-t border-gray-100 flex-shrink-0 flex gap-3 justify-end">
-      <button onclick="document.getElementById('modal-bd-qr-gen').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
-      <button onclick="generateBdQrPdf()" class="mms-btn" style="background:#dc2626;color:#fff">📄 สร้าง PDF</button>
-    </div>
-  </div>
-</div>
 
 <!-- modal-cl-items-editor: 3-mode items editor (default-daily / per-machine-daily / per-machine-pm) -->
 <div id="modal-cl-items-editor" class="modal-bg hidden">
@@ -2154,8 +2125,7 @@
         <!-- editor name + save footer -->
         <div class="p-4 border-t border-gray-100 flex-shrink-0">
             <div class="mb-3">
-                <label class="text-xs font-bold text-gray-600 block mb-1">ชื่อผู้แก้ไข <span class="text-red-500">*</span></label>
-                <input id="mcie-editor-name" type="text" placeholder="ระบุชื่อ..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-green-400">
+                <p class="text-xs text-gray-500">👤 ผู้แก้ไข: บันทึกจากชื่อที่เข้าสู่ระบบอัตโนมัติ</p>
             </div>
             <div class="flex gap-3 justify-end">
                 <button onclick="document.getElementById('modal-cl-items-editor').classList.add('hidden')" class="mms-btn">ยกเลิก</button>
@@ -2229,8 +2199,7 @@
                 </div>
             </div>
             <div class="pt-2 border-t border-gray-100">
-                <label class="text-xs font-bold text-gray-700 block mb-1">👤 ยืนยันชื่อผู้แจ้ง <span class="text-red-500">*</span></label>
-                <input id="rm-byname" type="text" placeholder="ระบุชื่อผู้แจ้ง..." class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-orange-500">
+                <p class="text-xs text-gray-500">👤 ผู้แจ้ง: บันทึกจากชื่อที่เข้าสู่ระบบอัตโนมัติ</p>
             </div>
         </div>
 
@@ -2663,6 +2632,154 @@
 </div>
 </div><!-- end panel-machines -->
 
+<!-- ==================== PANEL: USER ACCESS ==================== -->
+<div id="panel-ua" class="tab-panel p-4 md:p-6">
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center gap-3 mb-5">
+        <span class="text-2xl">👥</span>
+        <h2 class="text-xl font-bold text-gray-800">จัดการผู้ใช้งาน</h2>
+    </div>
+    <!-- Sub-tabs -->
+    <div class="flex gap-1 mb-5 border-b border-gray-200">
+        <button class="ua-subtab active" data-ua="users" onclick="uaSwitch('users')">👥 ผู้ใช้งาน</button>
+        <button class="ua-subtab" data-ua="perms" onclick="uaSwitch('perms')">🔑 สิทธิ์</button>
+        <button class="ua-subtab" data-ua="log" onclick="uaSwitch('log')">📋 ประวัติ</button>
+    </div>
+    <!-- Pane: Users -->
+    <div id="ua-pane-users">
+        <div class="flex justify-between items-center mb-4">
+            <p class="text-sm text-gray-500">รายชื่อผู้ใช้ทั้งหมด</p>
+            <button data-perm="ua.add" onclick="openAddUserModal()"
+                    class="hidden px-4 py-2 text-white text-sm font-bold rounded-lg transition-colors"
+                    style="background:var(--mms-red)" onmouseover="this.style.background='#962d22'" onmouseout="this.style.background='var(--mms-red)'">
+                + เพิ่มผู้ใช้
+            </button>
+        </div>
+        <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 text-left">ชื่อ-นามสกุล</th>
+                        <th class="px-4 py-3 text-left">Username</th>
+                        <th class="px-4 py-3 text-left">Level</th>
+                        <th class="px-4 py-3 text-center">สถานะ</th>
+                        <th class="px-4 py-3 text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="ua-user-tbody">
+                    <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">⏳ กำลังโหลด...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- Pane: Permissions matrix -->
+    <div id="ua-pane-perms" class="hidden">
+        <div id="ua-perm-matrix" class="overflow-x-auto"></div>
+    </div>
+    <!-- Pane: Access log -->
+    <div id="ua-pane-log" class="hidden">
+        <div id="ua-log-body" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
+    </div>
+</div>
+</div><!-- end panel-ua -->
+
+<!-- ==================== MODAL: เพิ่มผู้ใช้ ==================== -->
+<div id="add-user-modal" class="modal-bg hidden" onclick="if(event.target===this)closeAddUserModal()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div style="background:linear-gradient(135deg,#c0392b,#962d22);padding:20px 24px">
+            <p class="text-white font-bold text-lg">เพิ่มผู้ใช้งาน</p>
+            <p class="text-white/70 text-xs mt-0.5">กรอกข้อมูลผู้ใช้ใหม่</p>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="lbl-ua">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+                <input id="au-name" class="inp-ua" placeholder="เช่น สมชาย ใจดี">
+            </div>
+            <div>
+                <label class="lbl-ua">ชื่อผู้ใช้ (Username) <span class="text-red-500">*</span></label>
+                <input id="au-user" class="inp-ua" placeholder="ตัวอักษร/ตัวเลข ไม่มีช่องว่าง" autocapitalize="none" autocomplete="off">
+            </div>
+            <div>
+                <label class="lbl-ua">PIN <span class="text-red-500">*</span></label>
+                <input id="au-pin" type="password" maxlength="8" inputmode="numeric" class="inp-ua" placeholder="4-8 หลัก">
+            </div>
+            <div>
+                <label class="lbl-ua">Level</label>
+                <select id="au-level" class="inp-ua">
+                    <option>Visitor</option>
+                    <option>Production</option>
+                    <option>Technician</option>
+                    <option selected>Engineer</option>
+                    <option>Supervisor</option>
+                    <option>Administrator</option>
+                </select>
+            </div>
+            <div class="flex gap-3 justify-end pt-2 border-t border-gray-100">
+                <button onclick="closeAddUserModal()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-800 transition-colors">ยกเลิก</button>
+                <button onclick="submitAddUser()" class="px-6 py-2 text-white text-sm font-bold rounded-lg transition-colors"
+                        style="background:var(--mms-red)" onmouseover="this.style.background='#962d22'" onmouseout="this.style.background='var(--mms-red)'">บันทึก</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODAL: รีเซ็ต PIN ==================== -->
+<div id="reset-pin-modal" class="modal-bg hidden" onclick="if(event.target===this)closeResetPinModal()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div style="background:linear-gradient(135deg,#c0392b,#962d22);padding:16px 20px">
+            <p class="text-white font-bold">รีเซ็ต PIN</p>
+            <p id="reset-pin-name" class="text-white/70 text-xs mt-0.5"></p>
+        </div>
+        <div class="p-5 space-y-3">
+            <div>
+                <label class="lbl-ua">PIN ใหม่ <span class="text-red-500">*</span></label>
+                <input id="new-pin-val" type="password" maxlength="8" inputmode="numeric" class="inp-ua" placeholder="4-8 หลัก">
+            </div>
+            <div class="flex gap-3 justify-end pt-2">
+                <button onclick="closeResetPinModal()" class="px-4 py-2 text-sm font-bold text-gray-500">ยกเลิก</button>
+                <button onclick="submitResetPin()" class="px-5 py-2 text-white text-sm font-bold rounded-lg"
+                        style="background:var(--mms-red)">รีเซ็ต</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODAL: Scan Choice ==================== -->
+<div id="scan-choice-modal" class="modal-bg hidden" onclick="if(event.target===this)closeScanModal()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+                <div class="font-bold text-gray-800 text-base" id="scan-machine-name">เครื่องจักร</div>
+                <div class="text-xs text-gray-400 mt-0.5" id="scan-machine-sub"></div>
+            </div>
+            <button onclick="closeScanModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+        <div class="p-4 flex flex-col gap-3">
+            <button onclick="scanChoose('daily')" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-green-50 hover:bg-green-100 border-2 border-green-200 text-left transition">
+                <span class="text-2xl">✅</span>
+                <div>
+                    <div class="font-bold text-green-800 text-sm">Checklist รายวัน</div>
+                    <div class="text-xs text-green-600">ตรวจประจำวัน / กะเช้า / กะดึก</div>
+                </div>
+            </button>
+            <button onclick="scanChoose('bd')" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-red-50 hover:bg-red-100 border-2 border-red-200 text-left transition">
+                <span class="text-2xl">🚨</span>
+                <div>
+                    <div class="font-bold text-red-800 text-sm">แจ้ง Breakdown</div>
+                    <div class="text-xs text-red-600">เครื่องจักรเสีย / หยุดฉุกเฉิน</div>
+                </div>
+            </button>
+            <button onclick="scanChoose('adj')" class="w-full flex items-center gap-4 px-5 py-4 rounded-2xl bg-yellow-50 hover:bg-yellow-100 border-2 border-yellow-200 text-left transition">
+                <span class="text-2xl">🔧</span>
+                <div>
+                    <div class="font-bold text-yellow-800 text-sm">แจ้งซ่อม (Adjustment)</div>
+                    <div class="text-xs text-yellow-600">ปรับแต่ง / ซ่อมบำรุงตามแผน</div>
+                </div>
+            </button>
+        </div>
+    </div>
+</div>
+
 </div><!-- end app-content -->
 
 <script src="js/permissions.js"></script>
@@ -2675,5 +2792,7 @@
 <script src="js/bootstrap.js"></script>
 <script src="js/checklist-core.js"></script>
 <script src="js/checklist-status.js"></script>
+<script src="js/user-access.js"></script>
+<script src="js/scan.js"></script>
 </body>
 </html>

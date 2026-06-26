@@ -145,14 +145,15 @@ function renderProblemLocked() {
     ).join('');
 }
 function problemStageLabel() {
-    if (formStage === 'report')  return 'แจ้ง Breakdown';
+    if (formStage === 'report')  return 'แจ้งปัญหาเครื่องจักร';
     if (formStage === 'manual')  return 'สร้างเอกสาร';
     if (formStage === 'whyedit') return 'แก้ไข Why-Why';
     return 'แก้ไขเอกสาร';
 }
 function composeProblem(byName) {
     const fresh = (document.getElementById('inp-problem-new')?.value || '').trim();
-    return [_problemLocked, fresh].filter(Boolean).join('\n');
+    const line  = fresh ? `${fresh} *${byName||'ไม่ระบุ'} - ${problemStageLabel()}` : '';
+    return [_problemLocked, line].filter(Boolean).join('\n');
 }
 
 // ล้างค่าฟิลด์ทั้งหมดให้เป็นฟอร์มเปล่า

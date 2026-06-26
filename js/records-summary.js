@@ -74,6 +74,7 @@ const STATUS_BADGE = {
     'รับงานแล้ว':           'bg-blue-100 text-blue-700',
     'กำลังดำเนินการแก้ไข':  'bg-orange-100 text-orange-700',
     'รออะไหล่':             'bg-yellow-100 text-yellow-700',
+    'ซ่อมสำเร็จ':           'bg-teal-100 text-teal-700',
     'ดำเนินการเสร็จสิ้น':   'bg-green-100 text-green-700',
     'ยกเลิกงาน':            'bg-gray-100 text-gray-400',
 };
@@ -87,6 +88,7 @@ function renderRecordsTable(rows) {
         const badge= STATUS_BADGE[r.status] || 'bg-gray-100 text-gray-600';
         const isCancelled = r.status === 'ยกเลิกงาน';
         const isWaiting   = r.status === 'รอรับงาน' || r.status === 'แจ้ง Breakdown';
+        const isAccepted  = r.status === 'รับงานแล้ว';
         const isPending   = !isCancelled && !isWaiting && r.status !== 'ดำเนินการเสร็จสิ้น';
         const isDone      = !isCancelled && r.status === 'ดำเนินการเสร็จสิ้น';
         const j = JSON.stringify(r).replace(/'/g,"&#39;");
@@ -114,6 +116,8 @@ function renderRecordsTable(rows) {
                 <div class="flex gap-1 justify-center flex-wrap">
                     ${(canAccept && isWaiting) ? `<button onclick='acceptRecord(${j})'
                         class="text-xs font-bold px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors">✅ รับงาน</button>` : ''}
+                    ${(canEdit && isAccepted) ? `<button onclick='repairCompleteRecord(${j})'
+                        class="text-xs font-bold px-2 py-1 rounded-lg bg-teal-100 hover:bg-teal-200 text-teal-700 transition-colors">🔨 ซ่อมสำเร็จ</button>` : ''}
                     ${(canEdit && isPending) ? `<button onclick='openEditMode(${j})'
                         class="text-xs font-bold px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-700 transition-colors">✏️ แก้ไข</button>` : ''}
                     ${(canEdit && isDone) ? `<button onclick='editWhyOnly(${j})'

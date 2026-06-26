@@ -1525,6 +1525,7 @@
                 <option value="report">🔴 แจ้ง Breakdown</option>
                 <option value="wip">🔧 กำลังดำเนินการแก้ไข</option>
                 <option value="wait">⏳ รออะไหล่</option>
+                <option value="repaired">🔨 ซ่อมสำเร็จ</option>
                 <option value="done">✅ ดำเนินการเสร็จสิ้น</option>
             </select>
             <span id="status-caret" class="text-white/50 text-xs pointer-events-none">▾</span>
@@ -1882,6 +1883,44 @@
             </button>
         </div>
         </div><!-- /p-6 -->
+    </div>
+</div>
+
+<!-- ==================== REPAIR COMPLETE MODAL ==================== -->
+<div id="repair-complete-modal" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-teal-600 px-6 py-4">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">🔨 ยืนยันซ่อมสำเร็จ</h2>
+            <p id="repair-tracking-display" class="text-xs text-teal-100 font-mono mt-0.5"></p>
+        </div>
+        <div class="p-6">
+            <p class="text-sm text-gray-600 mb-4">กรุณาระบุวันและเวลาที่ซ่อมเสร็จเพื่อบันทึกสถานะ</p>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">วันที่ซ่อมเสร็จ *</label>
+                    <input type="date" id="repair-end-date"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-500 transition-colors">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 block mb-1">เวลาซ่อมเสร็จ *</label>
+                    <input type="time" id="repair-end-time"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-500 transition-colors">
+                </div>
+            </div>
+            <div class="bg-teal-50 border border-teal-200 rounded-lg px-4 py-2.5 mb-4 text-sm">
+                👤 บันทึกโดย: <strong id="repair-byuser" class="text-teal-700"></strong>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeRepairCompleteModal()"
+                        class="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-colors">
+                    ยกเลิก
+                </button>
+                <button onclick="confirmRepairComplete()"
+                        class="flex-1 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm transition-colors">
+                    🔨 ยืนยันซ่อมสำเร็จ
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -2780,17 +2819,17 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.9"></script>
-<script src="js/core.js?v=2.9"></script>
-<script src="js/machines.js?v=2.9"></script>
-<script src="js/breakdown-report.js?v=2.9"></script>
-<script src="js/breakdown-form.js?v=2.9"></script>
-<script src="js/records-summary.js?v=2.9"></script>
-<script src="js/export.js?v=2.9"></script>
-<script src="js/bootstrap.js?v=2.9"></script>
-<script src="js/checklist-core.js?v=2.9"></script>
-<script src="js/checklist-status.js?v=2.9"></script>
-<script src="js/user-access.js?v=2.9"></script>
-<script src="js/scan.js?v=2.9"></script>
+<script src="js/permissions.js?v=2.9.1"></script>
+<script src="js/core.js?v=2.9.1"></script>
+<script src="js/machines.js?v=2.9.1"></script>
+<script src="js/breakdown-report.js?v=2.9.1"></script>
+<script src="js/breakdown-form.js?v=2.9.1"></script>
+<script src="js/records-summary.js?v=2.9.1"></script>
+<script src="js/export.js?v=2.9.1"></script>
+<script src="js/bootstrap.js?v=2.9.1"></script>
+<script src="js/checklist-core.js?v=2.9.1"></script>
+<script src="js/checklist-status.js?v=2.9.1"></script>
+<script src="js/user-access.js?v=2.9.1"></script>
+<script src="js/scan.js?v=2.9.1"></script>
 </body>
 </html>

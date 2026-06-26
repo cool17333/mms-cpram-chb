@@ -94,18 +94,27 @@ function setFormStage(stage) {
     setFormMode(stage === 'report' ? 'report' : 'full');
     setBdStartLocked(stage === 'edit' || stage === 'whyedit');   // ห้ามแก้เวลาเริ่ม
 
+    // ล็อกข้อมูลที่ User แจ้งไว้ (ชื่อเครื่อง, โรงงาน, พื้นที่) ห้ามแก้ตอน edit/whyedit
+    if (stage === 'edit' || stage === 'whyedit') {
+        ['machine-name', 'factory-select', 'area-select'].forEach(id => {
+            const el = document.getElementById(id); if (!el) return;
+            el.disabled = true;
+            el.classList.add('bg-gray-100', 'cursor-not-allowed');
+        });
+    }
+
     const sSel = document.getElementById('status-select');
     if (stage === 'report') {
         setStatusOptions(['report']); setStatusLocked(true);
     } else if (stage === 'edit') {
-        setStatusOptions(['wip', 'wait']);            // แก้ไข report เลือกได้แค่ กำลังดำเนินการ/รออะไหล่
+        setStatusOptions(['wip', 'wait', 'repaired']);
         setStatusLocked(false);
         if (sSel.value === 'report') sSel.value = 'wip';
         updateStatus(sSel);
     } else if (stage === 'whyedit') {
         setStatusOptions(['done']); updateStatus(sSel);   // สถานะคงเป็น "เสร็จสิ้น" (จะถูกล็อกด้านล่าง)
     } else { // manual
-        setStatusOptions(['report', 'wip', 'wait', 'done']); setStatusLocked(false);
+        setStatusOptions(['report', 'wip', 'wait', 'repaired', 'done']); setStatusLocked(false);
     }
 
     showTracking();
@@ -235,6 +244,60 @@ async function confirmAccept() {
         });
         showToast('✅ รับงานเรียบร้อย — ' + acceptedBy, 'success');
         setTimeout(() => { switchTab('records'); checkRecordsSetup(); }, 700);
+    } catch (err) {
+        showToast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
+    }
+}
+
+// ============================================================
+// ซ่อมสำเร็จ — บันทึก bdEnd + เปลี่ยนสถานะ (quick action จาก records)
+// ============================================================
+let _repairItem = null;
+
+function repairCompleteRecord(item) {
+    if (!can('bd.editdoc')) { showToast('⚠️ ไม่มีสิทธิ์', 'error'); return; }
+    _repairItem = item;
+    document.getElementById('repair-tracking-display').textContent =
+        (item.tracking || '') + (item.machineName ? ' — ' + item.machineName : '');
+    const bu = document.getElementById('repair-byuser');
+    if (bu) bu.textContent = currentUser.name || '—';
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('repair-end-date').value =
+        `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    document.getElementById('repair-end-time').value =
+        `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    document.getElementById('repair-complete-modal').classList.remove('hidden');
+}
+
+function closeRepairCompleteModal() {
+    document.getElementById('repair-complete-modal').classList.add('hidden');
+    _repairItem = null;
+}
+
+async function confirmRepairComplete() {
+    if (!_repairItem) return;
+    const date = document.getElementById('repair-end-date').value;
+    const time = document.getElementById('repair-end-time').value;
+    if (!date || !time) { showToast('⚠️ กรุณาระบุวันที่และเวลาซ่อมเสร็จ', 'error'); return; }
+    const item = _repairItem;
+    closeRepairCompleteModal();
+    try {
+        await fetch(GAS_URL, {
+            method: 'POST', mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'repairComplete',
+                sheetName: item.sheetName,
+                rowIndex:  item.rowIndex,
+                tracking:  item.tracking,
+                bdEnd:     `${date}T${time}`,
+                byName:    currentUser.name,
+                username:  currentUser.username, pin: currentUser.pin,
+            }),
+        });
+        showToast('🔨 บันทึกซ่อมสำเร็จเรียบร้อย', 'success');
+        setTimeout(() => loadRecords(), 700);
     } catch (err) {
         showToast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
     }

@@ -362,6 +362,19 @@ function doPost(e) {
       return jsonOut({ success: true, action: 'accepted' });
     }
 
+    // ---- REPAIR COMPLETE (บันทึกซ่อมสำเร็จ — อัปเดตเฉพาะ status + bdEnd) ----
+    if (data.action === 'repairComplete') {
+      if (!userCan(ss, data.username, data.pin, 'bd.editdoc'))
+        return jsonOut({ success: false, error: 'ต้องมีสิทธิ์ bd.editdoc' });
+      const sheet = ss.getSheetByName(data.sheetName);
+      if (!sheet || !data.rowIndex) throw new Error('Sheet or rowIndex not found');
+      sheet.getRange(data.rowIndex, 7).setValue('ซ่อมสำเร็จ');    // col 7 = status
+      sheet.getRange(data.rowIndex, 9).setValue(data.bdEnd || ''); // col 9 = bdEnd
+      writeLog(ss, data.tracking, 'ซ่อมสำเร็จ — เวลาเสร็จ: ' + (data.bdEnd || ''), data.byName, 'ซ่อมสำเร็จ');
+      writeAccessLog(ss, data.username, 'repairComplete', 'ซ่อมสำเร็จ: ' + (data.tracking || ''));
+      return jsonOut({ success: true, action: 'repairComplete' });
+    }
+
     // ---- CANCEL record (เปลี่ยนสถานะเป็น "ยกเลิกงาน" — Admin เท่านั้น) ----
     if (data.action === 'cancel') {
       if (!userCan(ss, data.username, data.pin, 'bd.cancel'))

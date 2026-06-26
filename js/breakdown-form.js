@@ -49,7 +49,7 @@ function initHubStats() {
         const now  = new Date();
         const ym   = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
         const month = _dashRecords.filter(r => (r.date||'').startsWith(ym) && r.status !== 'cancel');
-        const ACTIVE = new Set(['รอรับงาน','แจ้ง Breakdown','รับงานแล้ว','กำลังดำเนินการแก้ไข','กำลังดำเนินการ','รออะไหล่','wip']);
+        const ACTIVE = new Set(['รอรับงาน','แจ้ง Breakdown','รับงานแล้ว','กำลังดำเนินการแก้ไข','กำลังดำเนินการ','รออะไหล่','ซ่อมสำเร็จ','wip']);
         const wip = _dashRecords.filter(r => ACTIVE.has(r.status));
         document.getElementById('hub-count-bd').textContent  = month.length;
         document.getElementById('hub-count-wip').textContent = wip.length;
@@ -59,7 +59,7 @@ function initHubStats() {
     function facStats(facFull) {
         const machines = machineList.filter(m => normFac(m.factory) === facFull);
         const total    = machines.length;
-        const ACTIVE   = new Set(['รอรับงาน','แจ้ง Breakdown','รับงานแล้ว','กำลังดำเนินการแก้ไข','กำลังดำเนินการ','รออะไหล่','wip']);
+        const ACTIVE   = new Set(['รอรับงาน','แจ้ง Breakdown','รับงานแล้ว','กำลังดำเนินการแก้ไข','กำลังดำเนินการ','รออะไหล่','ซ่อมสำเร็จ','wip']);
         const bdIds    = new Set(
             _dashRecords.filter(r => normFac(r.factory) === facFull && ACTIVE.has(r.status))
                         .map(r => r.machineId || r.machineName).filter(Boolean));
@@ -251,10 +251,11 @@ function updateSumArea() {
 // STATUS BADGE
 // ============================================================
 const STATUS_CFG = {
-    report: { label:'รอรับงาน',              cls:'border-amber-400 bg-amber-900/30',   color:'#fbbf24', icon:'⏳' },
-    wip:    { label:'กำลังดำเนินการแก้ไข',   cls:'border-orange-400 bg-orange-900/30', color:'#fb923c', icon:'🔧' },
-    wait:   { label:'รออะไหล่',              cls:'border-yellow-400 bg-yellow-900/30', color:'#facc15', icon:'🔩' },
-    done:   { label:'ดำเนินการเสร็จสิ้น',    cls:'border-green-400 bg-green-900/30',   color:'#4ade80', icon:'✅' },
+    report:   { label:'รอรับงาน',              cls:'border-amber-400 bg-amber-900/30',   color:'#fbbf24', icon:'⏳' },
+    wip:      { label:'กำลังดำเนินการแก้ไข',   cls:'border-orange-400 bg-orange-900/30', color:'#fb923c', icon:'🔧' },
+    wait:     { label:'รออะไหล่',              cls:'border-yellow-400 bg-yellow-900/30', color:'#facc15', icon:'🔩' },
+    repaired: { label:'ซ่อมสำเร็จ',            cls:'border-teal-400 bg-teal-900/30',     color:'#2dd4bf', icon:'🔨' },
+    done:     { label:'ดำเนินการเสร็จสิ้น',    cls:'border-green-400 bg-green-900/30',   color:'#4ade80', icon:'✅' },
 };
 
 function updateStatus(sel) {
@@ -946,7 +947,7 @@ function openEditMode(item, stage = 'edit') {
     const statusRevMap = {
         'รอรับงาน':'report', 'แจ้ง Breakdown':'report',
         'รับงานแล้ว':'wip', 'กำลังดำเนินการแก้ไข':'wip', 'กำลังดำเนินการ':'wip',
-        'รออะไหล่':'wait', 'ดำเนินการเสร็จสิ้น':'done',
+        'รออะไหล่':'wait', 'ซ่อมสำเร็จ':'repaired', 'ดำเนินการเสร็จสิ้น':'done',
     };
     const sSel = document.getElementById('status-select');
     if (sSel) { sSel.disabled = false; sSel.value = statusRevMap[item.status] || 'report'; updateStatus(sSel); }

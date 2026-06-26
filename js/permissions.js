@@ -44,11 +44,20 @@ function applyPermissions() {
     // sidebar admin section + more-log (ผูกกับ ua.log) — updateNavRole() อยู่ js/breakdown-report.js
     if (typeof updateNavRole === 'function') updateNavRole();
 
+    // ถ้าหน้าที่ค้างอยู่สิทธิ์ไม่ถึง → กลับหน้าหลัก
+    const _active = document.querySelector('.tab-panel.active')?.id.replace('panel-', '');
+    if (_active && PANEL_PERM[_active] && !can(PANEL_PERM[_active]) && typeof switchTab === 'function') {
+        switchTab('home');
+    }
+
     // re-render records ที่ขึ้นกับ role
     if (typeof applyRecordFilter === 'function' && typeof _lastRecords !== 'undefined' && _lastRecords?.length) {
         applyRecordFilter();
     }
 }
+
+// แผนผัง panel → permission ที่ต้องมี (redirect ถ้าสิทธิ์ไม่ถึง)
+const PANEL_PERM = { ua: 'ua.level', log: 'ua.log' };
 
 // Visitor perms (hardcode — ไม่ต้องเรียก GAS)
 const VISITOR_PERMS = ['bd.view','bd.export','mc.view','cl.view','cl.history','cl.status','cl.export'];

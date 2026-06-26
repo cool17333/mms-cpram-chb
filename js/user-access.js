@@ -21,13 +21,14 @@ let _uaPending = null;   // { userId, action } สำหรับ reset-pin moda
 
 // ---- Sub-tab switch ----
 function uaSwitch(pane) {
-    ['users','perms','log'].forEach(p => {
+    ['users','pending','perms','log'].forEach(p => {
         document.getElementById('ua-pane-' + p)?.classList.toggle('hidden', p !== pane);
         document.querySelector(`.ua-subtab[data-ua="${p}"]`)?.classList.toggle('active', p === pane);
     });
-    if (pane === 'users')  loadUaUsers();
-    if (pane === 'perms')  renderPermMatrix();
-    if (pane === 'log')    loadUaLog();
+    if (pane === 'users')   loadUaUsers();
+    if (pane === 'pending') loadUaPending();
+    if (pane === 'perms')   renderPermMatrix();
+    if (pane === 'log')     loadUaLog();
 }
 
 // ---- Load users ----
@@ -39,6 +40,7 @@ async function loadUaUsers() {
         const json = await res.json();
         _uaUsers = json.data || [];
         renderUaUsers();
+        refreshPendingBadge();
     } catch (e) {
         document.getElementById('ua-user-tbody').innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-red-400">❌ โหลดไม่สำเร็จ: ' + e.message + '</td></tr>';
     } finally {
@@ -86,19 +88,21 @@ function renderUaUsers() {
 
 // ---- Add user modal ----
 function openAddUserModal() {
-    ['au-name','au-user','au-pin'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['au-fname','au-lname','au-user','au-pin'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     document.getElementById('add-user-modal').classList.remove('hidden');
-    setTimeout(() => document.getElementById('au-name')?.focus(), 80);
+    setTimeout(() => document.getElementById('au-fname')?.focus(), 80);
 }
 function closeAddUserModal() { document.getElementById('add-user-modal').classList.add('hidden'); }
 
 async function submitAddUser() {
-    const name  = (document.getElementById('au-name')?.value  || '').trim();
+    const fname = (document.getElementById('au-fname')?.value || '').trim();
+    const lname = (document.getElementById('au-lname')?.value || '').trim();
     const uname = (document.getElementById('au-user')?.value  || '').trim();
     const pin   = (document.getElementById('au-pin')?.value   || '').trim();
     const level = document.getElementById('au-level')?.value  || 'Visitor';
-    if (!name || !uname || !pin) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
+    if (!fname || !lname || !uname || !pin) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
     if (pin.length < 8 || pin.length > 12) { showToast('⚠️ Password ต้อง 8–12 ตัว', 'error'); return; }
+    const name = `${fname} ${lname}`.trim();
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'addUser', username: currentUser.username, pin: currentUser.pin,
@@ -109,6 +113,108 @@ async function submitAddUser() {
         closeAddUserModal();
         showToast('✅ เพิ่มผู้ใช้ ' + name + ' สำเร็จ', 'success');
         loadUaUsers();
+    } catch (e) { showToast('❌ ' + e.message, 'error'); }
+}
+
+// ---- Pending requests (คำขอใช้งาน) ----
+let _uaPendingList = [];
+let _uaApproveId   = null;
+
+async function loadUaPending() {
+    const tb = document.getElementById('ua-pending-tbody');
+    if (!GAS_URL) { if (tb) tb.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">⚠️ ยังไม่ได้ตั้งค่า GAS URL</td></tr>'; return; }
+    if (typeof showLoading === 'function') showLoading('กำลังโหลดคำขอ…');
+    try {
+        const res  = await fetch(`${GAS_URL}?action=getPendingUsers`);
+        const json = await res.json();
+        _uaPendingList = json.data || [];
+        renderUaPending();
+        updatePendingBadge();
+    } catch (e) {
+        if (tb) tb.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-red-400">❌ โหลดไม่สำเร็จ: ' + e.message + '</td></tr>';
+    } finally { if (typeof hideLoading === 'function') hideLoading(); }
+}
+
+function renderUaPending() {
+    const tb = document.getElementById('ua-pending-tbody');
+    if (!tb) return;
+    const canAdd = can('ua.add');
+    if (!_uaPendingList.length) {
+        tb.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">ไม่มีคำขอที่รออนุมัติ</td></tr>';
+        return;
+    }
+    tb.innerHTML = _uaPendingList.map(p => {
+        const lvlCls  = 'ua-level-badge ua-level-' + (p.level || 'Visitor');
+        const uname   = String(p.username || '').replace(/'/g, '');
+        const actions = canAdd
+            ? `<button onclick="uaOpenApprove('${p.id}')" class="text-xs font-bold text-green-600 hover:text-green-800 underline">อนุมัติ</button>
+               <button onclick="uaRejectPending('${p.id}','${uname}')" class="text-xs font-bold text-red-600 hover:text-red-800 underline">ปฏิเสธ</button>`
+            : '—';
+        return `<tr class="border-t border-gray-100 hover:bg-gray-50">
+            <td class="px-4 py-3 font-medium text-gray-800">${p.name || '—'}</td>
+            <td class="px-4 py-3 font-mono text-gray-600 text-xs">${p.username || '—'}</td>
+            <td class="px-4 py-3"><span class="${lvlCls}">${p.level || '—'}</span></td>
+            <td class="px-4 py-3 text-xs text-gray-500">${p.requestedAt || '—'}</td>
+            <td class="px-4 py-3 text-center flex gap-3 justify-center flex-wrap">${actions}</td>
+        </tr>`;
+    }).join('');
+}
+
+function updatePendingBadge() {
+    const badge = document.getElementById('ua-pending-badge');
+    if (!badge) return;
+    const n = _uaPendingList.length;
+    badge.textContent = n;
+    badge.classList.toggle('hidden', n === 0);
+}
+
+async function refreshPendingBadge() {
+    if (!GAS_URL || !can('ua.add')) return;
+    try {
+        const res  = await fetch(`${GAS_URL}?action=getPendingUsers`);
+        const json = await res.json();
+        _uaPendingList = json.data || [];
+        updatePendingBadge();
+    } catch (e) {}
+}
+
+function uaOpenApprove(pendingId) {
+    const p = _uaPendingList.find(x => String(x.id) === String(pendingId));
+    if (!p) return;
+    _uaApproveId = pendingId;
+    document.getElementById('ap-name').textContent = p.name || '';
+    document.getElementById('ap-user').textContent = p.username || '';
+    document.getElementById('ap-level').value = p.level || 'Visitor';
+    document.getElementById('approve-modal').classList.remove('hidden');
+}
+function closeApproveModal() { document.getElementById('approve-modal').classList.add('hidden'); _uaApproveId = null; }
+
+async function uaConfirmApprove() {
+    if (!_uaApproveId) return;
+    const level = document.getElementById('ap-level')?.value || 'Visitor';
+    try {
+        const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
+            action:'approveUser', username: currentUser.username, pin: currentUser.pin,
+            pendingId: _uaApproveId, level
+        })});
+        const json = await res.json();
+        if (!json.success) { showToast('❌ ' + (json.error || 'ไม่สำเร็จ'), 'error'); return; }
+        closeApproveModal();
+        showToast('✅ อนุมัติแล้ว — ดึงเข้าระบบเรียบร้อย', 'success');
+        loadUaPending();
+    } catch (e) { showToast('❌ ' + e.message, 'error'); }
+}
+
+async function uaRejectPending(pendingId, uname) {
+    if (!confirm(`ปฏิเสธคำขอของ "${uname}"?`)) return;
+    try {
+        const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
+            action:'rejectUser', username: currentUser.username, pin: currentUser.pin, pendingId
+        })});
+        const json = await res.json();
+        if (!json.success) { showToast('❌ ' + (json.error || 'ไม่สำเร็จ'), 'error'); return; }
+        showToast('ปฏิเสธคำขอแล้ว', 'info');
+        loadUaPending();
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
 }
 

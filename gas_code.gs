@@ -35,6 +35,29 @@ const PERM_MATRIX = {
   Administrator: {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':1,'bd.whywhy':1,'bd.manual':1,'bd.cancel':1,'mc.view':1,'mc.edit':1,'mc.delete':1,'mc.add':1,'mc.import':1,'mc.backup':1,'mc.restore':1,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':1,'cl.pm':1,'cl.edit':1,'cl.calendar':1,'ua.add':1,'ua.del':1,'ua.level':1,'ua.perm':1,'ua.log':1},
 };
 
+// ============================================================
+// PHASE 3 — Sheet-backed permission matrix (อ่านจาก _Permissions sheet, cache 60s)
+// Fallback กลับ const PERM_MATRIX ถ้า sheet ว่าง
+// ============================================================
+function readPermMatrix(ss) {
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get('perm_matrix');
+  if (cached) { try { return JSON.parse(cached); } catch (_) {} }
+
+  var matrix = {};
+  var sh = ss ? ss.getSheetByName('_Permissions') : null;
+  if (sh && sh.getLastRow() > 1) {
+    sh.getDataRange().getValues().slice(1).forEach(function(r) {
+      var role = String(r[0]).trim(), code = String(r[1]).trim();
+      var allow = (r[2] === 1 || r[2] === true || String(r[2]).toUpperCase() === 'TRUE' || r[2] === '1') ? 1 : 0;
+      if (role && code) { if (!matrix[role]) matrix[role] = {}; matrix[role][code] = allow; }
+    });
+  }
+  if (Object.keys(matrix).length === 0) return PERM_MATRIX;   // fallback
+  try { cache.put('perm_matrix', JSON.stringify(matrix), 60); } catch (_) {}
+  return matrix;
+}
+
 // Tools → Run → seedPermissions  (รัน 1 ครั้งจาก GAS Editor)
 function seedPermissions() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -193,12 +216,12 @@ function userCan(ss, username, pin, perm) {
   var row = getUserRow(ss, username);
   if (!row || !row[6]) return false;
   if (!verifyPin(row, pin)) return false;
-  var m = PERM_MATRIX[String(row[5]).trim()];
+  var m = readPermMatrix(ss)[String(row[5]).trim()];
   return m ? Boolean(m[perm]) : false;
 }
 
-function getPermsForLevel(level) {
-  var m = PERM_MATRIX[String(level).trim()];
+function getPermsForLevel(level, ss) {
+  var m = readPermMatrix(ss)[String(level).trim()];
   if (!m) return [];
   return Object.keys(m).filter(function(k) { return m[k] === 1; });
 }
@@ -705,6 +728,25 @@ function doPost(e) {
       return jsonOut({ success:false, error:'ไม่พบ user' });
     }
 
+    // ---- USER ACCESS: setPermission (Phase 3) ----
+    if (data.action === 'setPermission') {
+      if (!userCan(ss, data.username, data.pin, 'ua.perm'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.perm' });
+      var shP = ss.getSheetByName('_Permissions');
+      if (!shP) return jsonOut({ success:false, error:'ไม่พบ sheet _Permissions (รัน seedPermissions ก่อน)' });
+      var rowsP = shP.getDataRange().getValues();
+      for (var iP = 1; iP < rowsP.length; iP++) {
+        if (String(rowsP[iP][0]).trim() === String(data.role).trim() &&
+            String(rowsP[iP][1]).trim() === String(data.perm_code).trim()) {
+          shP.getRange(iP + 1, 3).setValue(data.allow ? 1 : 0);
+          CacheService.getScriptCache().remove('perm_matrix');   // invalidate cache
+          writeAccessLog(ss, data.username, 'setPermission', data.role + '.' + data.perm_code + ' → ' + (data.allow ? '✓' : '✗'));
+          return jsonOut({ success:true });
+        }
+      }
+      return jsonOut({ success:false, error:'ไม่พบ permission row: ' + data.role + '.' + data.perm_code });
+    }
+
     // ---- CREATE new row ----
     // ล็อกกันเลขรันชนกันเวลาหลายคนแจ้งพร้อมกัน
     const lock = LockService.getScriptLock();
@@ -923,7 +965,7 @@ function doGet(e) {
       if (!row)    return jsonOut({ success: false, error: 'ไม่พบ username' });
       if (!row[6]) return jsonOut({ success: false, error: 'บัญชีถูกระงับ' });
       if (!verifyPin(row, pin)) return jsonOut({ success: false, error: 'PIN ไม่ถูกต้อง' });
-      var perms = getPermsForLevel(row[5]);
+      var perms = getPermsForLevel(row[5], ss2);
       return jsonOut({ success: true, name: String(row[1]).trim(), level: String(row[5]).trim(), perms: perms });
     }
     if (action === 'getLog') {
@@ -963,7 +1005,8 @@ function doGet(e) {
       return jsonOut({ success: true, data: data });
     }
     if (action === 'getPermissions') {
-      return jsonOut({ success: true, data: PERM_MATRIX });
+      var ssPerm = SpreadsheetApp.openById(SPREADSHEET_ID);
+      return jsonOut({ success: true, data: readPermMatrix(ssPerm) });
     }
     if (action === 'getAccessLog') {
       var ssAL = SpreadsheetApp.openById(SPREADSHEET_ID);

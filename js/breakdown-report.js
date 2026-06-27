@@ -26,7 +26,7 @@ function showTracking() {
 // ============================================================
 const PAGE_TITLE = {
     home:           '',
-    'bd-hub':       '🚨 ระบบแจ้งซ่อม & Breakdown',
+    'bd-hub':       '🚨 ระบบแจ้งปัญหาเครื่องจักร',
     form:           '🚨 แจ้ง Breakdown',
     records:        '📋 รายการ Breakdown',
     summary:        '📊 สรุปข้อมูล Breakdown',
@@ -43,6 +43,7 @@ const PAGE_TITLE = {
     'oee':          '📊 ระบบ TPM — สรุป OEE',
     'mcrank':       '📊 ระบบ TPM — Ranking เครื่องจักร',
     'mcapprove':    '📋 ระบบ TPM — อนุมัติฟอร์มประจำปี',
+    'tpm-hub':      '📈 ระบบ TPM',
 };
 
 // โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
@@ -602,11 +603,11 @@ function updateNavActive(panel) {
         'bd-hub':'bn-bd','form':'bn-bd','records':'bn-bd','summary':'bn-bd',
         'machines':'bn-mach',
         'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl','cl-status':'bn-cl',
-        'log':'bn-more', 'oee':'bn-more', 'mcrank':'bn-more', 'mcapprove':'bn-more',
+        'log':'bn-more', 'oee':'bn-more', 'mcrank':'bn-more', 'mcapprove':'bn-more', 'tpm-hub':'bn-more',
     };
     document.getElementById(bnMap[panel])?.classList.add('active');
     // sidebar: single items
-    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log', 'oee':'sn-tpm', 'mcrank':'sn-tpm', 'mcapprove':'sn-tpm' };
+    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log', 'oee':'sn-tpm', 'mcrank':'sn-tpm', 'mcapprove':'sn-tpm', 'tpm-hub':'sn-tpm' };
     if (snMap[panel]) document.getElementById(snMap[panel])?.classList.add('active');
     // sidebar: group + sub-item
     const grpMap = {
@@ -621,6 +622,7 @@ function updateNavActive(panel) {
         'cl-calendar': ['cl','sni-cl-calendar'],
         'cl-schedule': ['cl','sni-cl-schedule'],
         'cl-status':   ['cl','sni-cl-status'],
+        'tpm-hub':     ['tpm','sni-tpm-hub'],
         'oee':         ['tpm','sni-tpm-oee'],
         'mcrank':      ['tpm','sni-tpm-rank'],
         'mcapprove':   ['tpm','sni-tpm-approve'],
@@ -661,6 +663,7 @@ function switchTab(name) {
     if (name === 'oee') initOeePanel?.();
     if (name === 'mcrank') initMcRankPanel();
     if (name === 'mcapprove') initFormApprovalPanel();
+    if (name === 'tpm-hub') updateTpmHubStats();
     window.scrollTo(0, 0);
 }
 
@@ -695,6 +698,22 @@ function goBdHub() {
 
 function goChecklist() {
     switchTab('cl-hub');
+}
+
+function goTpmHub() {
+    switchTab('tpm-hub');
+    updateTpmHubStats();
+}
+
+// อัปเดต stat chips ใน TPM hub จาก cache (_mcrOverview) — ไม่ยิง fetch ใหม่
+function updateTpmHubStats() {
+    const ov   = (typeof _mcrOverview !== 'undefined') ? _mcrOverview : null;
+    const tot  = ov && ov.total ? ov.total : null;
+    const done = ov && ov.statusCounts ? (ov.statusCounts.complete || 0) : null;
+    const elR  = document.getElementById('tpmhub-stat-ranked');
+    const elT  = document.getElementById('tpmhub-stat-total');
+    if (elR) elR.textContent = '📊 ประเมินแล้ว: ' + (done !== null ? done : '—');
+    if (elT) elT.textContent = '🏭 เครื่องจักร: ' + (tot !== null ? tot : (typeof machineMaster !== 'undefined' ? machineMaster.length : '—'));
 }
 
 // ============================================================

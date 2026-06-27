@@ -242,7 +242,7 @@
         <!-- Breakdown group -->
         <div class="nav-group" id="grp-bd" data-color="red">
             <div class="sidebar-item" id="sn-bd" onclick="clToggleNavGroup('bd')">
-                <span class="nav-icon">🚨</span><span class="flex-1">ระบบแจ้งซ่อม & Breakdown</span><span class="nav-chev">›</span>
+                <span class="nav-icon">🚨</span><span class="flex-1">ระบบแจ้งปัญหาเครื่องจักร</span><span class="nav-chev">›</span>
             </div>
             <div class="nav-submenu" id="sub-bd">
                 <div class="sidebar-subitem" id="sni-bd-hub" onclick="goBdHub()">ภาพรวม</div>
@@ -261,6 +261,7 @@
                 <span class="nav-icon">📈</span><span class="flex-1">ระบบ TPM</span><span class="nav-chev">›</span>
             </div>
             <div class="nav-submenu" id="sub-tpm">
+                <div class="sidebar-subitem" id="sni-tpm-hub" onclick="goTpmHub()">ภาพรวม</div>
                 <div class="sidebar-subitem" id="sni-tpm-rank" onclick="switchTab('mcrank')">Ranking เครื่องจักร</div>
                 <div class="sidebar-subitem" id="sni-tpm-oee" onclick="switchTab('oee')">สรุป OEE</div>
                 <div class="sidebar-subitem" id="sni-tpm-approve" onclick="switchTab('mcapprove')">อนุมัติฟอร์มประจำปี</div>
@@ -336,11 +337,8 @@
         <div class="more-item" onclick="openSettings();closeMoreSheet()">
             <span class="text-lg">⚙️</span><span class="text-sm font-medium text-gray-800">ตั้งค่าระบบ</span>
         </div>
-        <div class="more-item" onclick="switchTab('mcrank');closeMoreSheet()">
-            <span class="text-lg">📈</span><span class="text-sm font-medium text-gray-800">ระบบ TPM — Ranking เครื่องจักร</span>
-        </div>
-        <div class="more-item" onclick="switchTab('oee');closeMoreSheet()">
-            <span class="text-lg">📈</span><span class="text-sm font-medium text-gray-800">ระบบ TPM — สรุป OEE</span>
+        <div class="more-item" onclick="goTpmHub();closeMoreSheet()">
+            <span class="text-lg">📈</span><span class="text-sm font-medium text-gray-800">ระบบ TPM (ภาพรวม)</span>
         </div>
         <div class="more-item hidden" id="more-log-item" onclick="goLog();closeMoreSheet()">
             <span class="text-lg">📋</span><span class="text-sm font-medium text-gray-800">Log ระบบ (Admin)</span>
@@ -769,7 +767,7 @@
     <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div>
             <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">ระบบจัดการเครื่องจักร · CPRAM CHB</p>
-            <h1 class="text-xl md:text-2xl font-bold text-white">🚨 ระบบแจ้งซ่อม & Breakdown</h1>
+            <h1 class="text-xl md:text-2xl font-bold text-white">🚨 ระบบแจ้งปัญหาเครื่องจักร</h1>
         </div>
         <div class="flex gap-2 text-sm">
             <span class="mms-stat-chip" id="bdhub-stat-wip">🔧 WIP: —</span>
@@ -843,6 +841,54 @@
 </div>
 
 </div><!-- end panel-bd-hub -->
+
+<!-- ==================== PANEL: TPM HUB (หน้ารวม TPM) ==================== -->
+<div id="panel-tpm-hub" class="tab-panel">
+
+<div class="mms-header py-6 px-4 md:px-8" style="background:linear-gradient(135deg,#1a5c8a,#2475b0)">
+    <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <div>
+            <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">ระบบจัดการเครื่องจักร · CPRAM CHB</p>
+            <h1 class="text-xl md:text-2xl font-bold text-white">📈 ระบบ TPM</h1>
+        </div>
+        <div class="flex gap-2 text-sm">
+            <span class="mms-stat-chip" id="tpmhub-stat-ranked">📊 ประเมินแล้ว: —</span>
+            <span class="mms-stat-chip" id="tpmhub-stat-total">🏭 เครื่องจักร: —</span>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-5xl mx-auto px-4 md:px-8 py-6">
+    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">เลือกการดำเนินการ</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+
+        <!-- Machine Ranking -->
+        <div class="mms-card mms-card-blue p-6 cursor-pointer text-center" onclick="switchTab('mcrank')">
+            <div class="text-4xl mb-3">📊</div>
+            <h3 class="font-bold mb-1" style="color:var(--mms-text)">Machine Ranking</h3>
+            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">จัดลำดับความสำคัญเครื่องจักร A/B/C/D</p>
+            <button class="mms-btn mms-btn-blue w-full justify-center text-sm" onclick="event.stopPropagation();switchTab('mcrank')">📊 ไปหน้า Ranking</button>
+        </div>
+
+        <!-- สรุป OEE -->
+        <div class="mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #16a085" onclick="switchTab('oee')">
+            <div class="text-4xl mb-3">📈</div>
+            <h3 class="font-bold mb-1" style="color:var(--mms-text)">สรุป OEE</h3>
+            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">Availability · Performance · Quality</p>
+            <button class="mms-btn w-full justify-center text-sm" style="background:#16a085;color:#fff" onclick="event.stopPropagation();switchTab('oee')">📈 ดูสรุป OEE</button>
+        </div>
+
+        <!-- อนุมัติฟอร์มประจำปี -->
+        <div class="mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #8e44ad" onclick="switchTab('mcapprove')">
+            <div class="text-4xl mb-3">📋</div>
+            <h3 class="font-bold mb-1" style="color:var(--mms-text)">อนุมัติฟอร์มประจำปี</h3>
+            <p class="text-xs mb-4" style="color:var(--mms-text-sub)">5 แผนกเซ็นอนุมัติฟอร์มรายพื้นที่</p>
+            <button class="mms-btn w-full justify-center text-sm" style="background:#8e44ad;color:#fff" onclick="event.stopPropagation();switchTab('mcapprove')">📋 ไปหน้าอนุมัติ</button>
+        </div>
+    </div>
+</div>
+
+</div><!-- end panel-tpm-hub -->
 
 
 <!-- ==================== PANEL: LOG VIEWER ==================== -->
@@ -3246,19 +3292,19 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.18"></script>
-<script src="js/core.js?v=2.18"></script>
-<script src="js/machines.js?v=2.18"></script>
-<script src="js/breakdown-report.js?v=2.18"></script>
-<script src="js/breakdown-form.js?v=2.18"></script>
-<script src="js/records-summary.js?v=2.18"></script>
-<script src="js/export.js?v=2.18"></script>
-<script src="js/oee.js?v=2.18"></script>
-<script src="js/bootstrap.js?v=2.18"></script>
-<script src="js/checklist-core.js?v=2.18"></script>
-<script src="js/checklist-status.js?v=2.18"></script>
-<script src="js/mcrank.js?v=2.18"></script>
-<script src="js/user-access.js?v=2.18"></script>
-<script src="js/scan.js?v=2.18"></script>
+<script src="js/permissions.js?v=2.19"></script>
+<script src="js/core.js?v=2.19"></script>
+<script src="js/machines.js?v=2.19"></script>
+<script src="js/breakdown-report.js?v=2.19"></script>
+<script src="js/breakdown-form.js?v=2.19"></script>
+<script src="js/records-summary.js?v=2.19"></script>
+<script src="js/export.js?v=2.19"></script>
+<script src="js/oee.js?v=2.19"></script>
+<script src="js/bootstrap.js?v=2.19"></script>
+<script src="js/checklist-core.js?v=2.19"></script>
+<script src="js/checklist-status.js?v=2.19"></script>
+<script src="js/mcrank.js?v=2.19"></script>
+<script src="js/user-access.js?v=2.19"></script>
+<script src="js/scan.js?v=2.19"></script>
 </body>
 </html>

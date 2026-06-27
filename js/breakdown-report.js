@@ -347,8 +347,10 @@ async function confirmRepairComplete() {
     const date = document.getElementById('repair-end-date').value;
     const time = document.getElementById('repair-end-time').value;
     if (!date || !time) { showToast('⚠️ กรุณาระบุวันที่และเวลาซ่อมเสร็จ', 'error'); return; }
-    const item = _repairItem;
     const corrective = (document.getElementById('repair-corrective')?.value || '').trim();
+    if (!corrective) { showToast('⚠️ กรุณาระบุมาตรการแก้ไข (Corrective)', 'error'); return; }
+    if (!_repairAfterImgs.length) { showToast('⚠️ กรุณาแนบรูปหลังแก้ไขอย่างน้อย 1 รูป', 'error'); return; }
+    const item = _repairItem;
     const imgAfter = _repairAfterImgs.map(im => im.data).join('|');
     closeRepairCompleteModal();
     showLoading('กำลังบันทึก…');

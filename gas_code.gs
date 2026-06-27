@@ -869,6 +869,15 @@ function doPost(e) {
       return jsonOut({ success:false, error:'ไม่พบ user' });
     }
 
+    // ---- RANKING: setRankingSection ----
+    if (data.action === 'setRankingSection') {
+      return handleSetRankingSection_(ss, data);
+    }
+    // ---- RANKING: setAreaDescriptions ----
+    if (data.action === 'setAreaDescriptions') {
+      return handleSetAreaDescriptions_(ss, data);
+    }
+
     // ---- USER ACCESS: approveUser (อนุมัติคำขอ → ดึงเข้า _Users) ----
     if (data.action === 'approveUser') {
       if (!userCan(ss, data.username, data.pin, 'ua.add'))
@@ -1256,6 +1265,10 @@ function doGet(e) {
       return jsonOut({ success:true, data:arr });
     }
 
+    if (action === 'getMachineRankings')  return doGetMachineRankings_(e.parameter);
+    if (action === 'getRankingOverview')  return doGetRankingOverview_(e.parameter);
+    if (action === 'getAreaDescriptions') return doGetAreaDescriptions_(e.parameter);
+
     return jsonOut({ success: false, error: 'Unknown action' });
 
   } catch (err) {
@@ -1478,6 +1491,245 @@ function doGetPmDates(monthKey) {
     out[r[0]] = r[1];
   }
   return jsonOut({ success: true, data: out });
+}
+
+// ============================================================
+// MACHINE CRITICALITY RANKING (v2.14)
+// ============================================================
+
+var MC_SECTIONS = {
+  'คุณภาพ':       { ids:[1,2,3],           byCol:20, atCol:21 },
+  'ผลผลิต':       { ids:[4,5,6,7],         byCol:22, atCol:23 },
+  'การซ่อมบำรุง': { ids:[8,9,10,11,12],    byCol:24, atCol:25 },
+  'ความปลอดภัย':  { ids:[13,14],           byCol:26, atCol:27 },
+  'อื่นๆ':        { ids:[15],              byCol:28, atCol:29 },
+};
+var MC_SECTION_DEPT = { 'คุณภาพ':'QA','ผลผลิต':'Production','การซ่อมบำรุง':'Engineer','ความปลอดภัย':'Safety','อื่นๆ':'*' };
+var MC_RANK_FACTOR  = 1.11;   // FIX — max raw 90 เสมอ (12×5 + 3×10 = 90)
+
+function ensureMachineRanking_(ss) {
+  var sh = ss.getSheetByName('_MachineRanking');
+  if (!sh) {
+    sh = ss.insertSheet('_MachineRanking');
+    var hdr = ['machineCode','machineName','factory','area','year',
+               's1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15',
+               'qaBy','qaAt','prodBy','prodAt','engBy','engAt','safetyBy','safetyAt','otherBy','otherAt',
+               'rawSum','finalScore','rank','status','updatedAt'];
+    sh.getRange(1,1,1,hdr.length).setValues([hdr]).setBackground('#8e44ad').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function ensureRankingDescriptions_(ss) {
+  var sh = ss.getSheetByName('_RankingDescriptions');
+  if (!sh) {
+    sh = ss.insertSheet('_RankingDescriptions');
+    sh.getRange(1,1,1,4).setValues([['area','criterionId','score','label']]).setBackground('#27ae60').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function getUserRowById_(ss, username) {
+  var row = getUserRow(ss, username);
+  return row;
+}
+
+function canReviewSection_(userRow, section) {
+  var level = String(userRow[5]||'').trim();
+  var dept  = String(userRow[9]||'').trim();
+  if (['Supervisor','Administrator'].indexOf(level) < 0) return false;
+  if (level === 'Administrator') return true;
+  var reqDept = MC_SECTION_DEPT[section];
+  if (!reqDept) return false;
+  if (reqDept === '*') return true;
+  return dept === reqDept;
+}
+
+function calcRankGas_(scores) {
+  var raw = 0;
+  for (var id = 1; id <= 15; id++) raw += Number(scores[id]||0);
+  var f = Math.round(raw * MC_RANK_FACTOR * 100) / 100;
+  var r = f >= 81 ? 'A' : f >= 61 ? 'B' : f >= 41 ? 'C' : 'D';
+  return { rawSum: raw, finalScore: f, rank: r };
+}
+
+function writeMachineRank_(ss, machineCode, rank, year) {
+  var sh = ss.getSheetByName('_Machines');
+  if (!sh) return;
+  var vals = sh.getDataRange().getValues();
+  for (var i = 1; i < vals.length; i++) {
+    if (String(vals[i][0]).trim().toLowerCase() === String(machineCode).trim().toLowerCase()) {
+      sh.getRange(i+1, 8).setValue(rank);
+      sh.getRange(i+1, 9).setValue(year);
+      return;
+    }
+  }
+}
+
+// GET: getMachineRankings
+function doGetMachineRankings_(params) {
+  var ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var year = params.year || String(new Date().getFullYear());
+  var facF = params.factory || '';
+  var areaF = params.area || '';
+  var sh   = ensureMachineRanking_(ss);
+  if (sh.getLastRow() < 2) return jsonOut({ success:true, data:[] });
+  var rows = sh.getDataRange().getValues().slice(1);
+  var out  = rows.filter(function(r) {
+    return String(r[4]) === String(year) &&
+           (!facF  || String(r[2]).trim() === facF) &&
+           (!areaF || String(r[3]).trim() === areaF);
+  }).map(function(r) {
+    var scores = {};
+    for (var i = 0; i < 15; i++) scores[i+1] = r[5+i] === '' || r[5+i] == null ? null : Number(r[5+i]);
+    var sections = {};
+    Object.keys(MC_SECTIONS).forEach(function(sec) {
+      var s = MC_SECTIONS[sec];
+      sections[sec] = { by: String(r[s.byCol]||''), at: String(r[s.atCol]||'') };
+    });
+    return {
+      machineCode: r[0], machineName: r[1], factory: r[2], area: r[3], year: r[4],
+      scores: scores, sections: sections,
+      rawSum: r[30], finalScore: r[31], rank: r[32], status: r[33], updatedAt: r[34]
+    };
+  });
+  return jsonOut({ success:true, data:out });
+}
+
+// GET: getRankingOverview
+function doGetRankingOverview_(params) {
+  var ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var year = params.year || String(new Date().getFullYear());
+  var sh   = ensureMachineRanking_(ss);
+  var rows = sh.getLastRow() > 1 ? sh.getDataRange().getValues().slice(1) : [];
+  var filtered = rows.filter(function(r){ return String(r[4]) === String(year); });
+  var secDone = { 'คุณภาพ':0,'ผลผลิต':0,'การซ่อมบำรุง':0,'ความปลอดภัย':0,'อื่นๆ':0 };
+  var rankDist = { A:0,B:0,C:0,D:0 };
+  var statusCnt = { 'not-started':0,'partial':0,'complete':0 };
+  filtered.forEach(function(r) {
+    Object.keys(MC_SECTIONS).forEach(function(sec) {
+      var s = MC_SECTIONS[sec];
+      if (String(r[s.byCol]||'').trim()) secDone[sec]++;
+    });
+    var st = String(r[33]||'not-started');
+    if (statusCnt[st] != null) statusCnt[st]++;
+    if (r[32] && rankDist[r[32]] != null) rankDist[r[32]]++;
+  });
+  return jsonOut({ success:true, year:year, total: filtered.length, sections: secDone, statusCounts: statusCnt, rankDist: rankDist });
+}
+
+// GET: getAreaDescriptions
+function doGetAreaDescriptions_(params) {
+  var ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var area = params.area || '';
+  var sh   = ensureRankingDescriptions_(ss);
+  if (sh.getLastRow() < 2) return jsonOut({ success:true, data:{} });
+  var rows = sh.getDataRange().getValues().slice(1);
+  var out  = {};
+  rows.forEach(function(r) {
+    if (String(r[0]).trim() !== area) return;
+    var cid = String(r[1]).trim(), sc = String(r[2]).trim();
+    if (!out[cid]) out[cid] = {};
+    out[cid][sc] = String(r[3]);
+  });
+  return jsonOut({ success:true, data:out });
+}
+
+// POST handler: setRankingSection
+function handleSetRankingSection_(ss, data) {
+  var uRow = getUserRow(ss, data.username);
+  if (!uRow || !verifyPin(uRow, data.pin)) return jsonOut({ success:false, error:'ยืนยันตัวตนไม่สำเร็จ' });
+  if (!canReviewSection_(uRow, data.section)) return jsonOut({ success:false, error:'ไม่มีสิทธิ์รีวิวหัวข้อ "' + data.section + '"' });
+  var sec = MC_SECTIONS[data.section];
+  if (!sec) return jsonOut({ success:false, error:'หัวข้อไม่ถูกต้อง' });
+  var code = String(data.machineCode||'').trim();
+  var year = String(data.year || new Date().getFullYear());
+  if (!code) return jsonOut({ success:false, error:'ไม่ระบุรหัสเครื่อง' });
+
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(15000); } catch(e) {}
+
+  var sh   = ensureMachineRanking_(ss);
+  var rows = sh.getLastRow() > 1 ? sh.getDataRange().getValues() : [[]];
+  var rowIdx = -1;
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim().toLowerCase() === code.toLowerCase() && String(rows[i][4]) === year) {
+      rowIdx = i; break;
+    }
+  }
+
+  var now = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss');
+  var rowData;
+  if (rowIdx < 0) {
+    // สร้างแถวใหม่
+    rowData = [code, data.machineName||'', data.factory||'', data.area||'', year,
+               '','','','','','','','','','','','','','','',
+               '','','','','','','','','','','',
+               '','','','not-started',''];
+    sh.appendRow(rowData);
+    rowIdx = sh.getLastRow() - 1;
+    rows = sh.getDataRange().getValues();
+  }
+
+  // เขียนคะแนนของ section นี้
+  var scores = data.scores || {};
+  sec.ids.forEach(function(id) {
+    var colIdx = 5 + (id - 1);   // s1=col5(idx5) ... s15=col19(idx19)
+    var val = scores[id] != null ? Number(scores[id]) : '';
+    sh.getRange(rowIdx+1, colIdx+1).setValue(val);   // GAS 1-indexed
+  });
+
+  // เขียน reviewer name + time
+  var reviewerName = String(uRow[1]||data.username).trim();
+  sh.getRange(rowIdx+1, sec.byCol+1).setValue(reviewerName);
+  sh.getRange(rowIdx+1, sec.atCol+1).setValue(now);
+
+  // คำนวณ status ใหม่ (นับแผนกที่เซ็นแล้ว)
+  var freshRow = sh.getRange(rowIdx+1, 1, 1, 35).getValues()[0];
+  var signed = 0;
+  Object.keys(MC_SECTIONS).forEach(function(s) { if (String(freshRow[MC_SECTIONS[s].byCol]||'').trim()) signed++; });
+  var newStatus = signed === 0 ? 'not-started' : signed < 5 ? 'partial' : 'complete';
+  sh.getRange(rowIdx+1, 34).setValue(newStatus);
+  sh.getRange(rowIdx+1, 35).setValue(now);
+
+  var rankResult = null;
+  if (newStatus === 'complete') {
+    var scMap = {};
+    for (var k = 0; k < 15; k++) scMap[k+1] = Number(freshRow[5+k]||0);
+    rankResult = calcRankGas_(scMap);
+    sh.getRange(rowIdx+1, 31).setValue(rankResult.rawSum);
+    sh.getRange(rowIdx+1, 32).setValue(rankResult.finalScore);
+    sh.getRange(rowIdx+1, 33).setValue(rankResult.rank);
+    // เขียนกลับ Machine List
+    writeMachineRank_(ss, code, rankResult.rank, year);
+  }
+
+  try { lock.releaseLock(); } catch(e) {}
+  writeAccessLog(ss, data.username, 'setRankingSection', code + '/' + year + ' หัวข้อ:' + data.section + (rankResult ? ' → rank:' + rankResult.rank : ''));
+  return jsonOut({ success:true, status:newStatus, rank: rankResult ? rankResult.rank : null });
+}
+
+// POST handler: setAreaDescriptions
+function handleSetAreaDescriptions_(ss, data) {
+  if (!userCan(ss, data.username, data.pin, 'ua.perm'))
+    return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.perm' });
+  var area  = String(data.area||'').trim();
+  var items = Array.isArray(data.items) ? data.items : [];
+  if (!area) return jsonOut({ success:false, error:'ไม่ระบุพื้นที่' });
+  var sh    = ensureRankingDescriptions_(ss);
+  // ลบ override ของ area นี้ก่อน
+  var rows  = sh.getLastRow() > 1 ? sh.getDataRange().getValues() : [];
+  for (var i = rows.length - 1; i >= 1; i--) {
+    if (String(rows[i][0]).trim() === area) sh.deleteRow(i+1);
+  }
+  // เพิ่มใหม่
+  items.forEach(function(it) {
+    sh.appendRow([area, String(it.criterionId||''), String(it.score||''), String(it.label||'')]);
+  });
+  writeAccessLog(ss, data.username, 'setAreaDescriptions', area + ' — ' + items.length + ' items');
+  return jsonOut({ success:true });
 }
 
 function jsonOut(obj) {

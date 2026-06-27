@@ -40,8 +40,8 @@ const PAGE_TITLE = {
     'cl-calendar':  '📅 ปฏิทิน PM',
     'cl-schedule':  '🔧 รายละเอียดตรวจสอบ',
     'cl-status':    '✅ สถานะการตรวจ',
-    'oee':          '📊 OEE & Ranking เครื่องจักร',
-    'mcrank':       '📊 Machine Criticality Ranking',
+    'oee':          '📊 ระบบ TPM — สรุป OEE',
+    'mcrank':       '📊 ระบบ TPM — Ranking เครื่องจักร',
 };
 
 // โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
@@ -603,7 +603,7 @@ function updateNavActive(panel) {
     };
     document.getElementById(bnMap[panel])?.classList.add('active');
     // sidebar: single items
-    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log', 'oee':'sn-oee', 'mcrank':'sn-mcrank' };
+    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log', 'oee':'sn-tpm', 'mcrank':'sn-tpm' };
     if (snMap[panel]) document.getElementById(snMap[panel])?.classList.add('active');
     // sidebar: group + sub-item
     const grpMap = {
@@ -618,6 +618,8 @@ function updateNavActive(panel) {
         'cl-calendar': ['cl','sni-cl-calendar'],
         'cl-schedule': ['cl','sni-cl-schedule'],
         'cl-status':   ['cl','sni-cl-status'],
+        'oee':         ['tpm','sni-tpm-oee'],
+        'mcrank':      ['tpm','sni-tpm-rank'],
     };
     const gi = grpMap[panel];
     if (gi) {

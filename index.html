@@ -255,8 +255,15 @@
         <div class="sidebar-item" id="sn-mach" onclick="goMachines()">
             <span class="nav-icon">🗂️</span><span>ระบบ Machine List</span>
         </div>
-        <div class="sidebar-item" id="sn-mcrank" onclick="switchTab('mcrank')">
-            <span class="nav-icon">📊</span><span>Machine Criticality</span>
+        <!-- TPM group -->
+        <div class="nav-group" id="grp-tpm" data-color="blue">
+            <div class="sidebar-item" id="sn-tpm" onclick="clToggleNavGroup('tpm')">
+                <span class="nav-icon">📈</span><span class="flex-1">ระบบ TPM</span><span class="nav-chev">›</span>
+            </div>
+            <div class="nav-submenu" id="sub-tpm">
+                <div class="sidebar-subitem" id="sni-tpm-rank" onclick="switchTab('mcrank')">Ranking เครื่องจักร</div>
+                <div class="sidebar-subitem" id="sni-tpm-oee" onclick="switchTab('oee')">สรุป OEE</div>
+            </div>
         </div>
         <!-- Checklist group -->
         <div class="nav-group" id="grp-cl" data-color="green">
@@ -273,9 +280,6 @@
                 <div class="sidebar-subitem" id="sni-cl-schedule" onclick="switchTab('cl-schedule')">รายละเอียดตรวจสอบ</div>
                 <div class="sidebar-subitem" id="sni-cl-status" onclick="switchTab('cl-status')">สถานะการตรวจ</div>
             </div>
-        </div>
-        <div class="sidebar-item" id="sn-oee" onclick="switchTab('oee')">
-            <span class="nav-icon">📊</span><span>OEE &amp; Ranking</span>
         </div>
     </nav>
     <!-- Admin section -->
@@ -331,17 +335,17 @@
         <div class="more-item" onclick="openSettings();closeMoreSheet()">
             <span class="text-lg">⚙️</span><span class="text-sm font-medium text-gray-800">ตั้งค่าระบบ</span>
         </div>
+        <div class="more-item" onclick="switchTab('mcrank');closeMoreSheet()">
+            <span class="text-lg">📈</span><span class="text-sm font-medium text-gray-800">ระบบ TPM — Ranking เครื่องจักร</span>
+        </div>
         <div class="more-item" onclick="switchTab('oee');closeMoreSheet()">
-            <span class="text-lg">📊</span><span class="text-sm font-medium text-gray-800">OEE &amp; Ranking เครื่องจักร</span>
+            <span class="text-lg">📈</span><span class="text-sm font-medium text-gray-800">ระบบ TPM — สรุป OEE</span>
         </div>
         <div class="more-item hidden" id="more-log-item" onclick="goLog();closeMoreSheet()">
             <span class="text-lg">📋</span><span class="text-sm font-medium text-gray-800">Log ระบบ (Admin)</span>
         </div>
         <div class="more-item hidden" data-perm="ua.level" onclick="switchTab('ua');closeMoreSheet()">
             <span class="text-lg">👥</span><span class="text-sm font-medium text-gray-800">จัดการผู้ใช้</span>
-        </div>
-        <div class="more-item" onclick="switchTab('mcrank');closeMoreSheet()">
-            <span class="text-lg">📊</span><span class="text-sm font-medium text-gray-800">Machine Criticality Ranking</span>
         </div>
         <div class="mt-3 pt-3 border-t border-gray-100">
             <div class="flex items-center justify-between gap-3">

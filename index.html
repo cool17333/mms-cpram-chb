@@ -156,7 +156,7 @@
             cursor: pointer; transition: background .15s, color .15s;
         }
         .sidebar-item:hover { background: #27272a; color: #f4f4f5; }
-        .sidebar-item.active { background: var(--mms-red); color: #fff; }
+        .sidebar-item.active { background: rgba(255,255,255,0.12); color: #fff; }
         .sidebar-item .nav-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; }
         .bnav-tab {
             flex: 1; display: flex; flex-direction: column; align-items: center;
@@ -166,7 +166,7 @@
             transition: color .15s; padding: 4px 0;
         }
         .bnav-tab .bnav-icon { font-size: 1.25rem; line-height: 1.2; }
-        .bnav-tab.active { color: var(--mms-red); }
+        .bnav-tab.active { color: #fff; }
         .bnav-tab:active { opacity: 0.7; }
         .nav-chev { margin-left: auto; font-size: 0.75rem; color: #71717a; transition: transform .2s; display: inline-block; line-height: 1; }
         .nav-group.open .nav-chev { transform: rotate(90deg); }
@@ -175,9 +175,9 @@
         .sidebar-subitem { display: flex; align-items: center; padding: 6px 14px 6px 38px; border-radius: 8px; margin: 1px 8px;
             color: #a1a1aa; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: background .15s, color .15s; }
         .sidebar-subitem:hover { background: #27272a; color: #f4f4f5; }
-        .nav-group[data-color="green"] .sidebar-subitem.active { color: #27ae60; background: rgba(39,174,96,0.15); }
-        .nav-group[data-color="red"] .sidebar-subitem.active { color: #f87171; background: rgba(220,38,38,0.15); }
-        .sidebar-subitem.active { color: #f87171; background: rgba(220,38,38,0.15); }
+        .nav-group[data-color="green"] .sidebar-subitem.active { color: #fff; background: rgba(255,255,255,0.1); }
+        .nav-group[data-color="red"] .sidebar-subitem.active { color: #fff; background: rgba(255,255,255,0.1); }
+        .sidebar-subitem.active { color: #fff; background: rgba(255,255,255,0.1); }
         .more-item {
             display: flex; align-items: center; gap: 12px;
             padding: 12px 8px; border-radius: 10px; cursor: pointer;

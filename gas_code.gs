@@ -877,6 +877,10 @@ function doPost(e) {
     if (data.action === 'setAreaDescriptions') {
       return handleSetAreaDescriptions_(ss, data);
     }
+    // ---- RANKING: setFormApproval ----
+    if (data.action === 'setFormApproval') {
+      return handleSetFormApproval_(ss, data);
+    }
 
     // ---- USER ACCESS: approveUser (อนุมัติคำขอ → ดึงเข้า _Users) ----
     if (data.action === 'approveUser') {
@@ -1268,6 +1272,7 @@ function doGet(e) {
     if (action === 'getMachineRankings')  return doGetMachineRankings_(e.parameter);
     if (action === 'getRankingOverview')  return doGetRankingOverview_(e.parameter);
     if (action === 'getAreaDescriptions') return doGetAreaDescriptions_(e.parameter);
+    if (action === 'getFormApprovals')    return doGetFormApprovals_(e.parameter);
 
     return jsonOut({ success: false, error: 'Unknown action' });
 
@@ -1529,6 +1534,84 @@ function ensureRankingDescriptions_(ss) {
     sh.setFrozenRows(1);
   }
   return sh;
+}
+
+function ensureRankingFormApproval_(ss) {
+  var sh = ss.getSheetByName('_RankingFormApproval');
+  if (!sh) {
+    sh = ss.insertSheet('_RankingFormApproval');
+    var hdr = ['area','year','qaBy','qaAt','prodBy','prodAt','engBy','engAt',
+               'safetyBy','safetyAt','otherBy','otherAt','status','updatedAt'];
+    sh.getRange(1,1,1,hdr.length).setValues([hdr]).setBackground('#8e44ad').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+var MC_APPROVAL_COLS = {
+  'คุณภาพ':       { byCol:2,  atCol:3  },
+  'ผลผลิต':       { byCol:4,  atCol:5  },
+  'การซ่อมบำรุง': { byCol:6,  atCol:7  },
+  'ความปลอดภัย':  { byCol:8,  atCol:9  },
+  'อื่นๆ':        { byCol:10, atCol:11 },
+};
+
+function doGetFormApprovals_(params) {
+  var ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var year = params.year || String(new Date().getFullYear());
+  var sh   = ensureRankingFormApproval_(ss);
+  var out  = {};
+  if (sh.getLastRow() > 1) {
+    sh.getDataRange().getValues().slice(1).forEach(function(r) {
+      if (String(r[1]) !== String(year)) return;
+      var sections = {};
+      Object.keys(MC_APPROVAL_COLS).forEach(function(sec) {
+        var c = MC_APPROVAL_COLS[sec];
+        sections[sec] = { by: String(r[c.byCol]||''), at: String(r[c.atCol]||'') };
+      });
+      out[String(r[0]).trim()] = { area:r[0], year:r[1], sections:sections, status:r[12], updatedAt:r[13] };
+    });
+  }
+  return jsonOut({ success:true, year:year, data:out });
+}
+
+function handleSetFormApproval_(ss, data) {
+  var uRow = getUserRow(ss, data.username);
+  if (!uRow || !verifyPin(uRow, data.pin)) return jsonOut({ success:false, error:'ยืนยันตัวตนไม่สำเร็จ' });
+  if (!canReviewSection_(uRow, data.section)) return jsonOut({ success:false, error:'ไม่มีสิทธิ์อนุมัติหัวข้อ "' + data.section + '"' });
+  var col = MC_APPROVAL_COLS[data.section];
+  if (!col) return jsonOut({ success:false, error:'หัวข้อไม่ถูกต้อง' });
+  var area = String(data.area||'').trim();
+  var year = String(data.year || new Date().getFullYear());
+  if (!area) return jsonOut({ success:false, error:'ไม่ระบุพื้นที่' });
+
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(15000); } catch(e) {}
+
+  var sh   = ensureRankingFormApproval_(ss);
+  var rows = sh.getLastRow() > 1 ? sh.getDataRange().getValues() : [[]];
+  var rowIdx = -1;
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === area && String(rows[i][1]) === year) { rowIdx = i; break; }
+  }
+  var now = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss');
+  if (rowIdx < 0) {
+    sh.appendRow([area, year, '','','','','','','','','','', 'partial', now]);
+    rowIdx = sh.getLastRow() - 1;
+  }
+  var reviewerName = String(uRow[1]||data.username).trim();
+  sh.getRange(rowIdx+1, col.byCol+1).setValue(reviewerName);
+  sh.getRange(rowIdx+1, col.atCol+1).setValue(now);
+
+  var fresh = sh.getRange(rowIdx+1, 1, 1, 14).getValues()[0];
+  var signed = 0;
+  Object.keys(MC_APPROVAL_COLS).forEach(function(s){ if (String(fresh[MC_APPROVAL_COLS[s].byCol]||'').trim()) signed++; });
+  var newStatus = signed >= 5 ? 'approved' : 'partial';
+  sh.getRange(rowIdx+1, 13).setValue(newStatus);
+  sh.getRange(rowIdx+1, 14).setValue(now);
+
+  try { lock.releaseLock(); } catch(e) {}
+  writeAccessLog(ss, data.username, 'setFormApproval', area + '/' + year + ' หัวข้อ:' + data.section + ' → ' + newStatus);
+  return jsonOut({ success:true, status:newStatus });
 }
 
 function getUserRowById_(ss, username) {

@@ -67,6 +67,7 @@ var _mcrOverview  = null;
 var _mcrYear      = String(new Date().getFullYear());
 var _mcrChart     = null;
 var _mcrFormRow   = null; // current machine row being assessed
+var _mcrApprovals = {};   // { area: {sections:{sec:{by,at}}, status} } ปีปัจจุบัน
 
 // ---- Panel init ----
 function initMcRankPanel() {
@@ -80,6 +81,19 @@ function initMcRankPanel() {
 // ============================================================
 // C: DASHBOARD
 // ============================================================
+
+async function loadFormApprovals() {
+    if (!GAS_URL) return;
+    try {
+        var res  = await fetch(GAS_URL + '?action=getFormApprovals&year=' + encodeURIComponent(_mcrYear));
+        var json = await res.json();
+        _mcrApprovals = json.success ? (json.data || {}) : {};
+    } catch(e) { _mcrApprovals = {}; }
+}
+function isAreaFormApproved(area) {
+    var a = _mcrApprovals[String(area||'').trim()];
+    return !!(a && a.status === 'approved');
+}
 
 async function loadMcRankOverview() {
     if (!GAS_URL) { showToast('⚠️ ตั้งค่า GAS URL ก่อน','error'); return; }
@@ -98,6 +112,7 @@ async function loadMcRankOverview() {
         if (!list.success) throw new Error(list.error || 'ไม่สำเร็จ');
         _mcrOverview = ov;
         _mcrData     = list.data || [];
+        await loadFormApprovals();
         renderMcRankKPIs();
         renderMcRankSectionProgress();
         renderMcRankChart();
@@ -201,7 +216,9 @@ function renderMcRankTable() {
             '<td class="px-3 py-2 text-center">' + rankBadge + '</td>' +
             '<td class="px-3 py-2 text-center">' + (r.finalScore || '—') + '</td>' +
             '<td class="px-3 py-2 text-center">' + statusBadge + '</td>' +
-            '<td class="px-3 py-2 text-center"><button onclick="openMcRankForm(\'' + safeCode + '\')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">ประเมิน</button></td>' +
+            (isAreaFormApproved(r.area)
+              ? '<td class="px-3 py-2 text-center"><button onclick="openMcRankForm(\'' + safeCode + '\')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">ประเมิน</button></td>'
+              : '<td class="px-3 py-2 text-center"><span class="text-xs text-gray-400" title="พื้นที่นี้ยังไม่อนุมัติฟอร์ม">🔒 รออนุมัติฟอร์ม</span></td>') +
             '</tr>';
     }).join('');
 }
@@ -236,8 +253,15 @@ async function openMcRankForm(machineCode) {
         var row = (json.data||[]).find(function(r) { return r.machineCode === machineCode; });
         _mcrFormData = row || null;
         // เติมข้อมูลเครื่องจากทะเบียน
-        var machines = typeof getMachineList === 'function' ? getMachineList() : [];
+        var machines = typeof machineMaster !== 'undefined' ? machineMaster : [];
         var mc = machines.find(function(m){ return m.id === machineCode; });
+        // gate: เช็ค area ว่าอนุมัติฟอร์มแล้วหรือยัง
+        var area = (row && row.area) || (mc && mc.area) || '';
+        if (area && !isAreaFormApproved(area)) {
+            showToast('🔒 พื้นที่ "' + area + '" ยังไม่อนุมัติฟอร์มประจำปี', 'error');
+            hideLoading();
+            return;
+        }
         document.getElementById('mcr-form-machine').value  = machineCode;
         document.getElementById('mcr-form-year').value     = _mcrYear;
         document.getElementById('mcr-form-name').value     = (row && row.machineName) || (mc && mc.name) || '';
@@ -485,4 +509,113 @@ async function saveMcRubricEditor() {
     } finally {
         hideLoading();
     }
+}
+
+// ============================================================
+// FORM APPROVAL — อนุมัติฟอร์มประเมินรายพื้นที่รายปี
+// ============================================================
+
+function getDistinctAreas(factory) {
+    var machines = typeof machineMaster !== 'undefined' ? machineMaster : [];
+    var set = {};
+    machines.forEach(function(m) {
+        if (factory && m.factory !== factory) return;
+        if (m.area) set[m.area] = (m.factory || '');
+    });
+    return Object.keys(set).sort().map(function(a) { return { area: a, factory: set[a] }; });
+}
+
+function initFormApprovalPanel() {
+    var y = document.getElementById('mcfa-year');
+    if (y && !y.value) y.value = _mcrYear;
+    loadFormApprovalPanel();
+}
+async function loadFormApprovalPanel() {
+    _mcrYear = (document.getElementById('mcfa-year')?.value || _mcrYear).trim();
+    showLoading('กำลังโหลด…');
+    try { await loadFormApprovals(); renderFormApprovalTable(); }
+    finally { hideLoading(); }
+}
+function renderFormApprovalTable() {
+    var tb = document.getElementById('mcfa-tbody');
+    if (!tb) return;
+    var fac   = document.getElementById('mcfa-factory')?.value || '';
+    var areas = getDistinctAreas(fac);
+    if (!areas.length) { tb.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">ไม่มีพื้นที่ในทะเบียนเครื่อง</td></tr>'; return; }
+    tb.innerHTML = areas.map(function(a) {
+        var ap = _mcrApprovals[a.area];
+        var dots = MC_SECTIONS_ORDER.map(function(sec) {
+            var s = ap && ap.sections && ap.sections[sec] && ap.sections[sec].by;
+            return '<span title="' + sec + (s ? ': ' + ap.sections[sec].by : ': รอ') + '" style="color:' + (s ? '#16a085' : '#d1d5db') + '">●</span>';
+        }).join('');
+        var stBadge = (ap && ap.status === 'approved')
+            ? '<span class="text-xs font-bold text-green-600">✓ อนุมัติแล้ว</span>'
+            : (ap && ap.status === 'partial' ? '<span class="text-xs font-bold text-orange-500">⏳ บางส่วน</span>' : '<span class="text-xs text-gray-400">ยังไม่เริ่ม</span>');
+        var safe = String(a.area).replace(/'/g, '');
+        return '<tr class="border-t hover:bg-gray-50">' +
+            '<td class="px-3 py-2 text-sm">' + a.area + '<div class="text-xs text-gray-400">' + (a.factory || '') + '</div></td>' +
+            '<td class="px-3 py-2 text-center tracking-widest text-base">' + dots + '</td>' +
+            '<td class="px-3 py-2 text-center">' + stBadge + '</td>' +
+            '<td class="px-3 py-2 text-center"><button onclick="openFormApproval(\'' + safe + '\')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">ดูฟอร์ม + อนุมัติ</button></td>' +
+            '</tr>';
+    }).join('');
+}
+function mcfaFilterChanged() { renderFormApprovalTable(); }
+
+var _mcApprovalArea = null;
+async function openFormApproval(area) {
+    _mcApprovalArea = area;
+    try {
+        var dRes  = await fetch(GAS_URL + '?action=getAreaDescriptions&area=' + encodeURIComponent(area));
+        var dJson = await dRes.json();
+        _mcrAreaDescs = dJson.success ? (dJson.data || {}) : {};
+    } catch(e) { _mcrAreaDescs = {}; }
+    var aEl = document.getElementById('mcfa-area');
+    if (aEl) aEl.textContent = area;
+    renderFormApprovalBody(area);
+    document.getElementById('mcfa-modal').classList.remove('hidden');
+}
+function closeFormApproval() { document.getElementById('mcfa-modal').classList.add('hidden'); }
+
+function renderFormApprovalBody(area) {
+    var el = document.getElementById('mcfa-body');
+    if (!el) return;
+    var ap = _mcrApprovals[area] || { sections: {} };
+    el.innerHTML = MC_SECTIONS_ORDER.map(function(secName) {
+        var crits  = criteriaByGroup(secName);
+        var signed = ap.sections && ap.sections[secName] && ap.sections[secName].by;
+        var canEdit = canReviewSection(currentUser, secName);
+        var critHtml = crits.map(function(c) {
+            var tierTxt = c.tiers.map(function(t) { return t.score + ' — ' + getLabelForTier(c.id, t.score); }).join('<br>');
+            return '<div class="py-1.5 border-b border-gray-50"><p class="text-xs font-bold text-gray-700">' + c.id + '. ' + c.name + '</p>' +
+                   '<p class="text-[11px] text-gray-400 mt-0.5">' + tierTxt + '</p></div>';
+        }).join('');
+        var hdr = '<div class="flex items-center justify-between mb-1"><p class="font-bold text-gray-700">' + secName + '</p>' +
+            (signed ? '<span class="text-xs text-green-600 font-bold">✓ อนุมัติโดย ' + ap.sections[secName].by + ' · ' + ap.sections[secName].at + '</span>'
+                    : (canEdit ? '<span class="text-xs text-orange-500 font-bold">รออนุมัติ</span>'
+                               : '<span class="text-xs text-gray-400">รอแผนก ' + (SECTION_DEPT[secName] || '') + '</span>')) + '</div>';
+        var btn = (!signed && canEdit)
+            ? '<div class="mt-2 flex justify-end"><button onclick="signFormApproval(\'' + secName + '\')" class="px-4 py-1.5 text-white text-xs font-bold rounded-lg" style="background:#2475b0">✅ อนุมัติฟอร์มหัวข้อนี้</button></div>'
+            : '';
+        return '<div class="mb-4 p-3 rounded-xl border ' + (signed ? 'border-green-200 bg-green-50' : 'border-gray-100 bg-gray-50') + '">' + hdr + critHtml + btn + '</div>';
+    }).join('');
+}
+
+async function signFormApproval(section) {
+    if (!_mcApprovalArea) return;
+    if (!GAS_URL) { showToast('⚠️ ตั้งค่า GAS URL ก่อน', 'error'); return; }
+    showLoading('กำลังอนุมัติ…');
+    try {
+        var res  = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({
+            action: 'setFormApproval', area: _mcApprovalArea, year: _mcrYear, section: section,
+            username: currentUser.username, pin: currentUser.pin }) });
+        var json = await res.json();
+        if (!json.success) throw new Error(json.error || 'ไม่สำเร็จ');
+        showToast('✅ อนุมัติหัวข้อ ' + section + ' แล้ว' + (json.status === 'approved' ? ' — ฟอร์มพื้นที่นี้พร้อมประเมิน' : ''), 'success');
+        await loadFormApprovals();
+        renderFormApprovalBody(_mcApprovalArea);
+        renderFormApprovalTable();
+        renderMcRankTable();
+    } catch(e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }

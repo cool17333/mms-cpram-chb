@@ -42,6 +42,7 @@ const PAGE_TITLE = {
     'cl-status':    '✅ สถานะการตรวจ',
     'oee':          '📊 ระบบ TPM — สรุป OEE',
     'mcrank':       '📊 ระบบ TPM — Ranking เครื่องจักร',
+    'mcapprove':    '📋 ระบบ TPM — อนุมัติฟอร์มประจำปี',
 };
 
 // โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
@@ -601,11 +602,11 @@ function updateNavActive(panel) {
         'bd-hub':'bn-bd','form':'bn-bd','records':'bn-bd','summary':'bn-bd',
         'machines':'bn-mach',
         'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl','cl-status':'bn-cl',
-        'log':'bn-more', 'oee':'bn-more', 'mcrank':'bn-more',
+        'log':'bn-more', 'oee':'bn-more', 'mcrank':'bn-more', 'mcapprove':'bn-more',
     };
     document.getElementById(bnMap[panel])?.classList.add('active');
     // sidebar: single items
-    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log', 'oee':'sn-tpm', 'mcrank':'sn-tpm' };
+    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log', 'oee':'sn-tpm', 'mcrank':'sn-tpm', 'mcapprove':'sn-tpm' };
     if (snMap[panel]) document.getElementById(snMap[panel])?.classList.add('active');
     // sidebar: group + sub-item
     const grpMap = {
@@ -622,6 +623,7 @@ function updateNavActive(panel) {
         'cl-status':   ['cl','sni-cl-status'],
         'oee':         ['tpm','sni-tpm-oee'],
         'mcrank':      ['tpm','sni-tpm-rank'],
+        'mcapprove':   ['tpm','sni-tpm-approve'],
     };
     const gi = grpMap[panel];
     if (gi) {
@@ -658,6 +660,7 @@ function switchTab(name) {
     if (name === 'ua') { uaSwitch?.('users'); }
     if (name === 'oee') initOeePanel?.();
     if (name === 'mcrank') initMcRankPanel();
+    if (name === 'mcapprove') initFormApprovalPanel();
     window.scrollTo(0, 0);
 }
 

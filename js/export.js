@@ -395,8 +395,8 @@ function _pptImgWithThumbs(arr, label, labelBg, labelColor) {
     const thumbs = arr.slice(1);
     return `<div style="display:flex;flex-direction:column;gap:4px;height:100%">
         <div style="background:${labelBg};color:${labelColor};font-size:9px;font-weight:700;border-radius:5px;padding:2px 8px;text-align:center;flex-shrink:0">${label}</div>
-        <div style="flex:1;min-height:0;border-radius:8px;overflow:hidden;background:#f3f4f6">
-            <img src="${main}" style="width:100%;height:100%;object-fit:contain">
+        <div style="flex:1;min-height:0;border-radius:8px;overflow:hidden;background:#ffffff;border:1px solid #f1f5f9;display:flex;align-items:center;justify-content:center">
+            <img src="${main}" style="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain">
         </div>
         ${thumbs.length ? `<div style="display:flex;gap:4px;flex-shrink:0;overflow:hidden">
             ${thumbs.slice(0,4).map(it => `<div style="width:36px;height:28px;border-radius:4px;overflow:hidden;border:1px solid #e5e7eb;flex-shrink:0"><img src="${it.data||it}" style="width:100%;height:100%;object-fit:cover"></div>`).join('')}
@@ -675,7 +675,30 @@ async function exportPDF(fmt = 'portrait') {
             };
             const addSection = async (sec) => placeSection(await captureSection(sec));
 
-            addFitOnePage(mainCanvas);
+            // วาง canvas โดยใช้ cursor เดียวกับ gallery: เต็มความกว้าง วางต่อถ้าพื้นที่พอ
+            const placeCanvas = (cv) => {
+                const renderH = availW * cv.height / cv.width;
+                const img = cv.toDataURL('image/jpeg', 0.85);
+                if (renderH > availH) {                        // สูงเกิน 1 หน้า → ย่อพอดีหน้าเดี่ยว
+                    if (cursorY !== null) pdf.addPage('a4', 'portrait');
+                    const dH = availH, dW = dH * cv.width / cv.height;
+                    pdf.addImage(img, 'JPEG', (pageW - dW) / 2, M, dW, dH);
+                    cursorY = botY;
+                    return;
+                }
+                if (cursorY === null) {                        // หน้าแรก
+                    cursorY = M;
+                } else if (cursorY + GAP + renderH > botY) {  // ที่ไม่พอ → หน้าใหม่
+                    pdf.addPage('a4', 'portrait');
+                    cursorY = M;
+                } else {
+                    cursorY += GAP;
+                }
+                pdf.addImage(img, 'JPEG', M, cursorY, availW, renderH);
+                cursorY += renderH;
+            };
+
+            placeCanvas(mainCanvas);
 
             // F9: Timeline page — fetch log แล้ว render ตาราง
             if (trk && typeof GAS_URL !== 'undefined') {
@@ -706,7 +729,7 @@ async function exportPDF(fmt = 'portrait') {
                         document.body.appendChild(tlWrap);
                         const tlCanvas = await _captureNode(tlWrap, CAP_W);
                         tlWrap.remove();
-                        addFitOnePage(tlCanvas);
+                        placeCanvas(tlCanvas);
                     }
                 } catch (_) { /* skip timeline if fetch fails */ }
             }

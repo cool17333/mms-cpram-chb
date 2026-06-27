@@ -96,7 +96,7 @@ function renderRecordsTable(rows) {
         const canEdit    = can('bd.editdoc');
         const canAccept  = can('bd.accept');
         const hasWhy  = Array.isArray(r.whys) ? r.whys.some(w => String(w).trim()) : false;
-        const canPDF  = isDone && (isAdmin || hasWhy);
+        const canPDF  = isDone && can('bd.export');
         const etBadge = r.eventType === 'Breakdown'  ? 'bg-red-100 text-red-700'  :
                         r.eventType === 'Adjustment' ? 'bg-blue-100 text-blue-700' : '';
         const etHtml  = r.eventType

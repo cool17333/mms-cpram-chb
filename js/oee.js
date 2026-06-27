@@ -218,15 +218,14 @@ async function saveOeeConfig() {
     if (!GAS_URL)       { showToast('⚠️ ตั้งค่า GAS URL ก่อน', 'error'); return; }
     showLoading('กำลังบันทึก…');
     try {
-        var creds = getLoginCreds?.() || {};
         var body  = JSON.stringify({
             action: 'setMachineConfig',
             machineCode: code,
             plannedMinPerDay: planned,
             idealCycleSec: 0,
             note: note,
-            username: creds.username || '',
-            pin: creds.pin || '',
+            username: currentUser.username,
+            pin: currentUser.pin,
         });
         var res  = await fetch(GAS_URL, { method: 'POST', body: body });
         var json = await res.json();

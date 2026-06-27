@@ -467,6 +467,14 @@
         </select>
         <p style="font-size:10px;color:#9ca3af;margin-top:4px">* ผู้ดูแลระบบจะปรับ Level สุดท้ายตอนอนุมัติ</p>
       </div>
+      <div><label class="lbl-ua">แผนก</label>
+        <select id="rg-dept" class="inp-ua">
+          <option value="">— ไม่ระบุ —</option>
+          <option value="QA">QA</option><option value="Production">Production</option>
+          <option value="Engineer">Engineer</option><option value="Safety">Safety</option>
+          <option value="อื่นๆ">อื่นๆ</option>
+        </select>
+      </div>
       <div class="flex gap-3 justify-end pt-1">
         <button onclick="closeRegister()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-800">ยกเลิก</button>
         <button onclick="submitRegister()" class="px-6 py-2 text-white text-sm font-bold rounded-lg" style="background:#2475b0">ส่งคำขอ</button>
@@ -2767,12 +2775,13 @@
                         <th class="px-4 py-3 text-left">ชื่อ-นามสกุล</th>
                         <th class="px-4 py-3 text-left">Username</th>
                         <th class="px-4 py-3 text-left">Level</th>
+                        <th class="px-4 py-3 text-left">แผนก</th>
                         <th class="px-4 py-3 text-center">สถานะ</th>
                         <th class="px-4 py-3 text-center">จัดการ</th>
                     </tr>
                 </thead>
                 <tbody id="ua-user-tbody">
-                    <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">⏳ กำลังโหลด...</td></tr>
+                    <tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">⏳ กำลังโหลด...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -2789,6 +2798,7 @@
                     <th class="px-4 py-2 text-left">ชื่อ-นามสกุล</th>
                     <th class="px-4 py-2 text-left">Username</th>
                     <th class="px-4 py-2 text-left">Level ที่ขอ</th>
+                    <th class="px-4 py-2 text-left">แผนก</th>
                     <th class="px-4 py-2 text-left">วันที่ขอ</th>
                     <th class="px-4 py-2 text-center">จัดการ</th>
                 </tr></thead>
@@ -2933,6 +2943,17 @@
                     <option>Administrator</option>
                 </select>
             </div>
+            <div>
+                <label class="lbl-ua">แผนก</label>
+                <select id="au-dept" class="inp-ua">
+                    <option value="">— ไม่ระบุ —</option>
+                    <option value="QA">QA</option>
+                    <option value="Production">Production</option>
+                    <option value="Engineer">Engineer</option>
+                    <option value="Safety">Safety</option>
+                    <option value="อื่นๆ">อื่นๆ</option>
+                </select>
+            </div>
             <div class="flex gap-3 justify-end pt-2 border-t border-gray-100">
                 <button onclick="closeAddUserModal()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-800 transition-colors">ยกเลิก</button>
                 <button onclick="submitAddUser()" class="px-6 py-2 text-white text-sm font-bold rounded-lg transition-colors"
@@ -3001,18 +3022,18 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.13"></script>
-<script src="js/core.js?v=2.13"></script>
-<script src="js/machines.js?v=2.13"></script>
-<script src="js/breakdown-report.js?v=2.13"></script>
-<script src="js/breakdown-form.js?v=2.13"></script>
-<script src="js/records-summary.js?v=2.13"></script>
-<script src="js/export.js?v=2.13"></script>
-<script src="js/oee.js?v=2.13"></script>
-<script src="js/bootstrap.js?v=2.13"></script>
-<script src="js/checklist-core.js?v=2.13"></script>
-<script src="js/checklist-status.js?v=2.13"></script>
-<script src="js/user-access.js?v=2.13"></script>
-<script src="js/scan.js?v=2.13"></script>
+<script src="js/permissions.js?v=2.13.1"></script>
+<script src="js/core.js?v=2.13.1"></script>
+<script src="js/machines.js?v=2.13.1"></script>
+<script src="js/breakdown-report.js?v=2.13.1"></script>
+<script src="js/breakdown-form.js?v=2.13.1"></script>
+<script src="js/records-summary.js?v=2.13.1"></script>
+<script src="js/export.js?v=2.13.1"></script>
+<script src="js/oee.js?v=2.13.1"></script>
+<script src="js/bootstrap.js?v=2.13.1"></script>
+<script src="js/checklist-core.js?v=2.13.1"></script>
+<script src="js/checklist-status.js?v=2.13.1"></script>
+<script src="js/user-access.js?v=2.13.1"></script>
+<script src="js/scan.js?v=2.13.1"></script>
 </body>
 </html>

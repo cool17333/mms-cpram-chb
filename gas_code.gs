@@ -79,7 +79,7 @@ function seedInitialAdmin() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sh = ss.getSheetByName('_Users') || ss.insertSheet('_Users');
   if (sh.getLastRow() > 1) { Logger.log('Already has users — skipped'); return; }
-  sh.getRange(1,1,1,9).setValues([['id','name','username','pin_hash','salt','level','active','createdAt','createdBy']]).setBackground('#c0392b').setFontColor('#fff').setFontWeight('bold');
+  sh.getRange(1,1,1,10).setValues([['id','name','username','pin_hash','salt','level','active','createdAt','createdBy','department']]).setBackground('#c0392b').setFontColor('#fff').setFontWeight('bold');
   sh.setFrozenRows(1);
   var INITIAL_PIN = '0000';   // เปลี่ยนหลัง login ครั้งแรก (ผ่าน _Users sheet หรือ P3 UI)
   var salt = Utilities.getUuid();
@@ -98,7 +98,7 @@ function ensurePendingUsers(ss) {
   var sh = ss.getSheetByName('_PendingUsers');
   if (!sh) {
     sh = ss.insertSheet('_PendingUsers');
-    sh.getRange(1,1,1,8).setValues([['id','name','username','pin_hash','salt','level','requestedAt','status']])
+    sh.getRange(1,1,1,9).setValues([['id','name','username','pin_hash','salt','level','requestedAt','status','department']])
       .setBackground('#e67e22').setFontColor('#fff').setFontWeight('bold');
     sh.setFrozenRows(1);
   }
@@ -736,9 +736,10 @@ function doPost(e) {
         if (String(pend[ip][2]).toLowerCase() === uLower && String(pend[ip][7]) === 'pending')
           return jsonOut({ success:false, error:'username นี้มีคำขอที่รออนุมัติอยู่แล้ว' });
       }
+      var rDept = String(rg.department||'').trim();
       var rSalt = Utilities.getUuid();
       var rNow  = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss');
-      shReg.appendRow([Utilities.getUuid(), rName, rUser, sha256hex(rSalt + rPin), rSalt, rLevel, rNow, 'pending']);
+      shReg.appendRow([Utilities.getUuid(), rName, rUser, sha256hex(rSalt + rPin), rSalt, rLevel, rNow, 'pending', rDept]);
       writeAccessLog(ss, rUser, 'registerUser', 'คำขอใช้งานใหม่: ' + rUser + ' (' + rLevel + ')');
       return jsonOut({ success:true });
     }
@@ -755,7 +756,8 @@ function doPost(e) {
       var salt = Utilities.getUuid();
       var nowStr = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss');
       shU.appendRow([Utilities.getUuid(), data.newUser.name, data.newUser.username,
-                     sha256hex(salt + data.newUser.pin), salt, data.newUser.level, true, nowStr, data.username]);
+                     sha256hex(salt + data.newUser.pin), salt, data.newUser.level, true, nowStr, data.username,
+                     String(data.newUser.department||'').trim()]);
       writeAccessLog(ss, data.username, 'addUser', 'เพิ่ม user: ' + data.newUser.username + ' (' + data.newUser.level + ')');
       return jsonOut({ success:true });
     }
@@ -848,6 +850,25 @@ function doPost(e) {
       return jsonOut({ success:false, error:'ไม่พบ permission row: ' + data.role + '.' + data.perm_code });
     }
 
+    // ---- USER ACCESS: setUserDept ----
+    if (data.action === 'setUserDept') {
+      if (!userCan(ss, data.username, data.pin, 'ua.level'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.level' });
+      var depts = ['QA','Production','Engineer','Safety','อื่นๆ',''];
+      var newDept = String(data.department||'').trim();
+      if (depts.indexOf(newDept) < 0) return jsonOut({ success:false, error:'แผนกไม่ถูกต้อง' });
+      var shDt = ss.getSheetByName('_Users');
+      var rowsDt = shDt ? shDt.getDataRange().getValues() : [];
+      for (var iDt = 1; iDt < rowsDt.length; iDt++) {
+        if (String(rowsDt[iDt][0]) === String(data.userId)) {
+          shDt.getRange(iDt + 1, 10).setValue(newDept);
+          writeAccessLog(ss, data.username, 'setUserDept', rowsDt[iDt][2] + ' → ' + newDept);
+          return jsonOut({ success:true });
+        }
+      }
+      return jsonOut({ success:false, error:'ไม่พบ user' });
+    }
+
     // ---- USER ACCESS: approveUser (อนุมัติคำขอ → ดึงเข้า _Users) ----
     if (data.action === 'approveUser') {
       if (!userCan(ss, data.username, data.pin, 'ua.add'))
@@ -866,7 +887,8 @@ function doPost(e) {
           var shU = ss.getSheetByName('_Users');
           if (!shU) return jsonOut({ success:false, error:'ไม่พบ sheet _Users' });
           var apNow = Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss');
-          shU.appendRow([Utilities.getUuid(), pName, pUser, pHash, pSalt, finalLevel, true, apNow, 'approve:'+data.username]);
+          var pDept = String(apRows[ia][8]||'').trim();
+          shU.appendRow([Utilities.getUuid(), pName, pUser, pHash, pSalt, finalLevel, true, apNow, 'approve:'+data.username, pDept]);
           shAp.getRange(ia+1, 8).setValue('approved');
           writeAccessLog(ss, data.username, 'approveUser', 'อนุมัติ: ' + pUser + ' (' + finalLevel + ')');
           return jsonOut({ success:true });
@@ -1125,7 +1147,7 @@ function doGet(e) {
       if (!row[6]) return jsonOut({ success: false, error: 'บัญชีถูกระงับ' });
       if (!verifyPin(row, pin)) return jsonOut({ success: false, error: 'PIN ไม่ถูกต้อง' });
       var perms = getPermsForLevel(row[5], ss2);
-      return jsonOut({ success: true, name: String(row[1]).trim(), level: String(row[5]).trim(), perms: perms });
+      return jsonOut({ success: true, name: String(row[1]).trim(), level: String(row[5]).trim(), perms: perms, department: String(row[9]||'').trim() });
     }
     if (action === 'getLog') {
       return doGetLog(e.parameter.tracking || '');
@@ -1159,7 +1181,7 @@ function doGet(e) {
       var sh  = ss2.getSheetByName('_Users');
       if (!sh || sh.getLastRow() < 2) return jsonOut({ success: true, data: [] });
       var data = sh.getDataRange().getValues().slice(1).map(function(r) {
-        return { id:r[0], name:r[1], username:r[2], level:r[5], active:r[6], createdAt:r[7] };
+        return { id:r[0], name:r[1], username:r[2], level:r[5], active:r[6], createdAt:r[7], department:String(r[9]||'').trim() };
       });
       return jsonOut({ success: true, data: data });
     }
@@ -1169,7 +1191,7 @@ function doGet(e) {
       if (!shP || shP.getLastRow() < 2) return jsonOut({ success:true, data:[] });
       var dataP = shP.getDataRange().getValues().slice(1)
         .filter(function(r){ return String(r[7]) === 'pending'; })
-        .map(function(r){ return { id:r[0], name:r[1], username:r[2], level:r[5], requestedAt:r[6] }; });
+        .map(function(r){ return { id:r[0], name:r[1], username:r[2], level:r[5], requestedAt:r[6], department:String(r[8]||'').trim() }; });
       return jsonOut({ success:true, data: dataP });
     }
     if (action === 'getPermissions') {

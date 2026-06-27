@@ -58,7 +58,7 @@ function renderUaUsers() {
         (!fName || (u.name||'').toLowerCase().includes(fName) || (u.username||'').toLowerCase().includes(fName)) &&
         (!fLvl  || u.level === fLvl));
     if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">' + (_uaUsers.length ? 'ไม่พบผู้ใช้ตามเงื่อนไข' : 'ไม่พบข้อมูลผู้ใช้') + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">' + (_uaUsers.length ? 'ไม่พบผู้ใช้ตามเงื่อนไข' : 'ไม่พบข้อมูลผู้ใช้') + '</td></tr>';
         return;
     }
     tbody.innerHTML = list.map(u => {
@@ -67,19 +67,27 @@ function renderUaUsers() {
         const statusBadge = active
             ? '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">ใช้งาน</span>'
             : '<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500">ระงับ</span>';
+        const deptDisplay = u.department
+            ? `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">${u.department}</span>`
+            : '<span class="text-gray-300 text-xs">—</span>';
+        const safeId   = String(u.id).replace(/'/g, '');
+        const safeName = String(u.name || '').replace(/'/g, '');
+        const safeDept = String(u.department || '').replace(/'/g, '');
         const actions = [];
         if (canLvl) {
-            actions.push(`<button onclick="uaOpenSetLevel('${u.id}','${u.level}')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">เปลี่ยน Level</button>`);
-            actions.push(`<button onclick="uaOpenResetPin('${u.id}','${u.name}')" class="text-xs font-bold text-orange-600 hover:text-orange-800 underline">รีเซ็ต PIN</button>`);
-            actions.push(`<button onclick="uaToggleActive('${u.id}',${!active})" class="text-xs font-bold ${active ? 'text-gray-500 hover:text-red-600' : 'text-green-600 hover:text-green-800'} underline">${active ? 'ระงับ' : 'เปิดใช้'}</button>`);
+            actions.push(`<button onclick="uaOpenSetLevel('${safeId}','${u.level}')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">เปลี่ยน Level</button>`);
+            actions.push(`<button onclick="uaOpenSetDept('${safeId}','${safeDept}')" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline">แผนก</button>`);
+            actions.push(`<button onclick="uaOpenResetPin('${safeId}','${safeName}')" class="text-xs font-bold text-orange-600 hover:text-orange-800 underline">รีเซ็ต PIN</button>`);
+            actions.push(`<button onclick="uaToggleActive('${safeId}',${!active})" class="text-xs font-bold ${active ? 'text-gray-500 hover:text-red-600' : 'text-green-600 hover:text-green-800'} underline">${active ? 'ระงับ' : 'เปิดใช้'}</button>`);
         }
         if (canDel && u.username !== 'admin') {
-            actions.push(`<button onclick="uaDeleteUser('${u.id}','${u.name}')" class="text-xs font-bold text-red-600 hover:text-red-800 underline">ลบ</button>`);
+            actions.push(`<button onclick="uaDeleteUser('${safeId}','${safeName}')" class="text-xs font-bold text-red-600 hover:text-red-800 underline">ลบ</button>`);
         }
         return `<tr class="border-t border-gray-100 hover:bg-gray-50">
             <td class="px-4 py-3 font-medium text-gray-800">${u.name || '—'}</td>
             <td class="px-4 py-3 font-mono text-gray-600 text-xs">${u.username || '—'}</td>
             <td class="px-4 py-3"><span class="${lvlCls}">${u.level || '—'}</span></td>
+            <td class="px-4 py-3">${deptDisplay}</td>
             <td class="px-4 py-3 text-center">${statusBadge}</td>
             <td class="px-4 py-3 text-center flex gap-3 justify-center flex-wrap">${actions.join('') || '—'}</td>
         </tr>`;
@@ -89,6 +97,7 @@ function renderUaUsers() {
 // ---- Add user modal ----
 function openAddUserModal() {
     ['au-fname','au-lname','au-user','au-pin'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const deptEl = document.getElementById('au-dept'); if (deptEl) deptEl.value = '';
     document.getElementById('add-user-modal').classList.remove('hidden');
     setTimeout(() => document.getElementById('au-fname')?.focus(), 80);
 }
@@ -100,13 +109,14 @@ async function submitAddUser() {
     const uname = (document.getElementById('au-user')?.value  || '').trim();
     const pin   = (document.getElementById('au-pin')?.value   || '').trim();
     const level = document.getElementById('au-level')?.value  || 'Visitor';
+    const dept  = document.getElementById('au-dept')?.value   || '';
     if (!fname || !lname || !uname || !pin) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
     if (pin.length < 8 || pin.length > 12) { showToast('⚠️ Password ต้อง 8–12 ตัว', 'error'); return; }
     const name = `${fname} ${lname}`.trim();
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'addUser', username: currentUser.username, pin: currentUser.pin,
-            newUser: { name, username: uname, pin, level }
+            newUser: { name, username: uname, pin, level, department: dept }
         })});
         const json = await res.json();
         if (!json.success) { showToast('❌ ' + (json.error || 'ไม่สำเร็จ'), 'error'); return; }
@@ -140,12 +150,15 @@ function renderUaPending() {
     if (!tb) return;
     const canAdd = can('ua.add');
     if (!_uaPendingList.length) {
-        tb.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">ไม่มีคำขอที่รออนุมัติ</td></tr>';
+        tb.innerHTML = '<tr><td colspan="6" class="px-4 py-10 text-center text-gray-400">ไม่มีคำขอที่รออนุมัติ</td></tr>';
         return;
     }
     tb.innerHTML = _uaPendingList.map(p => {
         const lvlCls  = 'ua-level-badge ua-level-' + (p.level || 'Visitor');
         const uname   = String(p.username || '').replace(/'/g, '');
+        const deptDisplay = p.department
+            ? `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">${p.department}</span>`
+            : '<span class="text-gray-300 text-xs">—</span>';
         const actions = canAdd
             ? `<button onclick="uaOpenApprove('${p.id}')" class="text-xs font-bold text-green-600 hover:text-green-800 underline">อนุมัติ</button>
                <button onclick="uaRejectPending('${p.id}','${uname}')" class="text-xs font-bold text-red-600 hover:text-red-800 underline">ปฏิเสธ</button>`
@@ -154,6 +167,7 @@ function renderUaPending() {
             <td class="px-4 py-3 font-medium text-gray-800">${p.name || '—'}</td>
             <td class="px-4 py-3 font-mono text-gray-600 text-xs">${p.username || '—'}</td>
             <td class="px-4 py-3"><span class="${lvlCls}">${p.level || '—'}</span></td>
+            <td class="px-4 py-3">${deptDisplay}</td>
             <td class="px-4 py-3 text-xs text-gray-500">${p.requestedAt || '—'}</td>
             <td class="px-4 py-3 text-center flex gap-3 justify-center flex-wrap">${actions}</td>
         </tr>`;
@@ -290,6 +304,28 @@ async function uaDeleteUser(userId, name) {
         const json = await res.json();
         if (!json.success) { showToast('❌ ' + (json.error || 'ไม่สำเร็จ'), 'error'); return; }
         showToast('✅ ลบผู้ใช้ ' + name + ' แล้ว', 'success');
+        loadUaUsers();
+    } catch (e) { showToast('❌ ' + e.message, 'error'); }
+}
+
+// ---- Set department ----
+function uaOpenSetDept(userId, currentDept) {
+    const depts = ['','QA','Production','Engineer','Safety','อื่นๆ'];
+    const labels = ['— ไม่ระบุ —','QA','Production','Engineer','Safety','อื่นๆ'];
+    const newDept = prompt('เลือกแผนก:\n' + depts.map((d,i) => (i===0?labels[i]:d)).join(' / '), currentDept || '');
+    if (newDept === null) return;
+    if (depts.indexOf(newDept) < 0) { showToast('⚠️ แผนกไม่ถูกต้อง', 'error'); return; }
+    uaSetDept(userId, newDept);
+}
+
+async function uaSetDept(userId, department) {
+    try {
+        const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
+            action:'setUserDept', username: currentUser.username, pin: currentUser.pin, userId, department
+        })});
+        const json = await res.json();
+        if (!json.success) { showToast('❌ ' + (json.error || 'ไม่สำเร็จ'), 'error'); return; }
+        showToast('✅ อัปเดตแผนกสำเร็จ', 'success');
         loadUaUsers();
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
 }

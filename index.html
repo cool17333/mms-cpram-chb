@@ -271,6 +271,9 @@
                 <div class="sidebar-subitem" id="sni-cl-status" onclick="switchTab('cl-status')">สถานะการตรวจ</div>
             </div>
         </div>
+        <div class="sidebar-item" id="sn-oee" onclick="switchTab('oee')">
+            <span class="nav-icon">📊</span><span>OEE &amp; Ranking</span>
+        </div>
     </nav>
     <!-- Admin section -->
     <div id="sidebar-admin-section" class="hidden px-3 pb-1 border-t border-gray-800 pt-2">
@@ -324,6 +327,9 @@
         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">เพิ่มเติม</p>
         <div class="more-item" onclick="openSettings();closeMoreSheet()">
             <span class="text-lg">⚙️</span><span class="text-sm font-medium text-gray-800">ตั้งค่าระบบ</span>
+        </div>
+        <div class="more-item" onclick="switchTab('oee');closeMoreSheet()">
+            <span class="text-lg">📊</span><span class="text-sm font-medium text-gray-800">OEE &amp; Ranking เครื่องจักร</span>
         </div>
         <div class="more-item hidden" id="more-log-item" onclick="goLog();closeMoreSheet()">
             <span class="text-lg">📋</span><span class="text-sm font-medium text-gray-800">Log ระบบ (Admin)</span>
@@ -2801,6 +2807,72 @@
 </div>
 </div><!-- end panel-ua -->
 
+<!-- ==================== OEE & RANKING ==================== -->
+<div id="panel-oee" class="tab-panel p-4 md:p-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-3 mb-4"><span class="text-2xl">📊</span>
+      <h2 class="text-xl font-bold text-gray-800">OEE &amp; Ranking เครื่องจักร</h2></div>
+    <!-- filters -->
+    <div class="flex flex-wrap gap-2 items-end mb-4">
+      <div><label class="text-xs text-gray-500">ตั้งแต่</label><input id="oee-from" type="date" class="block border rounded-lg px-3 py-1.5 text-sm"></div>
+      <div><label class="text-xs text-gray-500">ถึง</label><input id="oee-to" type="date" class="block border rounded-lg px-3 py-1.5 text-sm"></div>
+      <select id="oee-factory" class="border rounded-lg px-3 py-1.5 text-sm">
+        <option value="">ทุกโรงงาน</option>
+        <option value="โรงงาน 1">โรงงาน 1</option>
+        <option value="โรงงาน 2">โรงงาน 2</option>
+      </select>
+      <select id="oee-sort" onchange="renderOeeTable()" class="border rounded-lg px-3 py-1.5 text-sm">
+        <option value="downtimeMin">เรียง: Downtime มากสุด</option>
+        <option value="failures">เรียง: จำนวนเสียมากสุด</option>
+        <option value="mttrMin">เรียง: MTTR มากสุด</option>
+        <option value="mtbfMin">เรียง: MTBF น้อยสุด</option>
+        <option value="availability">เรียง: Availability น้อยสุด</option>
+      </select>
+      <button onclick="loadOee()" class="px-4 py-1.5 text-white text-sm font-bold rounded-lg" style="background:var(--mms-red)">🔄 คำนวณ</button>
+      <button data-perm="mc.edit" onclick="openOeeConfig()" class="hidden px-4 py-1.5 text-sm font-bold rounded-lg border">⚙️ ตั้งเวลาเดินเครื่อง</button>
+    </div>
+    <div id="oee-cards" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+    <div class="bg-white rounded-xl border overflow-x-auto">
+      <table class="w-full text-sm"><thead class="bg-gray-50 text-gray-500 text-xs"><tr>
+        <th class="px-3 py-2 text-left">#</th><th class="px-3 py-2 text-left">เครื่องจักร</th>
+        <th class="px-3 py-2 text-right">ครั้งเสีย</th><th class="px-3 py-2 text-right">Downtime</th>
+        <th class="px-3 py-2 text-right">MTTR</th><th class="px-3 py-2 text-right">MTBF</th>
+        <th class="px-3 py-2 text-right">Availability</th><th class="px-3 py-2 text-right">OEE</th></tr></thead>
+        <tbody id="oee-tbody"></tbody></table>
+    </div>
+  </div>
+</div><!-- end panel-oee -->
+
+<!-- ==================== MODAL: oee-config ==================== -->
+<div id="oee-config-modal" class="modal-bg hidden" onclick="if(event.target===this)closeOeeConfig()">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div style="background:linear-gradient(135deg,#16a085,#117a65);padding:18px 22px">
+      <p class="text-white font-bold text-lg">⚙️ ตั้งเวลาเดินเครื่อง (Planned Time)</p>
+      <p class="text-white/70 text-xs mt-0.5">ใช้คำนวณ Availability &amp; MTBF</p>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="text-xs font-bold text-gray-500 block mb-1">รหัสเครื่องจักร <span class="text-red-500">*</span></label>
+        <input id="oee-cfg-code" list="oee-machine-list" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="พิมพ์หรือเลือกรหัส">
+        <datalist id="oee-machine-list"></datalist>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-500 block mb-1">เวลาเดินเครื่องต่อวัน (นาที) <span class="text-red-500">*</span></label>
+        <input id="oee-cfg-planned" type="number" min="1" max="1440" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="เช่น 960 (2 กะ × 8 ชม.)">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-500 block mb-1">หมายเหตุ</label>
+        <input id="oee-cfg-note" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="เช่น 2 กะ / วันจันทร์-ศุกร์">
+      </div>
+      <div id="oee-cfg-list" class="text-xs text-gray-500 max-h-32 overflow-y-auto border rounded-lg p-2 bg-gray-50 hidden"></div>
+      <div class="flex gap-3 justify-end pt-2 border-t border-gray-100">
+        <button onclick="closeOeeConfig()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-800">ยกเลิก</button>
+        <button onclick="saveOeeConfig()" class="px-6 py-2 text-white text-sm font-bold rounded-lg" style="background:#16a085">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== MODAL: อนุมัติคำขอ (v2.12) ==================== -->
 <div id="approve-modal" class="modal-bg hidden" onclick="if(event.target===this)closeApproveModal()">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
@@ -2929,17 +3001,18 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.12.1"></script>
-<script src="js/core.js?v=2.12.1"></script>
-<script src="js/machines.js?v=2.12.1"></script>
-<script src="js/breakdown-report.js?v=2.12.1"></script>
-<script src="js/breakdown-form.js?v=2.12.1"></script>
-<script src="js/records-summary.js?v=2.12.1"></script>
-<script src="js/export.js?v=2.12.1"></script>
-<script src="js/bootstrap.js?v=2.12.1"></script>
-<script src="js/checklist-core.js?v=2.12.1"></script>
-<script src="js/checklist-status.js?v=2.12.1"></script>
-<script src="js/user-access.js?v=2.12.1"></script>
-<script src="js/scan.js?v=2.12.1"></script>
+<script src="js/permissions.js?v=2.13"></script>
+<script src="js/core.js?v=2.13"></script>
+<script src="js/machines.js?v=2.13"></script>
+<script src="js/breakdown-report.js?v=2.13"></script>
+<script src="js/breakdown-form.js?v=2.13"></script>
+<script src="js/records-summary.js?v=2.13"></script>
+<script src="js/export.js?v=2.13"></script>
+<script src="js/oee.js?v=2.13"></script>
+<script src="js/bootstrap.js?v=2.13"></script>
+<script src="js/checklist-core.js?v=2.13"></script>
+<script src="js/checklist-status.js?v=2.13"></script>
+<script src="js/user-access.js?v=2.13"></script>
+<script src="js/scan.js?v=2.13"></script>
 </body>
 </html>

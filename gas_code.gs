@@ -120,6 +120,29 @@ function writeAccessLog(ss, username, action, detail) {
   sh.appendRow([Utilities.formatDate(new Date(),'Asia/Bangkok','dd/MM/yyyy HH:mm:ss'), username||'', action||'', detail||'']);
 }
 
+// ============================================================
+// MACHINE CONFIG (OEE/Reliability) — planned time ต่อเครื่อง (opt-in)
+// ============================================================
+function ensureMachineConfig_(ss) {
+  var sh = ss.getSheetByName('_MachineConfig');
+  if (!sh) {
+    sh = ss.insertSheet('_MachineConfig');
+    sh.getRange(1,1,1,4).setValues([['machineCode','plannedMinPerDay','idealCycleSec','note']])
+      .setBackground('#16a085').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function readMachineConfig_(ss) {
+  var sh = ensureMachineConfig_(ss), m = {};
+  var v = sh.getDataRange().getValues();
+  for (var i = 1; i < v.length; i++) {
+    var c = String(v[i][0]||'').trim();
+    if (c) m[c] = { planned: Number(v[i][1])||0, cycle: Number(v[i][2])||0, note: String(v[i][3]||'') };
+  }
+  return m;
+}
+
 // JOB counter — increment-only per (factory+month), ไม่สวมเลขแม้ delete แถว
 function nextJobSeq(ss, key) {
   var sh = ss.getSheetByName('_Counters');
@@ -868,6 +891,21 @@ function doPost(e) {
       return jsonOut({ success:false, error:'ไม่พบคำขอ' });
     }
 
+    // ---- MACHINE CONFIG: setMachineConfig ----
+    if (data.action === 'setMachineConfig') {
+      if (!userCan(ss, data.username, data.pin, 'mc.edit'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ mc.edit' });
+      var code = String(data.machineCode||'').trim();
+      if (!code) return jsonOut({ success:false, error:'ไม่ระบุรหัสเครื่อง' });
+      var sh = ensureMachineConfig_(ss), v = sh.getDataRange().getValues(), found = -1;
+      for (var i = 1; i < v.length; i++) if (String(v[i][0]).trim() === code) { found = i+1; break; }
+      var row = [code, Number(data.plannedMinPerDay)||0, Number(data.idealCycleSec)||0, String(data.note||'')];
+      if (found > 0) sh.getRange(found,1,1,4).setValues([row]);
+      else sh.appendRow(row);
+      writeAccessLog(ss, data.username, 'setMachineConfig', code + ' planned=' + row[1]);
+      return jsonOut({ success:true });
+    }
+
     // ---- CREATE new row ----
     // ล็อกกันเลขรันชนกันเวลาหลายคนแจ้งพร้อมกัน
     const lock = LockService.getScriptLock();
@@ -1147,6 +1185,55 @@ function doGet(e) {
       });
       return jsonOut({ success:true, data: rowsAL });
     }
+    if (action === 'getReliabilityMetrics') {
+      var ssR = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var fromD = e.parameter.from ? new Date(e.parameter.from) : new Date('2000-01-01');
+      var toD   = e.parameter.to   ? new Date(e.parameter.to + 'T23:59:59') : new Date();
+      var facF  = (e.parameter.factory || '').trim();            // '' = ทุกโรงงาน
+      var cfg   = readMachineConfig_(ssR);
+      var days  = Math.max(1, Math.round((toD - fromD)/86400000) + 1);
+      var agg   = {};
+      ssR.getSheets().forEach(function(sh){
+        if (!/_\d{4}-\d{2}$/.test(sh.getName()) || sh.getLastRow() < 2) return;  // เฉพาะชีต BD รายเดือน
+        var rows = sh.getDataRange().getValues();
+        for (var i = 1; i < rows.length; i++) {
+          var r = rows[i];
+          var d = r[0] instanceof Date ? r[0] : new Date(r[0]);
+          if (isNaN(d) || d < fromD || d > toD) continue;
+          if (String(r[31] || 'Breakdown') !== 'Breakdown') continue;   // ตัด Adjustment
+          if (String(r[32] || '').trim()) continue;                      // ตัดงานยกเลิก
+          if (facF && String(r[2] || '').trim() !== facF) continue;      // filter factory (เทียบตรง)
+          var code = String(r[4] || '').trim() || String(r[1] || '').trim();
+          if (!code) continue;
+          if (!agg[code]) agg[code] = { code:code, name:String(r[1]||''), factory:String(r[2]||''), fail:0, dt:0 };
+          agg[code].fail += 1;
+          agg[code].dt   += Number(r[9]) || 0;
+        }
+      });
+      var out = Object.keys(agg).map(function(code){
+        var a = agg[code], c = cfg[code];
+        var ppm  = c && c.planned > 0 ? c.planned * days : null;
+        var mttr = a.fail ? a.dt / a.fail : 0;
+        var avail = (ppm != null) ? Math.max(0, (ppm - a.dt) / ppm) : null;
+        var mtbf  = (ppm != null && a.fail) ? (ppm - a.dt) / a.fail : null;
+        return {
+          code:a.code, name:a.name, factory:a.factory,
+          failures:a.fail, downtimeMin:Math.round(a.dt), mttrMin:Math.round(mttr),
+          mtbfMin: mtbf != null ? Math.round(mtbf) : null,
+          availability: avail != null ? Math.round(avail*1000)/10 : null,   // %
+          hasConfig: ppm != null
+        };
+      });
+      return jsonOut({ success:true, days:days, data:out });
+    }
+
+    if (action === 'getMachineConfig') {
+      var ssC = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var cm  = readMachineConfig_(ssC);
+      var arr = Object.keys(cm).map(function(k){ return { machineCode:k, plannedMinPerDay:cm[k].planned, idealCycleSec:cm[k].cycle, note:cm[k].note }; });
+      return jsonOut({ success:true, data:arr });
+    }
+
     return jsonOut({ success: false, error: 'Unknown action' });
 
   } catch (err) {

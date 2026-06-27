@@ -40,6 +40,7 @@ const PAGE_TITLE = {
     'cl-calendar':  '📅 ปฏิทิน PM',
     'cl-schedule':  '🔧 รายละเอียดตรวจสอบ',
     'cl-status':    '✅ สถานะการตรวจ',
+    'oee':          '📊 OEE & Ranking เครื่องจักร',
 };
 
 // โหมดฟอร์ม: 'report' = กรอกน้อย / 'full' = กรอกครบ
@@ -597,11 +598,11 @@ function updateNavActive(panel) {
         'bd-hub':'bn-bd','form':'bn-bd','records':'bn-bd','summary':'bn-bd',
         'machines':'bn-mach',
         'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl','cl-status':'bn-cl',
-        'log':'bn-more',
+        'log':'bn-more', 'oee':'bn-more',
     };
     document.getElementById(bnMap[panel])?.classList.add('active');
     // sidebar: single items
-    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log' };
+    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log', 'oee':'sn-oee' };
     if (snMap[panel]) document.getElementById(snMap[panel])?.classList.add('active');
     // sidebar: group + sub-item
     const grpMap = {
@@ -650,6 +651,7 @@ function switchTab(name) {
     if (name === 'cl-schedule') initClSchedule();
     if (name === 'cl-status') initClStatus();
     if (name === 'ua') { uaSwitch?.('users'); }
+    if (name === 'oee') initOeePanel?.();
     window.scrollTo(0, 0);
 }
 

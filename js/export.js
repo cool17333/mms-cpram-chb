@@ -547,16 +547,21 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
 }
 
 // F9: แปลง log row → ชื่อเหตุการณ์ภาษาไทย
+// GAS เก็บ action เป็น Thai string ยาว (เช่น 'แจ้ง Breakdown (สร้างใหม่)', 'รับงาน — ชื่อคน')
 function timelineLabel(row) {
-    const a = String(row.action || '').toLowerCase();
-    const s = row.status || '';
-    if (a === 'submit')                    return '📝 แจ้ง Breakdown';
-    if (a === 'accept')                    return '📋 รับงาน';
-    if (a === 'close')                     return '✅ ปิดงาน';
-    if (a === 'repaircomplete')            return '🔨 ซ่อมสำเร็จ';
-    if (a === 'update')                    return '🔄 อัปเดต';
-    if (a === 'edit')                      return '✏️ แก้ไข';
-    return row.action || s || '—';
+    const raw = String(row.action || '');
+    const a   = raw.toLowerCase();
+    const s   = row.status || '';
+    if (a === 'submit'        || raw.startsWith('แจ้ง'))        return '📝 แจ้ง Breakdown';
+    if (a === 'accept'        || raw.startsWith('รับงาน'))       return '📋 รับงาน';
+    if (a === 'repaircomplete'|| raw.startsWith('ซ่อมสำเร็จ'))  return '🔨 ซ่อมเสร็จสิ้น';
+    if (a === 'update')                                           return '🔄 อัปเดต';
+    if (a === 'close')                                            return '✅ ยืนยันปิดงาน';
+    if (raw.startsWith('แก้ไข'))
+        return s === 'ดำเนินการเสร็จสิ้น' ? '✅ ยืนยันปิดงาน' : '✏️ แก้ไขเอกสาร';
+    if (raw.startsWith('ยกเลิก'))                                return '❌ ยกเลิกงาน';
+    if (raw.startsWith('ลบ'))                                    return '🗑️ ลบเอกสาร';
+    return raw.split(/\s*[—→|([—–]/)[0].trim() || '—';
 }
 
 async function exportPDF(fmt = 'portrait') {
@@ -693,7 +698,7 @@ async function exportPDF(fmt = 'portrait') {
                                 </tr></thead>
                                 <tbody>${logs.map((row, i) => `<tr style="background:${i % 2 === 0 ? '#ffffff' : '#f8fafc'};border-bottom:1px solid #f1f5f9">
                                     <td style="padding:7px 10px;font-weight:600;color:#1e293b">${esc(timelineLabel(row))}</td>
-                                    <td style="padding:7px 10px;color:#64748b">${esc(row.by || row.user || '')}</td>
+                                    <td style="padding:7px 10px;color:#64748b">${esc(row.byName || row.by || row.user || '')}</td>
                                     <td style="padding:7px 10px;color:#374151;white-space:nowrap">${esc(fmtExportDateTime(row.timestamp || row.time || ''))}</td>
                                     <td style="padding:7px 10px;color:#64748b">${esc(row.note || row.remark || '')}</td>
                                 </tr>`).join('')}</tbody>

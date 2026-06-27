@@ -3,6 +3,13 @@
 // ============================================================
 let machineMaster = [];   // สำเนาที่แก้ไขได้ (โหลดจาก GAS, บันทึกกลับทั้งชุด)
 
+const MACH_RANK_COLOR = { A:'#c0392b', B:'#e67e22', C:'#f1c40f', D:'#27ae60' };
+function machRankBadge(rank) {
+    var r = String(rank||'').trim().toUpperCase();
+    if (!MACH_RANK_COLOR[r]) return '<span class="text-xs text-gray-300">ยังไม่ประเมิน</span>';
+    return '<span class="inline-block px-2 py-0.5 rounded font-bold text-white text-xs" style="background:' + MACH_RANK_COLOR[r] + '">' + r + '</span>';
+}
+
 function goMachines() {
     switchTab('machines');
     loadMachineMaster();
@@ -15,7 +22,7 @@ async function loadMachineMaster() {
     try {
         const res  = await fetch(`${GAS_URL}?action=getMachines`);
         const json = await res.json();
-        machineMaster = (json.data || []).map(m => ({ id:m.id||'', name:m.name||'', factory:m.factory||'', area:m.area||'', line:m.line||'', editedBy:m.editedBy||'', editedAt:m.editedAt||'' }));
+        machineMaster = (json.data || []).map(m => ({ id:m.id||'', name:m.name||'', factory:m.factory||'', area:m.area||'', line:m.line||'', editedBy:m.editedBy||'', editedAt:m.editedAt||'', rank:m.rank||'', rankYear:m.rankYear||'' }));
     } catch (e) { showToast('❌ โหลดทะเบียนไม่สำเร็จ', 'error'); }
     finally { hideLoading(); }
     setVisible('mach-loading', false);
@@ -58,6 +65,7 @@ function machGoPage(p) {
 function renderMachTable() {
     const ff = document.getElementById('mach-f-factory').value;
     const fa = document.getElementById('mach-f-area').value;
+    const fr = document.getElementById('mach-f-rank')?.value || '';
     const fq = (document.getElementById('mach-f-search')?.value || '').trim().toLowerCase();
     const tb = document.getElementById('mach-tbody');
     const emptyEl    = document.getElementById('mach-empty');
@@ -66,6 +74,7 @@ function renderMachTable() {
     const filtered = machineMaster
         .map((m, i) => ({ m, i }))
         .filter(({m}) => (!ff || m.factory === ff) && (!fa || m.area === fa) &&
+            (!fr || (fr === 'none' ? !String(m.rank||'').trim() : String(m.rank||'').trim().toUpperCase() === fr)) &&
             (!fq || String(m.id||'').toLowerCase().includes(fq) || String(m.name||'').toLowerCase().includes(fq)));
 
     const total = filtered.length;
@@ -102,6 +111,7 @@ function renderMachTable() {
         <td class="px-4 py-2.5 text-xs text-gray-600">${m.factory||'—'}</td>
         <td class="px-4 py-2.5 text-xs text-gray-600">${m.area||'—'}</td>
         <td class="px-4 py-2.5 text-xs text-gray-600">${m.line||'—'}</td>
+        <td class="px-4 py-2.5 text-center">${machRankBadge(m.rank)}</td>
         <td class="px-4 py-2.5 text-xs leading-tight">${editInfo}</td>
         <td class="px-4 py-2.5">
             <div class="flex gap-1.5 justify-end">
@@ -159,6 +169,7 @@ function machOpenAdd() {
     document.getElementById('mc-line').value = '';
     document.getElementById('mc-editor').value = '';
     document.getElementById('mc-edit-idx').value = '-1';
+    document.getElementById('mc-rank-row').classList.add('hidden');
     mcUpdateArea('');
     document.getElementById('modal-mc').classList.remove('hidden');
     setTimeout(() => document.getElementById('mc-id').focus(), 50);
@@ -173,8 +184,20 @@ function machOpenEdit(i) {
     document.getElementById('mc-line').value = m.line || '';
     document.getElementById('mc-editor').value = '';
     document.getElementById('mc-edit-idx').value = String(i);
+    var rankRow = document.getElementById('mc-rank-row');
+    rankRow.classList.remove('hidden');
+    rankRow.dataset.code = m.id || '';
+    document.getElementById('mc-rank-badge').innerHTML = machRankBadge(m.rank);
+    document.getElementById('mc-rank-year').textContent = m.rankYear ? '(ปี ' + m.rankYear + ')' : '';
     mcUpdateArea(m.area || '');
     document.getElementById('modal-mc').classList.remove('hidden');
+}
+
+function machGoAssess() {
+    var code = document.getElementById('mc-rank-row').dataset.code || '';
+    closeMcModal();
+    if (typeof switchTab === 'function') switchTab('mcrank');
+    if (code && typeof openMcRankForm === 'function') setTimeout(function(){ openMcRankForm(code); }, 200);
 }
 
 function mcUpdateArea(keepVal) {

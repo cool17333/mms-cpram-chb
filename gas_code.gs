@@ -1401,7 +1401,7 @@ function doGetMachines() {
   for (let i = 1; i < data.length; i++) {
     const r = data[i];
     if (!r[0]) continue;
-    rows.push({ id: String(r[0]).trim(), name: r[1] || '', factory: r[2] || '', area: r[3] || '', line: r[4] || '', editedBy: r[5] || '', editedAt: r[6] || '' });
+    rows.push({ id: String(r[0]).trim(), name: r[1] || '', factory: r[2] || '', area: r[3] || '', line: r[4] || '', editedBy: r[5] || '', editedAt: r[6] || '', rank: r[7] || '', rankYear: r[8] || '' });
   }
   return jsonOut({ success: true, data: rows });
 }

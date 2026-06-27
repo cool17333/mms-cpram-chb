@@ -1898,6 +1898,14 @@
             <div class="mb-4">
                 <p class="text-xs text-gray-500">👤 ผู้แก้ไข: บันทึกจากชื่อที่เข้าสู่ระบบอัตโนมัติ</p>
             </div>
+            <div id="mc-rank-row" class="hidden mb-3 p-3 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-gray-500">Rank เครื่องจักร: </span>
+                    <span id="mc-rank-badge"></span>
+                    <span id="mc-rank-year" class="text-xs text-gray-400 ml-1"></span>
+                </div>
+                <button type="button" onclick="machGoAssess()" class="px-3 py-1.5 text-white text-xs font-bold rounded-lg" style="background:#2475b0">📊 ไปประเมิน Ranking</button>
+            </div>
             <input type="hidden" id="mc-edit-idx" value="-1">
             <div class="flex gap-3 justify-end pt-2 border-t border-gray-100">
                 <button onclick="closeMcModal()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900">ยกเลิก</button>
@@ -2580,7 +2588,7 @@
                 <button onclick="openQrPicker()" class="mms-btn mms-btn-blue text-sm">📱 Generate QR</button>
             </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
                 <label class="text-xs font-bold text-gray-500 block mb-1">โรงงาน</label>
                 <select id="mach-f-factory" onchange="machUpdateFilterArea();renderMachTable()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400 transition-colors">
@@ -2591,6 +2599,15 @@
                 <label class="text-xs font-bold text-gray-500 block mb-1">พื้นที่</label>
                 <select id="mach-f-area" onchange="renderMachTable()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400 transition-colors">
                     <option value="">ทุกพื้นที่</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 block mb-1">Rank</label>
+                <select id="mach-f-rank" onchange="renderMachTable()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400 transition-colors">
+                    <option value="">ทุก Rank</option>
+                    <option value="none">ยังไม่ได้ประเมิน</option>
+                    <option value="A">A</option><option value="B">B</option>
+                    <option value="C">C</option><option value="D">D</option>
                 </select>
             </div>
             <div>
@@ -2630,6 +2647,7 @@
                     <th class="px-4 py-2.5 text-left">โรงงาน</th>
                     <th class="px-4 py-2.5 text-left">พื้นที่</th>
                     <th class="px-4 py-2.5 text-left">Line</th>
+                    <th class="px-4 py-2.5 text-center">Rank</th>
                     <th class="px-4 py-2.5 text-left">ผู้แก้ไข</th>
                     <th class="px-4 py-2.5 w-24"></th>
                 </tr></thead>
@@ -3173,19 +3191,19 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.15.1"></script>
-<script src="js/core.js?v=2.15.1"></script>
-<script src="js/machines.js?v=2.15.1"></script>
-<script src="js/breakdown-report.js?v=2.15.1"></script>
-<script src="js/breakdown-form.js?v=2.15.1"></script>
-<script src="js/records-summary.js?v=2.15.1"></script>
-<script src="js/export.js?v=2.15.1"></script>
-<script src="js/oee.js?v=2.15.1"></script>
-<script src="js/bootstrap.js?v=2.15.1"></script>
-<script src="js/checklist-core.js?v=2.15.1"></script>
-<script src="js/checklist-status.js?v=2.15.1"></script>
-<script src="js/mcrank.js?v=2.15.1"></script>
-<script src="js/user-access.js?v=2.15.1"></script>
-<script src="js/scan.js?v=2.15.1"></script>
+<script src="js/permissions.js?v=2.17"></script>
+<script src="js/core.js?v=2.17"></script>
+<script src="js/machines.js?v=2.17"></script>
+<script src="js/breakdown-report.js?v=2.17"></script>
+<script src="js/breakdown-form.js?v=2.17"></script>
+<script src="js/records-summary.js?v=2.17"></script>
+<script src="js/export.js?v=2.17"></script>
+<script src="js/oee.js?v=2.17"></script>
+<script src="js/bootstrap.js?v=2.17"></script>
+<script src="js/checklist-core.js?v=2.17"></script>
+<script src="js/checklist-status.js?v=2.17"></script>
+<script src="js/mcrank.js?v=2.17"></script>
+<script src="js/user-access.js?v=2.17"></script>
+<script src="js/scan.js?v=2.17"></script>
 </body>
 </html>

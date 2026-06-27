@@ -1952,49 +1952,40 @@
 
 <!-- ==================== REPAIR COMPLETE MODAL ==================== -->
 <div id="repair-complete-modal" class="modal-bg hidden">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div class="bg-teal-600 px-6 py-4">
-            <h2 class="text-base font-bold text-white flex items-center gap-2">🔨 ยืนยันซ่อมสำเร็จ</h2>
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="bg-teal-600 px-6 py-4 flex-shrink-0">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">🔨 ยืนยันซ่อมสำเร็จ</h2>
             <p id="repair-tracking-display" class="text-xs text-teal-100 font-mono mt-0.5"></p>
         </div>
-        <div class="p-6">
-            <p class="text-sm text-gray-600 mb-4">กรุณาระบุวันและเวลาที่ซ่อมเสร็จเพื่อบันทึกสถานะ</p>
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                    <label class="text-xs font-bold text-gray-500 block mb-1">วันที่ซ่อมเสร็จ *</label>
-                    <input type="date" id="repair-end-date"
-                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-500 transition-colors">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-gray-500 block mb-1">เวลาซ่อมเสร็จ *</label>
-                    <input type="time" id="repair-end-time"
-                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-500 transition-colors">
+        <div class="p-6 overflow-y-auto">
+        <div class="space-y-3 text-sm">
+            <div>
+                <label class="text-xs font-bold text-gray-600 block mb-1">วันที่ซ่อมเสร็จ <span class="text-red-500">*</span></label>
+                <div class="flex gap-2">
+                    <input type="date" id="repair-end-date" class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-teal-500">
+                    <input type="time" id="repair-end-time" class="w-28 border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-teal-500">
                 </div>
             </div>
-            <div class="bg-teal-50 border border-teal-200 rounded-lg px-4 py-2.5 mb-4 text-sm">
-                👤 บันทึกโดย: <strong id="repair-byuser" class="text-teal-700"></strong>
+            <div>
+                <label class="text-xs font-bold text-gray-600 block mb-1">มาตรการแก้ไข (Corrective) <span class="text-red-500">*</span></label>
+                <textarea id="repair-corrective" rows="3" placeholder="ระบุมาตรการแก้ไขที่ดำเนินการ..." class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-teal-500"></textarea>
             </div>
-            <div class="mb-4">
-                <label class="text-xs font-bold text-gray-500 block mb-1">รูปหลังแก้ไข (เลือกได้หลายรูป)</label>
-                <input type="file" accept="image/*" multiple onchange="repairAddAfter(event)"
-                       class="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-teal-50 file:text-teal-700 file:font-bold">
+            <div>
+                <label class="text-xs font-bold text-gray-600 block mb-1">รูปหลังแก้ไข <span class="text-red-500">*</span></label>
+                <div id="repair-photo-box" class="relative border-2 border-dashed border-teal-300 hover:border-teal-500 rounded-xl bg-teal-50/40 flex items-center justify-center overflow-hidden cursor-pointer" style="height:7rem">
+                    <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" accept="image/*" multiple onchange="repairAddAfter(event)">
+                    <span class="text-teal-400 text-xs font-semibold pointer-events-none">📷 คลิกเพื่อถ่าย/อัปโหลดรูป (เลือกได้หลายรูป)</span>
+                </div>
                 <div id="repair-after-thumbs" class="flex flex-wrap gap-1.5 mt-2"></div>
             </div>
-            <div class="mb-4">
-                <label class="text-xs font-bold text-gray-500 block mb-1">มาตรการแก้ไข (Corrective)</label>
-                <textarea id="repair-corrective" rows="3" placeholder="ระบุมาตรการแก้ไข..."
-                          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-500"></textarea>
+            <div class="pt-2 border-t border-gray-100">
+                <p class="text-xs text-gray-500">👤 บันทึกโดย: <strong id="repair-byuser" class="text-teal-700"></strong></p>
             </div>
-            <div class="flex gap-3">
-                <button onclick="closeRepairCompleteModal()"
-                        class="flex-1 py-2 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm hover:bg-gray-50 transition-colors">
-                    ยกเลิก
-                </button>
-                <button onclick="confirmRepairComplete()"
-                        class="flex-1 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm transition-colors">
-                    🔨 ยืนยันซ่อมสำเร็จ
-                </button>
-            </div>
+        </div>
+        <div class="flex gap-3 justify-end mt-5">
+            <button onclick="closeRepairCompleteModal()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">ยกเลิก</button>
+            <button onclick="confirmRepairComplete()" class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-full text-sm transition-colors flex items-center gap-2">🔨 ยืนยันซ่อมสำเร็จ</button>
+        </div>
         </div>
     </div>
 </div>
@@ -3182,19 +3173,19 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.14"></script>
-<script src="js/core.js?v=2.14"></script>
-<script src="js/machines.js?v=2.14"></script>
-<script src="js/breakdown-report.js?v=2.14"></script>
-<script src="js/breakdown-form.js?v=2.14"></script>
-<script src="js/records-summary.js?v=2.14"></script>
-<script src="js/export.js?v=2.14"></script>
-<script src="js/oee.js?v=2.14"></script>
-<script src="js/bootstrap.js?v=2.14"></script>
-<script src="js/checklist-core.js?v=2.14"></script>
-<script src="js/checklist-status.js?v=2.14"></script>
-<script src="js/mcrank.js?v=2.14"></script>
-<script src="js/user-access.js?v=2.14"></script>
-<script src="js/scan.js?v=2.14"></script>
+<script src="js/permissions.js?v=2.15"></script>
+<script src="js/core.js?v=2.15"></script>
+<script src="js/machines.js?v=2.15"></script>
+<script src="js/breakdown-report.js?v=2.15"></script>
+<script src="js/breakdown-form.js?v=2.15"></script>
+<script src="js/records-summary.js?v=2.15"></script>
+<script src="js/export.js?v=2.15"></script>
+<script src="js/oee.js?v=2.15"></script>
+<script src="js/bootstrap.js?v=2.15"></script>
+<script src="js/checklist-core.js?v=2.15"></script>
+<script src="js/checklist-status.js?v=2.15"></script>
+<script src="js/mcrank.js?v=2.15"></script>
+<script src="js/user-access.js?v=2.15"></script>
+<script src="js/scan.js?v=2.15"></script>
 </body>
 </html>

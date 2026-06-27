@@ -505,6 +505,21 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
             </div>
           </div>
 
+          <!-- Card: มาตรการ -->
+          <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:10px 12px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <div style="font-size:10px;font-weight:800;color:#374151;margin-bottom:6px">📋 แผนมาตรการแก้ไขและป้องกัน</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px">
+                <div style="font-size:9px;font-weight:700;color:#ea580c;margin-bottom:3px">🔧 มาตรการแก้ไข (Corrective)</div>
+                <div style="font-size:10px;color:#431407;white-space:pre-wrap;line-height:1.5">${(d.corrective||'—').replace(/</g,'&lt;')}</div>
+              </div>
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px">
+                <div style="font-size:9px;font-weight:700;color:#16a34a;margin-bottom:3px">🛡️ มาตรการป้องกัน (Preventive)</div>
+                <div style="font-size:10px;color:#14532d;white-space:pre-wrap;line-height:1.5">${(d.preventive||'—').replace(/</g,'&lt;')}</div>
+              </div>
+            </div>
+          </div>
+
           ${hasWhy ? `<!-- Card: Why-Why -->
           <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:10px 12px;flex:1;min-height:0;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
             <div style="font-size:10px;font-weight:800;color:#1e3a5f;margin-bottom:6px">🌿 การวิเคราะห์แบบรากต้นไม้ (Why-Why Tree Analysis)</div>
@@ -525,21 +540,6 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
               <div style="min-height:0">${_pptImgWithThumbs(imgList.after,'หลังแก้ไข','#dcfce7','#16a34a')}</div>
             </div>
           </div>
-
-          <!-- Card: มาตรการ -->
-          <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:10px 12px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-            <div style="font-size:10px;font-weight:800;color:#374151;margin-bottom:6px">📋 แผนมาตรการแก้ไขและป้องกัน</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-              <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 10px">
-                <div style="font-size:9px;font-weight:700;color:#ea580c;margin-bottom:3px">🔧 มาตรการแก้ไข (Corrective)</div>
-                <div style="font-size:10px;color:#431407;white-space:pre-wrap;line-height:1.5">${(d.corrective||'—').replace(/</g,'&lt;')}</div>
-              </div>
-              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px">
-                <div style="font-size:9px;font-weight:700;color:#16a34a;margin-bottom:3px">🛡️ มาตรการป้องกัน (Preventive)</div>
-                <div style="font-size:10px;color:#14532d;white-space:pre-wrap;line-height:1.5">${(d.preventive||'—').replace(/</g,'&lt;')}</div>
-              </div>
-            </div>
-          </div>
         </div>
 
       </div>
@@ -554,7 +554,7 @@ function timelineLabel(row) {
     if (a === 'accept')                    return '📋 รับงาน';
     if (a === 'close')                     return '✅ ปิดงาน';
     if (a === 'repaircomplete')            return '🔨 ซ่อมสำเร็จ';
-    if (a === 'update')                    return `🔄 อัปเดต${s ? ` → ${s}` : ''}`;
+    if (a === 'update')                    return '🔄 อัปเดต';
     if (a === 'edit')                      return '✏️ แก้ไข';
     return row.action || s || '—';
 }
@@ -686,15 +686,15 @@ async function exportPDF(fmt = 'portrait') {
                             <div style="font-size:16px;font-weight:800;color:#1e3a5f;margin-bottom:16px">📋 Timeline — ${esc(d0.machineName)} (${esc(trk)})</div>
                             <table style="width:100%;border-collapse:collapse;font-size:12px">
                                 <thead><tr style="background:#f1f5f9">
-                                    <th style="text-align:left;padding:8px 10px;color:#64748b;font-weight:700;border-bottom:2px solid #e2e8f0">เวลา</th>
                                     <th style="text-align:left;padding:8px 10px;color:#64748b;font-weight:700;border-bottom:2px solid #e2e8f0">เหตุการณ์</th>
-                                    <th style="text-align:left;padding:8px 10px;color:#64748b;font-weight:700;border-bottom:2px solid #e2e8f0">ผู้ดำเนินการ</th>
+                                    <th style="text-align:left;padding:8px 10px;color:#64748b;font-weight:700;border-bottom:2px solid #e2e8f0">ชื่อผู้ดำเนินการ</th>
+                                    <th style="text-align:left;padding:8px 10px;color:#64748b;font-weight:700;border-bottom:2px solid #e2e8f0">เวลา</th>
                                     <th style="text-align:left;padding:8px 10px;color:#64748b;font-weight:700;border-bottom:2px solid #e2e8f0">หมายเหตุ</th>
                                 </tr></thead>
                                 <tbody>${logs.map((row, i) => `<tr style="background:${i % 2 === 0 ? '#ffffff' : '#f8fafc'};border-bottom:1px solid #f1f5f9">
-                                    <td style="padding:7px 10px;color:#374151;white-space:nowrap">${esc(fmtExportDateTime(row.timestamp || row.time || ''))}</td>
                                     <td style="padding:7px 10px;font-weight:600;color:#1e293b">${esc(timelineLabel(row))}</td>
                                     <td style="padding:7px 10px;color:#64748b">${esc(row.by || row.user || '')}</td>
+                                    <td style="padding:7px 10px;color:#374151;white-space:nowrap">${esc(fmtExportDateTime(row.timestamp || row.time || ''))}</td>
                                     <td style="padding:7px 10px;color:#64748b">${esc(row.note || row.remark || '')}</td>
                                 </tr>`).join('')}</tbody>
                             </table>`;

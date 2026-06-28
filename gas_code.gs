@@ -1308,8 +1308,7 @@ function doGetSummary(year, factory, area) {
 
   sheets.forEach(sheet => {
     const name = sheet.getName();
-    if (name.charAt(0) === '_') return;   // ข้ามชีตภายใน (_Log)
-    if (!name.includes('_')) return;
+    if (!/_\d{4}-\d{2}$/.test(name)) return;   // เฉพาะชีต BD รายเดือน (กัน Copy/backup/ชีตอื่นหลุดเข้ามา)
     const sheetMonth = name.split('_').pop();
     if (!sheetMonth.startsWith(year)) return;
     if (factory && !name.startsWith(factory)) return;
@@ -1340,8 +1339,7 @@ function doGetAll(factory, area, status, month, machineId) {
 
   sheets.forEach(sheet => {
     const name = sheet.getName();
-    if (name.charAt(0) === '_') return;   // ข้ามชีตภายใน (_Log)
-    if (!name.includes('_')) return;
+    if (!/_\d{4}-\d{2}$/.test(name)) return;   // เฉพาะชีต BD รายเดือน {factory}_YYYY-MM (กัน Copy/backup/ชีตอื่นหลุดเข้ามา)
     const sheetMonth = name.split('_').pop(); // YYYY-MM
     const sheetFactory = name.replace('_' + sheetMonth, '');
 

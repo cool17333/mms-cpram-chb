@@ -28,7 +28,10 @@ function sha256hex(text) {
 // ============================================================
 const PERM_MATRIX = {
   Visitor:       {'bd.view':1,'bd.export':1,'bd.report':0,'bd.accept':0,'bd.editdoc':0,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':0,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  User:          {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':0,'bd.editdoc':0,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':1,'cl.pm':0,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  QA:            {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':0,'bd.editdoc':0,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':1,'cl.pm':0,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
   Production:    {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':0,'bd.editdoc':0,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':1,'cl.pm':0,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
+  Safety:        {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':0,'bd.editdoc':0,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':1,'cl.pm':0,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
   Technician:    {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':0,'bd.whywhy':0,'bd.manual':0,'bd.cancel':0,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':1,'cl.edit':0,'cl.calendar':0,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
   Engineer:      {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':1,'bd.whywhy':1,'bd.manual':1,'bd.cancel':0,'mc.view':1,'mc.edit':1,'mc.delete':1,'mc.add':1,'mc.import':1,'mc.backup':1,'mc.restore':1,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':1,'cl.edit':1,'cl.calendar':1,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
   Supervisor:    {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':1,'bd.whywhy':1,'bd.manual':1,'bd.cancel':1,'mc.view':1,'mc.edit':0,'mc.delete':0,'mc.add':0,'mc.import':0,'mc.backup':0,'mc.restore':0,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':0,'cl.pm':0,'cl.edit':1,'cl.calendar':1,'ua.add':0,'ua.del':0,'ua.level':0,'ua.perm':0,'ua.log':0},
@@ -64,14 +67,30 @@ function seedPermissions() {
   let sh = ss.getSheetByName('_Permissions') || ss.insertSheet('_Permissions');
   sh.clearContents();
   sh.getRange(1,1,1,3).setValues([['role','perm_code','allow']]).setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
-  const ROLES = ['Visitor','Production','Technician','Engineer','Supervisor','Administrator'];
+  const ROLES = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
   const CODES = ['bd.view','bd.export','bd.report','bd.accept','bd.editdoc','bd.close','bd.whywhy','bd.manual','bd.cancel','mc.view','mc.edit','mc.delete','mc.add','mc.import','mc.backup','mc.restore','cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar','ua.add','ua.del','ua.level','ua.perm','ua.log'];
   const rows = [];
   ROLES.forEach(function(role) { CODES.forEach(function(code) { rows.push([role, code, PERM_MATRIX[role][code] || 0]); }); });
   sh.getRange(2,1,rows.length,3).setValues(rows);
   sh.setFrozenRows(1);
   sh.autoResizeColumns(1,3);
-  Logger.log('Seeded ' + rows.length + ' rows');  // expect 174
+  Logger.log('Seeded ' + rows.length + ' rows');  // expect 261 (9 roles × 29 codes)
+}
+
+// Tools → Run → migrateRolesV2_runOnce  (v2.21 — รัน 1 ครั้งหลัง redeploy: ยุบแผนก→Level)
+// 1) reseed _Permissions = 9 roles ใหม่  2) level 'Production' (floor เดิม) → 'User'
+function migrateRolesV2_runOnce() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  seedPermissions();   // _Permissions ← 9 roles (User/QA/Production/Safety/...) ⚠️ ทับ custom perm เดิม
+  ['_Users','_PendingUsers'].forEach(function(nm){
+    var sh = ss.getSheetByName(nm); if (!sh || sh.getLastRow() < 2) return;
+    var rng = sh.getRange(2, 6, sh.getLastRow() - 1, 1);   // คอลัมน์ level (F)
+    var v = rng.getValues(), changed = false;
+    v.forEach(function(r){ if (String(r[0]).trim() === 'Production') { r[0] = 'User'; changed = true; } });
+    if (changed) rng.setValues(v);
+  });
+  CacheService.getScriptCache().remove('perm_matrix');
+  Logger.log('migrateRolesV2 done — Production→User + reseeded. อย่าลืมตั้ง level ทีม (QA/Production/Engineer/Safety) ให้หัวหน้าเดิม');
 }
 
 // Tools → Run → seedInitialAdmin  (รัน 1 ครั้ง — เปลี่ยน PIN หลัง setup!)
@@ -91,8 +110,8 @@ function seedInitialAdmin() {
 // ============================================================
 // USER REGISTRATION (v2.12) — self-service request → admin approve
 // ============================================================
-var REGISTER_LEVELS = ['Visitor','Production','Technician','Engineer','Supervisor'];       // ขอเองได้ (ไม่รวม Administrator)
-var ALL_LEVELS      = ['Visitor','Production','Technician','Engineer','Supervisor','Administrator'];
+var REGISTER_LEVELS = ['Visitor','User','Technician'];       // สมัครเองได้เฉพาะ non-signing (team QA/Production/Engineer/Safety/Supervisor = admin ตั้งให้ กัน escalation)
+var ALL_LEVELS      = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
 
 function ensurePendingUsers(ss) {
   var sh = ss.getSheetByName('_PendingUsers');
@@ -1509,7 +1528,7 @@ var MC_SECTIONS = {
   'ความปลอดภัย':  { ids:[13,14],           byCol:26, atCol:27 },
   'อื่นๆ':        { ids:[15],              byCol:28, atCol:29 },
 };
-var MC_SECTION_DEPT = { 'คุณภาพ':'QA','ผลผลิต':'Production','การซ่อมบำรุง':'Engineer','ความปลอดภัย':'Safety','อื่นๆ':'*' };
+var SECTION_LEVEL   = { 'คุณภาพ':'QA','ผลผลิต':'Production','การซ่อมบำรุง':'Engineer','ความปลอดภัย':'Safety','อื่นๆ':'*' };   // v2.21: เซ็นตาม Level (เลิกใช้แผนก)
 var MC_RANK_FACTOR  = 1.11;   // FIX — max raw 90 เสมอ (12×5 + 3×10 = 90)
 
 function ensureMachineRanking_(ss) {
@@ -1621,13 +1640,11 @@ function getUserRowById_(ss, username) {
 
 function canReviewSection_(userRow, section) {
   var level = String(userRow[5]||'').trim();
-  var dept  = String(userRow[9]||'').trim();
-  if (['Supervisor','Administrator'].indexOf(level) < 0) return false;
-  if (level === 'Administrator') return true;
-  var reqDept = MC_SECTION_DEPT[section];
-  if (!reqDept) return false;
-  if (reqDept === '*') return true;
-  return dept === reqDept;
+  if (level === 'Administrator') return true;          // admin เซ็นได้ทุกหมวด
+  var req = SECTION_LEVEL[section];
+  if (!req) return false;
+  if (req === '*') return level !== 'Visitor';          // 'อื่นๆ' = ใครก็ได้ที่ login (ไม่ใช่ Visitor)
+  return level === req;                                 // QA→คุณภาพ, Production→ผลผลิต, Engineer→ซ่อมบำรุง, Safety→ปลอดภัย
 }
 
 function calcRankGas_(scores) {

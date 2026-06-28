@@ -50,7 +50,7 @@ function closeLogin() {
 function openRegister() {
     closeLogin();
     ['rg-fname','rg-lname','rg-user','rg-pin'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const lv = document.getElementById('rg-level'); if (lv) lv.value = 'Production';
+    const lv = document.getElementById('rg-level'); if (lv) lv.value = 'User';
     document.getElementById('register-modal').classList.remove('hidden');
     setTimeout(() => document.getElementById('rg-fname')?.focus(), 80);
 }
@@ -62,7 +62,6 @@ async function submitRegister() {
     const uname = (document.getElementById('rg-user')?.value  || '').trim();
     const pin   = (document.getElementById('rg-pin')?.value   || '').trim();
     const level = document.getElementById('rg-level')?.value  || 'Visitor';
-    const dept  = document.getElementById('rg-dept')?.value   || '';
     if (!fname || !lname || !uname || !pin) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
     if (!/^[A-Za-z0-9_.]+$/.test(uname)) { showToast('⚠️ Username ใช้ a-z 0-9 _ . (ห้ามเว้นวรรค)', 'error'); return; }
     if (pin.length < 8 || pin.length > 12) { showToast('⚠️ Password ต้อง 8–12 ตัว', 'error'); return; }
@@ -71,7 +70,7 @@ async function submitRegister() {
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'registerUser',
-            newUser: { name: `${fname} ${lname}`.trim(), username: uname, pin, level, department: dept }
+            newUser: { name: `${fname} ${lname}`.trim(), username: uname, pin, level }
         })});
         const json = await res.json();
         if (!json.success) { showToast(/unknown action/i.test(json.error||'') ? '⚠️ GAS ยังไม่ได้ redeploy' : '❌ ' + (json.error||'ส่งคำขอไม่สำเร็จ'), 'error'); return; }
@@ -110,7 +109,7 @@ async function doLogin() {
             showToast(/unknown action/i.test(json.error||'') ? '⚠️ GAS ยังไม่ได้ redeploy' : `❌ ${json.error||'เข้าสู่ระบบไม่สำเร็จ'}`, 'error');
             return;
         }
-        currentUser = { username, name: json.name, level: json.level, department: json.department || '', perms: new Set(json.perms||[]), pin };
+        currentUser = { username, name: json.name, level: json.level, perms: new Set(json.perms||[]), pin };
         closeLogin();
         if (typeof closeMoreSheet === 'function') closeMoreSheet();
         applyPermissions();

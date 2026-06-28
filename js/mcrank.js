@@ -37,7 +37,7 @@ const DEFAULT_CRITERIA = [
 ];
 const RANK_FACTOR = 1.11;
 const RANK_COLOR  = { A:'#c0392b', B:'#e67e22', C:'#f1c40f', D:'#27ae60' };
-const SECTION_DEPT = { 'คุณภาพ':'QA','ผลผลิต':'Production','การซ่อมบำรุง':'Engineer','ความปลอดภัย':'Safety','อื่นๆ':'*' };
+const SECTION_LEVEL = { 'คุณภาพ':'QA','ผลผลิต':'Production','การซ่อมบำรุง':'Engineer','ความปลอดภัย':'Safety','อื่นๆ':'*' };
 const MC_SECTIONS_ORDER = ['คุณภาพ','ผลผลิต','การซ่อมบำรุง','ความปลอดภัย','อื่นๆ'];
 
 function calcRank(scores) {
@@ -48,12 +48,11 @@ function calcRank(scores) {
 
 function canReviewSection(user, section) {
     if (!user || !user.level) return false;
-    if (['Supervisor','Administrator'].indexOf(user.level) < 0) return false;
-    if (user.level === 'Administrator') return true;
-    var req = SECTION_DEPT[section];
+    if (user.level === 'Administrator') return true;        // admin เซ็นได้ทุกหมวด
+    var req = SECTION_LEVEL[section];
     if (!req) return false;
-    if (req === '*') return true;
-    return user.department === req;
+    if (req === '*') return user.level !== 'Visitor';        // 'อื่นๆ' = ใครก็ได้ที่ login
+    return user.level === req;   // QA→คุณภาพ, Production→ผลผลิต, Engineer→ซ่อมบำรุง, Safety→ปลอดภัย
 }
 
 function criteriaByGroup(group) {
@@ -329,7 +328,7 @@ function renderMcRankForm() {
             (signed
                 ? '<span class="text-xs text-green-600 font-bold">✓ รีวิวโดย ' + reviewer + '</span>'
                 : (isLocked
-                    ? '<span class="text-xs text-gray-400">รอแผนก ' + (SECTION_DEPT[secName]||'') + '</span>'
+                    ? '<span class="text-xs text-gray-400">รอทีม' + (SECTION_LEVEL[secName]||'') + '</span>'
                     : '<span class="text-xs text-orange-500 font-bold">รอการเซ็น</span>')
             ) +
             '</div>';
@@ -593,7 +592,7 @@ function renderFormApprovalBody(area) {
         var hdr = '<div class="flex items-center justify-between mb-1"><p class="font-bold text-gray-700">' + secName + '</p>' +
             (signed ? '<span class="text-xs text-green-600 font-bold">✓ อนุมัติโดย ' + ap.sections[secName].by + ' · ' + ap.sections[secName].at + '</span>'
                     : (canEdit ? '<span class="text-xs text-orange-500 font-bold">รออนุมัติ</span>'
-                               : '<span class="text-xs text-gray-400">รอแผนก ' + (SECTION_DEPT[secName] || '') + '</span>')) + '</div>';
+                               : '<span class="text-xs text-gray-400">รอทีม' + (SECTION_LEVEL[secName] || '') + '</span>')) + '</div>';
         var btn = (!signed && canEdit)
             ? '<div class="mt-2 flex justify-end"><button onclick="signFormApproval(\'' + secName + '\')" class="px-4 py-1.5 text-white text-xs font-bold rounded-lg" style="background:#2475b0">✅ อนุมัติฟอร์มหัวข้อนี้</button></div>'
             : '';

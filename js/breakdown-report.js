@@ -606,8 +606,8 @@ function updateNavActive(panel) {
         'log':'bn-more', 'oee':'bn-more', 'mcrank':'bn-more', 'mcapprove':'bn-more', 'tpm-hub':'bn-more',
     };
     document.getElementById(bnMap[panel])?.classList.add('active');
-    // sidebar: single items
-    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log', 'oee':'sn-tpm', 'mcrank':'sn-tpm', 'mcapprove':'sn-tpm', 'tpm-hub':'sn-tpm' };
+    // sidebar: single items (standalone เท่านั้น — group header จัดการใน grpMap)
+    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log' };
     if (snMap[panel]) document.getElementById(snMap[panel])?.classList.add('active');
     // sidebar: group + sub-item
     const grpMap = {
@@ -630,6 +630,7 @@ function updateNavActive(panel) {
     const gi = grpMap[panel];
     if (gi) {
         document.getElementById('grp-' + gi[0])?.classList.add('open');
+        document.getElementById('sn-' + gi[0])?.classList.add('active'); // highlight main menu (group header) ทุกระบบ
         document.getElementById(gi[1])?.classList.add('active');
     }
     document.getElementById('sidebar-subnav')?.classList.toggle('hidden', !isSubPanel);

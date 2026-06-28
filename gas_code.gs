@@ -1549,8 +1549,20 @@ function ensureRankingDescriptions_(ss) {
   var sh = ss.getSheetByName('_RankingDescriptions');
   if (!sh) {
     sh = ss.insertSheet('_RankingDescriptions');
-    sh.getRange(1,1,1,4).setValues([['area','criterionId','score','label']]).setBackground('#27ae60').setFontColor('#fff').setFontWeight('bold');
+    sh.getRange(1,1,1,5).setValues([['area','year','criterionId','score','label']]).setBackground('#27ae60').setFontColor('#fff').setFontWeight('bold');
     sh.setFrozenRows(1);
+    return sh;
+  }
+  // v2.20 migrate: schema เก่า 4 คอลัมน์ (area,criterionId,score,label) → 5 (แทรก year)
+  if (String(sh.getRange(1,2).getValue()).trim() === 'criterionId') {
+    sh.insertColumnAfter(1);
+    sh.getRange(1,2).setValue('year');
+    var n = sh.getLastRow();
+    if (n > 1) {
+      var defYear = String(new Date().getFullYear());
+      var arr = []; for (var i = 0; i < n-1; i++) arr.push([defYear]);
+      sh.getRange(2,2,n-1,1).setValues(arr);   // backfill ปีปัจจุบัน
+    }
   }
   return sh;
 }
@@ -1724,15 +1736,17 @@ function doGetRankingOverview_(params) {
 function doGetAreaDescriptions_(params) {
   var ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
   var area = params.area || '';
+  var year = String(params.year || new Date().getFullYear());
   var sh   = ensureRankingDescriptions_(ss);
   if (sh.getLastRow() < 2) return jsonOut({ success:true, data:{} });
   var rows = sh.getDataRange().getValues().slice(1);
   var out  = {};
   rows.forEach(function(r) {
     if (String(r[0]).trim() !== area) return;
-    var cid = String(r[1]).trim(), sc = String(r[2]).trim();
+    if (String(r[1]).trim() !== year) return;   // NEW: filter ปี
+    var cid = String(r[2]).trim(), sc = String(r[3]).trim();
     if (!out[cid]) out[cid] = {};
-    out[cid][sc] = String(r[3]);
+    out[cid][sc] = String(r[4]);
   });
   return jsonOut({ success:true, data:out });
 }
@@ -1813,22 +1827,40 @@ function handleSetRankingSection_(ss, data) {
 
 // POST handler: setAreaDescriptions
 function handleSetAreaDescriptions_(ss, data) {
-  if (!userCan(ss, data.username, data.pin, 'ua.perm'))
-    return jsonOut({ success:false, error:'ต้องมีสิทธิ์ ua.perm' });
+  var uRow = getUserRow(ss, data.username);
+  if (!uRow || !verifyPin(uRow, data.pin)) return jsonOut({ success:false, error:'ยืนยันตัวตนไม่สำเร็จ' });
   var area  = String(data.area||'').trim();
+  var year  = String(data.year || new Date().getFullYear());
   var items = Array.isArray(data.items) ? data.items : [];
   if (!area) return jsonOut({ success:false, error:'ไม่ระบุพื้นที่' });
-  var sh    = ensureRankingDescriptions_(ss);
-  // ลบ override ของ area นี้ก่อน
-  var rows  = sh.getLastRow() > 1 ? sh.getDataRange().getValues() : [];
-  for (var i = rows.length - 1; i >= 1; i--) {
-    if (String(rows[i][0]).trim() === area) sh.deleteRow(i+1);
+
+  // สิทธิ์: admin (ua.perm) หรือ Level ทีมของ "ทุกหัวข้อที่ส่งมา" (canReviewSection_ = level-based v2.21)
+  var isAdmin = userCan(ss, data.username, data.pin, 'ua.perm');
+  if (!isAdmin) {
+    var critSec = {};
+    Object.keys(MC_SECTIONS).forEach(function(s){ MC_SECTIONS[s].ids.forEach(function(id){ critSec[id] = s; }); });
+    var ok = items.length > 0 && items.every(function(it){
+      var sec = critSec[Number(it.criterionId)];
+      return sec && canReviewSection_(uRow, sec);
+    });
+    if (!ok) return jsonOut({ success:false, error:'ไม่มีสิทธิ์แก้คำอธิบายหัวข้อนี้' });
   }
-  // เพิ่มใหม่
-  items.forEach(function(it) {
-    sh.appendRow([area, String(it.criterionId||''), String(it.score||''), String(it.label||'')]);
+
+  var sh = ensureRankingDescriptions_(ss);
+  // upsert เฉพาะ (criterionId,score) ที่ส่งมา ของ (area,year) นี้ — ไม่แตะหัวข้ออื่น
+  var submitted = {};
+  items.forEach(function(it){ submitted[String(it.criterionId)+'|'+String(it.score)] = true; });
+  var rows = sh.getLastRow() > 1 ? sh.getDataRange().getValues() : [];
+  for (var i = rows.length - 1; i >= 1; i--) {
+    if (String(rows[i][0]).trim() !== area) continue;
+    if (String(rows[i][1]).trim() !== year) continue;
+    var key = String(rows[i][2]).trim()+'|'+String(rows[i][3]).trim();
+    if (submitted[key]) sh.deleteRow(i+1);
+  }
+  items.forEach(function(it){
+    sh.appendRow([area, year, String(it.criterionId||''), String(it.score||''), String(it.label||'')]);
   });
-  writeAccessLog(ss, data.username, 'setAreaDescriptions', area + ' — ' + items.length + ' items');
+  writeAccessLog(ss, data.username, 'setAreaDescriptions', area + '/' + year + ' — ' + items.length + ' items');
   return jsonOut({ success:true });
 }
 

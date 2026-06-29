@@ -786,9 +786,36 @@ function doPost(e) {
         var fpSalt = Utilities.getUuid();
         sh.getRange(fi + 1, 4).setValue(sha256hex(fpSalt + fpTemp));
         sh.getRange(fi + 1, 5).setValue(fpSalt);
-        writeAccessLog(ss, fpUser, 'forgotPassword', 'รีเซ็ต PIN ตัวเอง');
+        sh.getRange(fi + 1, 11).setValue(1);   // mustChangePin flag (คอลัมน์ K)
+        writeAccessLog(ss, fpUser, 'forgotPassword', 'รีเซ็ต PIN ตัวเอง (บังคับเปลี่ยน)');
         var ret = {}; ret.success = true; ret.tempPin = fpTemp;
         return jsonOut(ret);
+      }
+      return jsonOut({ success:false, error:'ไม่พบ username นี้ในระบบ' });
+    }
+
+    // ---- CHANGE OWN PIN: เปลี่ยนรหัสผ่านตัวเอง (ใช้ตอนถูกบังคับเปลี่ยนหลัง temp PIN) ----
+    if (data.action === 'changeOwnPin') {
+      var cpUser = String(data.username||'').trim();
+      var cpCur  = String(data.currentPin||'');
+      var cpNew  = String(data.newPin||'');
+      if (!cpUser || !cpCur || !cpNew) return jsonOut({ success:false, error:'กรอกข้อมูลให้ครบ' });
+      if (cpNew.length < 8) return jsonOut({ success:false, error:'รหัสผ่านใหม่ต้องอย่างน้อย 8 ตัว' });
+      var cpSh = ss.getSheetByName('_Users');
+      if (!cpSh) return jsonOut({ success:false, error:'ไม่พบข้อมูลผู้ใช้' });
+      var cpRows  = cpSh.getDataRange().getValues();
+      var cpLower = cpUser.toLowerCase();
+      for (var ci = 1; ci < cpRows.length; ci++) {
+        if (String(cpRows[ci][2]).trim().toLowerCase() !== cpLower) continue;
+        if (!cpRows[ci][6]) return jsonOut({ success:false, error:'บัญชีนี้ถูกระงับ' });
+        if (sha256hex(String(cpRows[ci][4]) + cpCur) !== String(cpRows[ci][3]))
+          return jsonOut({ success:false, error:'รหัสผ่านปัจจุบันไม่ถูกต้อง' });
+        var cpSalt = Utilities.getUuid();
+        cpSh.getRange(ci + 1, 4).setValue(sha256hex(cpSalt + cpNew));
+        cpSh.getRange(ci + 1, 5).setValue(cpSalt);
+        cpSh.getRange(ci + 1, 11).setValue('');   // ล้าง mustChangePin flag
+        writeAccessLog(ss, cpUser, 'changeOwnPin', 'เปลี่ยนรหัสผ่านตัวเอง');
+        return jsonOut({ success:true });
       }
       return jsonOut({ success:false, error:'ไม่พบ username นี้ในระบบ' });
     }
@@ -802,7 +829,7 @@ function doPost(e) {
       var rLevel = String(rg.level||'').trim();
       if (!rName || !rUser || !rPin) return jsonOut({ success:false, error:'กรอกข้อมูลให้ครบ' });
       if (!/^[A-Za-z0-9_.]+$/.test(rUser)) return jsonOut({ success:false, error:'username ใช้ได้เฉพาะ a-z 0-9 _ . (ห้ามเว้นวรรค)' });
-      if (rPin.length < 8 || rPin.length > 12) return jsonOut({ success:false, error:'Password ต้อง 8–12 ตัว' });
+      if (rPin.length < 8) return jsonOut({ success:false, error:'Password ต้องอย่างน้อย 8 ตัว' });
       if (REGISTER_LEVELS.indexOf(rLevel) < 0) return jsonOut({ success:false, error:'Level ไม่ถูกต้อง' });
       if (getUserRow(ss, rUser)) return jsonOut({ success:false, error:'username นี้มีอยู่ในระบบแล้ว' });
       var shReg = ensurePendingUsers(ss);
@@ -884,7 +911,8 @@ function doPost(e) {
           var newSalt = Utilities.getUuid();
           shP.getRange(iP + 1, 4).setValue(sha256hex(newSalt + String(data.newPin)));
           shP.getRange(iP + 1, 5).setValue(newSalt);
-          writeAccessLog(ss, data.username, 'resetUserPin', 'รีเซ็ต PIN: ' + rowsP[iP][2]);
+          shP.getRange(iP + 1, 11).setValue(1);   // บังคับ user เปลี่ยนเองตอน login ถัดไป
+          writeAccessLog(ss, data.username, 'resetUserPin', 'รีเซ็ต PIN: ' + rowsP[iP][2] + ' (บังคับเปลี่ยน)');
           return jsonOut({ success:true });
         }
       }
@@ -1236,7 +1264,7 @@ function doGet(e) {
       if (!row[6]) return jsonOut({ success: false, error: 'บัญชีถูกระงับ' });
       if (!verifyPin(row, pin)) return jsonOut({ success: false, error: 'PIN ไม่ถูกต้อง' });
       var perms = getPermsForLevel(row[5], ss2);
-      return jsonOut({ success: true, name: String(row[1]).trim(), level: String(row[5]).trim(), perms: perms, department: String(row[9]||'').trim() });
+      return jsonOut({ success: true, name: String(row[1]).trim(), level: String(row[5]).trim(), perms: perms, department: String(row[9]||'').trim(), mustChangePin: !!row[10] });
     }
     if (action === 'getLog') {
       return doGetLog(e.parameter.tracking || '');

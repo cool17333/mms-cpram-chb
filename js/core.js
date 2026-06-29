@@ -103,7 +103,7 @@ async function submitRegister() {
     const level = document.getElementById('rg-level')?.value  || 'Visitor';
     if (!fname || !lname || !uname || !pin) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
     if (!/^[A-Za-z0-9_.]+$/.test(uname)) { showToast('⚠️ Username ใช้ a-z 0-9 _ . (ห้ามเว้นวรรค)', 'error'); return; }
-    if (pin.length < 8 || pin.length > 12) { showToast('⚠️ Password ต้อง 8–12 ตัว', 'error'); return; }
+    if (pin.length < 8) { showToast('⚠️ Password ต้องอย่างน้อย 8 ตัว', 'error'); return; }
     if (!GAS_URL) { showToast('⚠️ ตั้งค่า Web App URL ก่อน', 'error'); return; }
     showLoading('กำลังส่งคำขอ…');
     try {
@@ -135,6 +135,57 @@ function saveSettings() {
 Object.defineProperty(window, 'userRole',  { get: () => currentUser.level, set: () => {} });
 Object.defineProperty(window, 'sessionPw', { get: () => currentUser.pin,   set: () => {} });
 
+// ---- Force change PIN (บังคับเปลี่ยนหลัง login ด้วย temp PIN / admin reset) ----
+let _pendingLogin = null;
+
+function finalizeLogin(u) {
+    currentUser = u;
+    closeLogin();
+    if (typeof closeMoreSheet === 'function') closeMoreSheet();
+    applyPermissions();
+    showToast(`✅ เข้าสู่ระบบเป็น ${u.name} (${u.level})`, 'success');
+    if (typeof window._afterLoginCallback === 'function') {
+        const cb = window._afterLoginCallback;
+        window._afterLoginCallback = null;
+        cb();
+    }
+}
+
+function openForceChangePin() {
+    ['fc-new','fc-confirm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('force-change-pin-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('fc-new')?.focus(), 80);
+}
+
+function cancelForceChangePin() {
+    _pendingLogin = null;
+    document.getElementById('force-change-pin-modal').classList.add('hidden');
+    showToast('ยกเลิกการเข้าสู่ระบบ — ต้องเปลี่ยนรหัสผ่านก่อนใช้งาน', 'info');
+}
+
+async function submitForceChangePin() {
+    if (!_pendingLogin) return;
+    const newPin  = (document.getElementById('fc-new')?.value     || '').trim();
+    const confirm = (document.getElementById('fc-confirm')?.value || '').trim();
+    if (newPin.length < 8) { showToast('⚠️ รหัสผ่านใหม่ต้องอย่างน้อย 8 ตัว', 'error'); return; }
+    if (newPin !== confirm)  { showToast('⚠️ รหัสผ่านยืนยันไม่ตรงกัน', 'error'); return; }
+    if (newPin === _pendingLogin.pin) { showToast('⚠️ ต้องตั้งรหัสใหม่ที่ต่างจากรหัสชั่วคราว', 'error'); return; }
+    showLoading('กำลังเปลี่ยนรหัสผ่าน…');
+    try {
+        const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
+            action:'changeOwnPin', username: _pendingLogin.username,
+            currentPin: _pendingLogin.pin, newPin
+        })});
+        const json = await res.json();
+        if (!json.success) { showToast('❌ ' + (json.error || 'ไม่สำเร็จ'), 'error'); return; }
+        document.getElementById('force-change-pin-modal').classList.add('hidden');
+        const u = Object.assign({}, _pendingLogin, { pin: newPin });
+        _pendingLogin = null;
+        finalizeLogin(u);
+    } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
+}
+
 async function doLogin() {
     const username = (document.getElementById('lm-user')?.value || '').trim();
     const pin      = (document.getElementById('lm-pin')?.value  || '').trim();
@@ -148,16 +199,14 @@ async function doLogin() {
             showToast(/unknown action/i.test(json.error||'') ? '⚠️ GAS ยังไม่ได้ redeploy' : `❌ ${json.error||'เข้าสู่ระบบไม่สำเร็จ'}`, 'error');
             return;
         }
-        currentUser = { username, name: json.name, level: json.level, perms: new Set(json.perms||[]), pin };
-        closeLogin();
-        if (typeof closeMoreSheet === 'function') closeMoreSheet();
-        applyPermissions();
-        showToast(`✅ เข้าสู่ระบบเป็น ${json.name} (${json.level})`, 'success');
-        if (typeof window._afterLoginCallback === 'function') {
-            const cb = window._afterLoginCallback;
-            window._afterLoginCallback = null;
-            cb();
+        const u = { username, name: json.name, level: json.level, perms: new Set(json.perms||[]), pin };
+        if (json.mustChangePin) {
+            _pendingLogin = u;
+            closeLogin();
+            openForceChangePin();
+            return;
         }
+        finalizeLogin(u);
     } catch (err) {
         showToast('❌ เข้าสู่ระบบไม่สำเร็จ: ' + err.message, 'error');
     } finally {

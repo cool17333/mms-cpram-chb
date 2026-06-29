@@ -167,7 +167,6 @@ function machOpenAdd() {
     document.getElementById('mc-name').value = '';
     document.getElementById('mc-factory').value = '';
     document.getElementById('mc-line').value = '';
-    document.getElementById('mc-editor').value = '';
     document.getElementById('mc-edit-idx').value = '-1';
     document.getElementById('mc-rank-row').classList.add('hidden');
     mcUpdateArea('');
@@ -182,7 +181,6 @@ function machOpenEdit(i) {
     document.getElementById('mc-name').value = m.name || '';
     document.getElementById('mc-factory').value = m.factory || '';
     document.getElementById('mc-line').value = m.line || '';
-    document.getElementById('mc-editor').value = '';
     document.getElementById('mc-edit-idx').value = String(i);
     var rankRow = document.getElementById('mc-rank-row');
     rankRow.classList.remove('hidden');
@@ -261,7 +259,6 @@ function machDeleteRow(i) {
     _machDelIdx = i;
     document.getElementById('mach-del-desc').textContent =
         `คุณกำลังจะลบเครื่องจักร "${m.id || ''} — ${m.name || ''}" ออกจากทะเบียน ข้อมูลนี้จะถูกลบถาวรและไม่สามารถกู้คืนได้`;
-    document.getElementById('mach-del-by').value = '';
     document.getElementById('modal-mach-del').classList.remove('hidden');
 }
 function closeMachDelModal() {

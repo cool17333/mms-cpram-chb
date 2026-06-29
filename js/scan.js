@@ -114,24 +114,71 @@ function lockScanFields() {
 // ---- QR Picker modal ----
 function openQrPicker() {
     const list = typeof machineMaster !== 'undefined' ? machineMaster : [];
-    const box  = document.getElementById('qr-pick-list');
     if (!list.length) { showToast('⚠️ ยังไม่มีข้อมูลเครื่องจักร', 'warn'); return; }
-    const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    box.innerHTML = list.map(m => {
-        const id = m.id || m.machineId || m.machine_id || '';
-        if (!id) return '';
-        return `<label class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm">
-            <input type="checkbox" class="qr-pick-cb w-4 h-4" value="${esc(id)}" onchange="qrPickerCount()">
-            <span class="font-bold text-gray-800">${esc(m.name||id)}</span>
-            <span class="text-gray-400 text-xs">${esc(id)}</span>
-            <span class="ml-auto text-gray-400 text-xs">${esc(m.factory||'')} ${esc(m.area||'')}</span>
-        </label>`;
-    }).join('');
+    // populate factory dropdown
+    const facSel = document.getElementById('qr-fac-filter');
+    if (facSel) {
+        const facs = {};
+        list.forEach(m => { if (m.factory) facs[m.factory] = true; });
+        facSel.innerHTML = '<option value="">ทุกโรงงาน</option>' +
+            Object.keys(facs).sort().map(f => `<option>${f}</option>`).join('');
+        facSel.value = '';
+    }
+    // reset area + search
+    const areaSel = document.getElementById('qr-area-filter');
+    if (areaSel) { areaSel.innerHTML = '<option value="">ทุกพื้นที่</option>'; areaSel.value = ''; }
+    const srch = document.getElementById('qr-search-filter');
+    if (srch) srch.value = '';
     document.getElementById('qr-pick-all').checked = false;
-    qrPickerCount();
+    _qrPickerRenderList();
     document.getElementById('qr-picker-modal').classList.remove('hidden');
 }
 function closeQrPicker() { document.getElementById('qr-picker-modal').classList.add('hidden'); }
+
+function _qrPickerRenderList() {
+    const list = typeof machineMaster !== 'undefined' ? machineMaster : [];
+    const fac  = document.getElementById('qr-fac-filter')?.value  || '';
+    const area = document.getElementById('qr-area-filter')?.value  || '';
+    const q    = (document.getElementById('qr-search-filter')?.value || '').trim().toLowerCase();
+    const esc  = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const box  = document.getElementById('qr-pick-list');
+    if (!box) return;
+    const filtered = list.filter(m => {
+        const id = m.id || m.machineId || m.machine_id || '';
+        if (!id) return false;
+        if (fac  && m.factory !== fac)  return false;
+        if (area && m.area    !== area)  return false;
+        if (q && !String(id).toLowerCase().includes(q) && !String(m.name||'').toLowerCase().includes(q)) return false;
+        return true;
+    });
+    box.innerHTML = filtered.length
+        ? filtered.map(m => {
+            const id = m.id || m.machineId || m.machine_id || '';
+            return `<label class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm">
+                <input type="checkbox" class="qr-pick-cb w-4 h-4" value="${esc(id)}" onchange="qrPickerCount()">
+                <span class="font-bold text-gray-800">${esc(m.name||id)}</span>
+                <span class="text-gray-400 text-xs">${esc(id)}</span>
+                <span class="ml-auto text-gray-400 text-xs">${esc(m.factory||'')} ${esc(m.area||'')}</span>
+            </label>`;
+        }).join('')
+        : '<p class="text-center text-gray-400 text-sm py-6">ไม่พบเครื่องจักรตามเงื่อนไข</p>';
+    qrPickerCount();
+}
+
+function qrPickerFilterFac() {
+    const fac    = document.getElementById('qr-fac-filter')?.value || '';
+    const areaSel = document.getElementById('qr-area-filter');
+    if (areaSel) {
+        const list = typeof machineMaster !== 'undefined' ? machineMaster : [];
+        const areas = {};
+        list.forEach(m => { if (!fac || m.factory === fac) { if (m.area) areas[m.area] = true; } });
+        areaSel.innerHTML = '<option value="">ทุกพื้นที่</option>' +
+            Object.keys(areas).sort().map(a => `<option>${a}</option>`).join('');
+        areaSel.value = '';
+    }
+    _qrPickerRenderList();
+}
+
 function qrPickerToggleAll(cb) {
     document.querySelectorAll('.qr-pick-cb').forEach(x => { x.checked = cb.checked; });
     qrPickerCount();
@@ -167,7 +214,7 @@ function generateMachineQrPdf(ids, sizeMm) {
     const base = location.origin + location.pathname;
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
-    const PAGE_W=210, PAGE_H=297, MARGIN=10, LABEL_H=11, GAP=6;
+    const PAGE_W=210, PAGE_H=297, MARGIN=10, LABEL_H=9, GAP=6;
     const cellW = sizeMm + GAP;
     const cellH = sizeMm + LABEL_H + GAP;
     const cols  = Math.max(1, Math.floor((PAGE_W - 2*MARGIN + GAP) / cellW));
@@ -186,8 +233,6 @@ function generateMachineQrPdf(ids, sizeMm) {
         pdf.text(String(id), x + sizeMm/2, y + sizeMm + 4, { align:'center', maxWidth: cellW });
         pdf.setFontSize(6); pdf.setTextColor(80);
         pdf.text(String(name).slice(0,32), x + sizeMm/2, y + sizeMm + 8, { align:'center', maxWidth: cellW });
-        pdf.setFontSize(5); pdf.setTextColor(150);
-        pdf.text('Scan → เลือก Checklist / Breakdown / แจ้งซ่อม', x + sizeMm/2, y + sizeMm + 11.5, { align:'center' });
         pdf.setTextColor(0);
     });
     pdf.save(`QR_Machines_${ids.length}เครื่อง.pdf`);

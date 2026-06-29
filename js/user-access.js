@@ -316,10 +316,10 @@ async function renderPermMatrix() {
         ];
         const canEdit = can('ua.perm');
         const shortRole = r => ({Visitor:'Visit',User:'User',QA:'QA',Production:'Prod',Technician:'Tech',Engineer:'Eng',Safety:'Safe',Supervisor:'Super',Administrator:'Admin'}[r] || r);
-        let html = `<table class="w-full text-xs border-collapse bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
+        let html = `<table class="w-full text-xs border-separate bg-white rounded-xl shadow-sm border border-gray-200" style="border-spacing:0">
             <thead><tr class="bg-gray-50">
-                <th class="px-3 py-2 text-left text-gray-500 font-bold uppercase tracking-wider">Permission${canEdit ? ' <span class="text-[10px] text-orange-400 font-normal normal-case">(คลิกเพื่อแก้)</span>' : ''}</th>
-                ${roles.map(r => `<th class="px-2 py-2 text-center font-bold text-gray-600">${shortRole(r)}</th>`).join('')}
+                <th class="px-3 py-2 text-left text-gray-500 font-bold uppercase tracking-wider" style="position:sticky;top:0;z-index:6;background:#eef2f6;box-shadow:inset 0 -1px 0 #e5e7eb">Permission${canEdit ? ' <span class="text-[10px] text-orange-400 font-normal normal-case">(คลิกเพื่อแก้)</span>' : ''}</th>
+                ${roles.map(r => `<th class="px-2 py-2 text-center font-bold text-gray-600" style="position:sticky;top:0;z-index:5;background:#eef2f6;box-shadow:inset 0 -1px 0 #e5e7eb">${shortRole(r)}</th>`).join('')}
             </tr></thead><tbody>`;
         groups.forEach(g => {
             html += `<tr class="bg-gray-50/60"><td colspan="${roles.length+1}" class="px-3 py-1.5 font-bold text-gray-600 text-xs">${g.label}</td></tr>`;

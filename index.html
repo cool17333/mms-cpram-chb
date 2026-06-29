@@ -260,7 +260,7 @@
         </div>
         <!-- TPM group -->
         <div class="nav-group" id="grp-tpm" data-color="blue">
-            <div class="sidebar-item" id="sn-tpm" onclick="goTpmHub()">
+            <div class="sidebar-item" id="sn-tpm" data-perm="tpm.view" onclick="goTpmHub()">
                 <span class="nav-icon">📈</span><span class="flex-1">ระบบ TPM</span><span class="nav-chev">›</span>
             </div>
             <div class="nav-submenu" id="sub-tpm">
@@ -339,7 +339,7 @@
         <div class="more-item" onclick="openSettings();closeMoreSheet()">
             <span class="text-lg">⚙️</span><span class="text-sm font-medium text-gray-800">ตั้งค่าระบบ</span>
         </div>
-        <div class="more-item" onclick="goTpmHub();closeMoreSheet()">
+        <div class="more-item" data-perm="tpm.view" onclick="goTpmHub();closeMoreSheet()">
             <span class="text-lg">📈</span><span class="text-sm font-medium text-gray-800">ระบบ TPM (ภาพรวม)</span>
         </div>
         <div class="more-item hidden" id="more-log-item" onclick="goLog();closeMoreSheet()">
@@ -2955,7 +2955,7 @@
                 <option>โรงงาน 1</option><option>โรงงาน 2</option>
             </select>
             <button onclick="loadMcRankOverview()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold">🔄</button>
-            <button onclick="openMcRankForm('')" class="px-4 py-1.5 text-white text-sm font-bold rounded-lg" style="background:#2475b0">+ ประเมินเครื่อง</button>
+            <button data-perm="tpm.rank" onclick="openMcRankForm('')" class="hidden px-4 py-1.5 text-white text-sm font-bold rounded-lg" style="background:#2475b0">+ ประเมินเครื่อง</button>
         </div>
     </div>
 
@@ -3231,19 +3231,19 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.22.1"></script>
-<script src="js/core.js?v=2.22.1"></script>
-<script src="js/machines.js?v=2.22.1"></script>
-<script src="js/breakdown-report.js?v=2.22.1"></script>
-<script src="js/breakdown-form.js?v=2.22.1"></script>
-<script src="js/records-summary.js?v=2.22.1"></script>
-<script src="js/export.js?v=2.22.1"></script>
-<script src="js/oee.js?v=2.22.1"></script>
-<script src="js/bootstrap.js?v=2.22.1"></script>
-<script src="js/checklist-core.js?v=2.22.1"></script>
-<script src="js/checklist-status.js?v=2.22.1"></script>
-<script src="js/mcrank.js?v=2.22.1"></script>
-<script src="js/user-access.js?v=2.22.1"></script>
-<script src="js/scan.js?v=2.22.1"></script>
+<script src="js/permissions.js?v=2.23"></script>
+<script src="js/core.js?v=2.23"></script>
+<script src="js/machines.js?v=2.23"></script>
+<script src="js/breakdown-report.js?v=2.23"></script>
+<script src="js/breakdown-form.js?v=2.23"></script>
+<script src="js/records-summary.js?v=2.23"></script>
+<script src="js/export.js?v=2.23"></script>
+<script src="js/oee.js?v=2.23"></script>
+<script src="js/bootstrap.js?v=2.23"></script>
+<script src="js/checklist-core.js?v=2.23"></script>
+<script src="js/checklist-status.js?v=2.23"></script>
+<script src="js/mcrank.js?v=2.23"></script>
+<script src="js/user-access.js?v=2.23"></script>
+<script src="js/scan.js?v=2.23"></script>
 </body>
 </html>

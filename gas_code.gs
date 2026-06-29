@@ -38,6 +38,18 @@ const PERM_MATRIX = {
   Administrator: {'bd.view':1,'bd.export':1,'bd.report':1,'bd.accept':1,'bd.editdoc':1,'bd.close':1,'bd.whywhy':1,'bd.manual':1,'bd.cancel':1,'mc.view':1,'mc.edit':1,'mc.delete':1,'mc.add':1,'mc.import':1,'mc.backup':1,'mc.restore':1,'cl.view':1,'cl.history':1,'cl.status':1,'cl.export':1,'cl.daily':1,'cl.pm':1,'cl.edit':1,'cl.calendar':1,'ua.add':1,'ua.del':1,'ua.level':1,'ua.perm':1,'ua.log':1},
 };
 
+// v2.23: TPM perm codes (merge เข้า PERM_MATRIX — แก้ได้ในหน้า Permission)  [tpm.view, tpm.rank, tpm.approve, tpm.desc]
+var _TPM_DEFAULT = {
+  Visitor:[1,0,0,0], User:[1,0,0,0], QA:[1,1,1,1], Production:[1,1,1,1], Technician:[1,0,0,0],
+  Engineer:[1,1,1,1], Safety:[1,1,1,1], Supervisor:[1,1,1,1], Administrator:[1,1,1,1]
+};
+Object.keys(_TPM_DEFAULT).forEach(function(role){
+  if (!PERM_MATRIX[role]) return;
+  var v = _TPM_DEFAULT[role];
+  PERM_MATRIX[role]['tpm.view']=v[0]; PERM_MATRIX[role]['tpm.rank']=v[1];
+  PERM_MATRIX[role]['tpm.approve']=v[2]; PERM_MATRIX[role]['tpm.desc']=v[3];
+});
+
 // ============================================================
 // PHASE 3 — Sheet-backed permission matrix (อ่านจาก _Permissions sheet, cache 60s)
 // Fallback กลับ const PERM_MATRIX ถ้า sheet ว่าง
@@ -68,13 +80,13 @@ function seedPermissions() {
   sh.clearContents();
   sh.getRange(1,1,1,3).setValues([['role','perm_code','allow']]).setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
   const ROLES = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
-  const CODES = ['bd.view','bd.export','bd.report','bd.accept','bd.editdoc','bd.close','bd.whywhy','bd.manual','bd.cancel','mc.view','mc.edit','mc.delete','mc.add','mc.import','mc.backup','mc.restore','cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar','ua.add','ua.del','ua.level','ua.perm','ua.log'];
+  const CODES = ['bd.view','bd.export','bd.report','bd.accept','bd.editdoc','bd.close','bd.whywhy','bd.manual','bd.cancel','mc.view','mc.edit','mc.delete','mc.add','mc.import','mc.backup','mc.restore','cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar','ua.add','ua.del','ua.level','ua.perm','ua.log','tpm.view','tpm.rank','tpm.approve','tpm.desc'];
   const rows = [];
   ROLES.forEach(function(role) { CODES.forEach(function(code) { rows.push([role, code, PERM_MATRIX[role][code] || 0]); }); });
   sh.getRange(2,1,rows.length,3).setValues(rows);
   sh.setFrozenRows(1);
   sh.autoResizeColumns(1,3);
-  Logger.log('Seeded ' + rows.length + ' rows');  // expect 261 (9 roles × 29 codes)
+  Logger.log('Seeded ' + rows.length + ' rows');  // expect 297 (9 roles × 33 codes รวม tpm)
 }
 
 // Tools → Run → migrateRolesV2_runOnce  (v2.21 — รัน 1 ครั้งหลัง redeploy: ยุบแผนก→Level)
@@ -91,6 +103,25 @@ function migrateRolesV2_runOnce() {
   });
   CacheService.getScriptCache().remove('perm_matrix');
   Logger.log('migrateRolesV2 done — Production→User + reseeded. อย่าลืมตั้ง level ทีม (QA/Production/Engineer/Safety) ให้หัวหน้าเดิม');
+}
+
+// Tools → Run → migrateTpmPerms_runOnce  (v2.23 — รัน 1 ครั้งหลัง redeploy: เพิ่ม tpm.* ใน _Permissions แบบ append ไม่ทับ custom)
+function migrateTpmPerms_runOnce() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sh = ss.getSheetByName('_Permissions');
+  if (!sh || sh.getLastRow() < 2) { seedPermissions(); return; }   // ไม่มี sheet → seed เต็ม (รวม tpm)
+  var existing = {};
+  sh.getDataRange().getValues().slice(1).forEach(function(r){ existing[String(r[0]).trim()+'|'+String(r[1]).trim()] = true; });
+  var ROLES = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
+  var TPM = ['tpm.view','tpm.rank','tpm.approve','tpm.desc'];
+  var rows = [];
+  ROLES.forEach(function(role){ TPM.forEach(function(code){
+    if (existing[role+'|'+code]) return;   // มีแล้วข้าม
+    rows.push([role, code, (PERM_MATRIX[role] && PERM_MATRIX[role][code]) || 0]);
+  }); });
+  if (rows.length) sh.getRange(sh.getLastRow()+1, 1, rows.length, 3).setValues(rows);
+  CacheService.getScriptCache().remove('perm_matrix');
+  Logger.log('migrateTpmPerms: appended ' + rows.length + ' tpm rows (คาด 36 ถ้ายังไม่มี)');
 }
 
 // Tools → Run → seedInitialAdmin  (รัน 1 ครั้ง — เปลี่ยน PIN หลัง setup!)

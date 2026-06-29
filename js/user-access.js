@@ -14,6 +14,7 @@ const PERM_LABEL = {
     'cl.daily':'ตรวจรายวัน (Daily)','cl.pm':'ตรวจ PM (PM)','cl.edit':'แก้ไขรายการตรวจ (Edit)','cl.calendar':'ปฏิทิน PM (Calendar)',
     'ua.add':'เพิ่มผู้ใช้ (Add user)','ua.del':'ลบผู้ใช้ (Delete user)','ua.level':'เปลี่ยน Level (Set level)',
     'ua.perm':'แก้สิทธิ์ (Edit perm)','ua.log':'ดู Log ระบบ (View log)',
+    'tpm.view':'ดูระบบ TPM (View)','tpm.rank':'ประเมิน Ranking','tpm.approve':'อนุมัติฟอร์มประจำปี','tpm.desc':'แก้คำอธิบายเกณฑ์',
 };
 
 let _uaUsers   = [];
@@ -313,6 +314,7 @@ async function renderPermMatrix() {
             { label:'🗂️ ทะเบียนเครื่องจักร', codes:['mc.view','mc.edit','mc.delete','mc.add','mc.import','mc.backup','mc.restore'] },
             { label:'✅ Checklist', codes:['cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar'] },
             { label:'👥 User Access', codes:['ua.add','ua.del','ua.level','ua.perm','ua.log'] },
+            { label:'📈 ระบบ TPM', codes:['tpm.view','tpm.rank','tpm.approve','tpm.desc'] },
         ];
         const canEdit = can('ua.perm');
         const shortRole = r => ({Visitor:'Visit',User:'User',QA:'QA',Production:'Prod',Technician:'Tech',Engineer:'Eng',Safety:'Safe',Supervisor:'Super',Administrator:'Admin'}[r] || r);

@@ -232,9 +232,11 @@ function renderMcRankTable() {
             '<td class="px-3 py-2 text-center">' + rankBadge + '</td>' +
             '<td class="px-3 py-2 text-center">' + (r.finalScore || '—') + '</td>' +
             '<td class="px-3 py-2 text-center">' + statusBadge + '</td>' +
-            (isAreaFormApproved(r.area)
-              ? '<td class="px-3 py-2 text-center"><button onclick="openMcRankForm(\'' + safeCode + '\')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">ประเมิน</button></td>'
-              : '<td class="px-3 py-2 text-center"><span class="text-xs text-gray-400" title="พื้นที่นี้ยังไม่อนุมัติฟอร์ม">🔒 รออนุมัติฟอร์ม</span></td>') +
+            (!can('tpm.rank')
+              ? '<td class="px-3 py-2 text-center"><span class="text-xs text-gray-300">—</span></td>'
+              : isAreaFormApproved(r.area)
+                ? '<td class="px-3 py-2 text-center"><button onclick="openMcRankForm(\'' + safeCode + '\')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">ประเมิน</button></td>'
+                : '<td class="px-3 py-2 text-center"><span class="text-xs text-gray-400" title="พื้นที่นี้ยังไม่อนุมัติฟอร์ม">🔒 รออนุมัติฟอร์ม</span></td>') +
             '</tr>';
     }).join('');
 }
@@ -489,7 +491,9 @@ function renderMcApprovalDash() {
             '<td class="px-3 py-2 text-sm">' + a.area + '<div class="text-xs text-gray-400">' + (a.factory || '') + '</div></td>' +
             '<td class="px-3 py-2 text-center tracking-widest text-base">' + dots + '</td>' +
             '<td class="px-3 py-2 text-center">' + stBadge + '</td>' +
-            '<td class="px-3 py-2 text-center"><button onclick="openFormApproval(\'' + safe + '\')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">ดูฟอร์ม + อนุมัติ/แก้</button></td>' +
+            (can('tpm.approve')
+              ? '<td class="px-3 py-2 text-center"><button onclick="openFormApproval(\'' + safe + '\')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">ดูฟอร์ม + อนุมัติ/แก้</button></td>'
+              : '<td class="px-3 py-2 text-center"><span class="text-xs text-gray-300">—</span></td>') +
             '</tr>';
     }).join('');
     if (sumEl) sumEl.textContent = 'อนุมัติแล้ว ' + approved + '/' + areas.length + ' พื้นที่';
@@ -518,7 +522,8 @@ function renderFormApprovalBody(area) {
         var crits    = criteriaByGroup(secName);
         var signed   = ap.sections && ap.sections[secName] && ap.sections[secName].by;
         var canEdit  = canReviewSection(currentUser, secName);
-        var editable = canEdit && !signed;   // ทีมตัวเอง + ยังไม่เซ็น → แก้ desc ได้
+        var canSign  = canEdit && !signed;            // ทีมตัวเอง + ยังไม่เซ็น → อนุมัติได้ (canReviewSection)
+        var editable = canSign && can('tpm.desc');    // + สิทธิ์ tpm.desc → แก้คำอธิบาย (input) ได้
         var critHtml = crits.map(function(c) {
             var tiers = c.tiers.map(function(t) {
                 var cur = getLabelForTier(c.id, t.score);
@@ -536,12 +541,12 @@ function renderFormApprovalBody(area) {
         }).join('');
         var hdr = '<div class="flex items-center justify-between mb-1"><p class="font-bold text-gray-700">' + secName + '</p>' +
             (signed ? '<span class="text-xs text-green-600 font-bold">✓ อนุมัติโดย ' + ap.sections[secName].by + ' · ' + ap.sections[secName].at + '</span>'
-                    : (canEdit ? '<span class="text-xs text-orange-500 font-bold">แก้คำอธิบายได้ก่อนอนุมัติ</span>'
+                    : (canSign ? '<span class="text-xs text-orange-500 font-bold">' + (editable ? 'แก้คำอธิบายได้ก่อนอนุมัติ' : 'พร้อมอนุมัติ') + '</span>'
                                : '<span class="text-xs text-gray-400">รอทีม ' + (SECTION_LEVEL[secName] || '') + '</span>')) + '</div>';
-        var btn = editable
-            ? '<div class="mt-2 flex justify-end"><button onclick="approveFormSection(\'' + secName + '\')" class="px-4 py-1.5 text-white text-xs font-bold rounded-lg" style="background:#2475b0">💾 บันทึกคำอธิบาย & อนุมัติ</button></div>'
+        var btn = canSign
+            ? '<div class="mt-2 flex justify-end"><button onclick="approveFormSection(\'' + secName + '\')" class="px-4 py-1.5 text-white text-xs font-bold rounded-lg" style="background:#2475b0">' + (editable ? '💾 บันทึกคำอธิบาย & อนุมัติ' : '✅ อนุมัติหัวข้อนี้') + '</button></div>'
             : '';
-        return '<div class="mb-4 p-3 rounded-xl border ' + (signed ? 'border-green-200 bg-green-50' : (editable ? 'border-blue-200 bg-blue-50' : 'border-gray-100 bg-gray-50')) + '">' + hdr + critHtml + btn + '</div>';
+        return '<div class="mb-4 p-3 rounded-xl border ' + (signed ? 'border-green-200 bg-green-50' : (canSign ? 'border-blue-200 bg-blue-50' : 'border-gray-100 bg-gray-50')) + '">' + hdr + critHtml + btn + '</div>';
     }).join('');
 }
 

@@ -768,6 +768,29 @@ function doPost(e) {
       return jsonOut({ success: true, action: 'deleted' });
     }
 
+    // ---- FORGOT PASSWORD: รีเซ็ต PIN ตัวเอง (ยืนยันชื่อ-นามสกุล) ----
+    if (data.action === 'forgotPassword') {
+      var sh = ss.getSheetByName('_Users');
+      if (!sh) return jsonOut({ success:false, error:'ไม่พบข้อมูลผู้ใช้' });
+      var fpRows = sh.getDataRange().getValues();
+      var fpUser = String(data.username||'').trim().toLowerCase();
+      var fpFull = (String(data.fname||'').trim() + ' ' + String(data.lname||'').trim()).trim().toLowerCase();
+      if (!fpUser || !fpFull) return jsonOut({ success:false, error:'กรอกข้อมูลให้ครบ' });
+      for (var fi = 1; fi < fpRows.length; fi++) {
+        if (String(fpRows[fi][2]).trim().toLowerCase() !== fpUser) continue;
+        if (!fpRows[fi][6]) return jsonOut({ success:false, error:'บัญชีนี้ถูกระงับ' });
+        if (String(fpRows[fi][1]).trim().toLowerCase() !== fpFull)
+          return jsonOut({ success:false, error:'ชื่อ-นามสกุลไม่ตรงกับระบบ' });
+        var fpTemp = String(Math.floor(10000000 + Math.random() * 90000000)); // 8 หลัก
+        var fpSalt = Utilities.getUuid();
+        sh.getRange(fi + 1, 4).setValue(sha256hex(fpSalt + fpTemp));
+        sh.getRange(fi + 1, 5).setValue(fpSalt);
+        writeAccessLog(ss, fpUser, 'forgotPassword', 'รีเซ็ต PIN ตัวเอง');
+        return jsonOut({ success:true, tempPin: fpTemp });
+      }
+      return jsonOut({ success:false, error:'ไม่พบ username นี้ในระบบ' });
+    }
+
     // ---- REGISTER: คำขอใช้งาน (สาธารณะ ไม่ต้อง login) ----
     if (data.action === 'registerUser') {
       var rg = data.newUser || {};

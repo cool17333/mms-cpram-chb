@@ -46,6 +46,40 @@ function closeLogin() {
     const p = document.getElementById('lm-pin');  if (p) p.value = '';
 }
 
+// ---- Forgot Password (ลืมรหัสผ่าน — สาธารณะ) ----
+function openForgotPw() {
+    closeLogin();
+    ['fp-fname','fp-lname','fp-user'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('forgot-pw-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('fp-fname')?.focus(), 80);
+}
+function closeForgotPw() { document.getElementById('forgot-pw-modal').classList.add('hidden'); }
+function closeForgotPwResult() { document.getElementById('forgot-pw-result-modal').classList.add('hidden'); }
+function copyTempPin() {
+    const pin = document.getElementById('fp-temp-pin')?.textContent || '';
+    if (navigator.clipboard) navigator.clipboard.writeText(pin).then(() => showToast('📋 คัดลอกแล้ว', 'success'));
+    else showToast('📋 ' + pin, 'info');
+}
+async function submitForgotPw() {
+    const fname = (document.getElementById('fp-fname')?.value || '').trim();
+    const lname = (document.getElementById('fp-lname')?.value || '').trim();
+    const uname = (document.getElementById('fp-user')?.value  || '').trim();
+    if (!fname || !lname || !uname) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
+    if (!GAS_URL) { showToast('⚠️ ตั้งค่า Web App URL ก่อน', 'error'); return; }
+    showLoading('กำลังดำเนินการ…');
+    try {
+        const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
+            action:'forgotPassword', username: uname, fname, lname
+        })});
+        const json = await res.json();
+        if (!json.success) { showToast('❌ ' + (json.error || 'ไม่สำเร็จ'), 'error'); return; }
+        closeForgotPw();
+        document.getElementById('fp-temp-pin').textContent = json.tempPin;
+        document.getElementById('forgot-pw-result-modal').classList.remove('hidden');
+    } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
+}
+
 // ---- Register (ขอใช้งาน — สาธารณะ) ----
 function openRegister() {
     closeLogin();

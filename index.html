@@ -452,9 +452,47 @@
             </button>
             <button onclick="closeLogin()" style="width:100%;background:transparent;color:#7f8c8d;font-weight:700;font-size:14px;padding:10px;border-radius:12px;border:none;cursor:pointer;margin-top:8px" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">ยกเลิก</button>
             <p style="text-align:center;font-size:11px;color:#9ca3af;margin:12px 0 0">ไม่เข้าสู่ระบบ = Visitor (ดูอย่างเดียว)</p>
-            <p style="text-align:center;font-size:12px;color:#6b7280;margin:10px 0 0">ยังไม่มีบัญชี? <a onclick="openRegister()" style="color:#c0392b;font-weight:700;cursor:pointer">ขอสมัครใช้งาน</a></p>
+            <p style="text-align:center;font-size:12px;color:#6b7280;margin:10px 0 0"><a onclick="openForgotPw()" style="color:#e67e22;font-weight:700;cursor:pointer">ลืมรหัสผ่าน?</a> &nbsp;·&nbsp; ยังไม่มีบัญชี? <a onclick="openRegister()" style="color:#c0392b;font-weight:700;cursor:pointer">ขอสมัครใช้งาน</a></p>
         </div>
     </div>
+</div>
+
+<!-- ==================== MODAL: ลืมรหัสผ่าน ==================== -->
+<div id="forgot-pw-modal" class="modal-bg hidden" onclick="if(event.target===this)closeForgotPw()">
+  <div style="background:white;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:380px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#e67e22,#d35400);padding:24px;text-align:center">
+      <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.2);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:22px">🔑</div>
+      <p style="color:white;font-size:17px;font-weight:700;margin:0">ลืมรหัสผ่าน</p>
+      <p style="color:rgba(255,255,255,0.7);font-size:11px;margin:4px 0 0">ยืนยันตัวตนเพื่อรับรหัสผ่านชั่วคราว</p>
+    </div>
+    <div style="padding:22px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="lbl-ua">ชื่อ <span class="text-red-500">*</span></label><input id="fp-fname" class="inp-ua" placeholder="ชื่อ"></div>
+        <div><label class="lbl-ua">นามสกุล <span class="text-red-500">*</span></label><input id="fp-lname" class="inp-ua" placeholder="นามสกุล"></div>
+      </div>
+      <div><label class="lbl-ua">Username <span class="text-red-500">*</span></label><input id="fp-user" class="inp-ua" placeholder="username" autocapitalize="none" autocomplete="off"></div>
+      <div class="flex gap-3 justify-end pt-1">
+        <button onclick="closeForgotPw()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-800">ยกเลิก</button>
+        <button onclick="submitForgotPw()" class="px-6 py-2 text-white text-sm font-bold rounded-lg" style="background:#e67e22">รับรหัสผ่านชั่วคราว</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL: รหัสผ่านชั่วคราว ==================== -->
+<div id="forgot-pw-result-modal" class="modal-bg hidden">
+  <div style="background:white;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:360px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#27ae60,#1e8449);padding:24px;text-align:center">
+      <div style="font-size:36px;margin-bottom:8px">✅</div>
+      <p style="color:white;font-size:17px;font-weight:700;margin:0">รหัสผ่านชั่วคราว</p>
+    </div>
+    <div style="padding:22px;text-align:center">
+      <p style="font-size:12px;color:#6b7280;margin-bottom:12px">บันทึกรหัสผ่านนี้ไว้ — ระบบจะแสดงเพียงครั้งเดียว</p>
+      <div id="fp-temp-pin" style="font-size:28px;font-weight:700;font-family:monospace;letter-spacing:4px;color:#1a567f;background:#eef7ff;border-radius:12px;padding:14px 20px;margin-bottom:12px"></div>
+      <button onclick="copyTempPin()" class="px-4 py-2 text-sm font-bold text-white rounded-lg mb-4" style="background:#2475b0">📋 คัดลอก</button>
+      <div><button onclick="closeForgotPwResult()" class="px-6 py-2 text-sm font-bold text-gray-600 hover:text-gray-800">ปิด</button></div>
+    </div>
+  </div>
 </div>
 
 <!-- ==================== MODAL: ขอสมัครใช้งาน (Register) ==================== -->
@@ -3231,19 +3269,19 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.24"></script>
-<script src="js/core.js?v=2.24"></script>
-<script src="js/machines.js?v=2.24"></script>
-<script src="js/breakdown-report.js?v=2.24"></script>
-<script src="js/breakdown-form.js?v=2.24"></script>
-<script src="js/records-summary.js?v=2.24"></script>
-<script src="js/export.js?v=2.24"></script>
-<script src="js/oee.js?v=2.24"></script>
-<script src="js/bootstrap.js?v=2.24"></script>
-<script src="js/checklist-core.js?v=2.24"></script>
-<script src="js/checklist-status.js?v=2.24"></script>
-<script src="js/mcrank.js?v=2.24"></script>
-<script src="js/user-access.js?v=2.24"></script>
-<script src="js/scan.js?v=2.24"></script>
+<script src="js/permissions.js?v=2.25"></script>
+<script src="js/core.js?v=2.25"></script>
+<script src="js/machines.js?v=2.25"></script>
+<script src="js/breakdown-report.js?v=2.25"></script>
+<script src="js/breakdown-form.js?v=2.25"></script>
+<script src="js/records-summary.js?v=2.25"></script>
+<script src="js/export.js?v=2.25"></script>
+<script src="js/oee.js?v=2.25"></script>
+<script src="js/bootstrap.js?v=2.25"></script>
+<script src="js/checklist-core.js?v=2.25"></script>
+<script src="js/checklist-status.js?v=2.25"></script>
+<script src="js/mcrank.js?v=2.25"></script>
+<script src="js/user-access.js?v=2.25"></script>
+<script src="js/scan.js?v=2.25"></script>
 </body>
 </html>

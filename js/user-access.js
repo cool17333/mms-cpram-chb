@@ -104,7 +104,7 @@ async function submitAddUser() {
     const pin   = (document.getElementById('au-pin')?.value   || '').trim();
     const level = document.getElementById('au-level')?.value  || 'Visitor';
     if (!fname || !lname || !uname || !pin) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
-    if (pin.length < 8 || pin.length > 12) { showToast('⚠️ Password ต้อง 8–12 ตัว', 'error'); return; }
+    if (pin.length < 8) { showToast('⚠️ Password ต้องอย่างน้อย 8 ตัว', 'error'); return; }
     const name = `${fname} ${lname}`.trim();
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
@@ -257,7 +257,7 @@ function closeResetPinModal() { document.getElementById('reset-pin-modal').class
 async function submitResetPin() {
     if (!_uaPending) return;
     const newPin = (document.getElementById('new-pin-val')?.value || '').trim();
-    if (newPin.length < 8 || newPin.length > 12) { showToast('⚠️ Password ต้อง 8–12 ตัว', 'error'); return; }
+    if (newPin.length < 8) { showToast('⚠️ Password ต้องอย่างน้อย 8 ตัว', 'error'); return; }
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'resetUserPin', username: currentUser.username, pin: currentUser.pin,

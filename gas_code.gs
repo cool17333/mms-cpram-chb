@@ -781,12 +781,14 @@ function doPost(e) {
         if (!fpRows[fi][6]) return jsonOut({ success:false, error:'บัญชีนี้ถูกระงับ' });
         if (String(fpRows[fi][1]).trim().toLowerCase() !== fpFull)
           return jsonOut({ success:false, error:'ชื่อ-นามสกุลไม่ตรงกับระบบ' });
-        var fpTemp = String(Math.floor(10000000 + Math.random() * 90000000)); // 8 หลัก
+        var fpRaw  = Math.floor(10000000 + Math.random() * 90000000);
+        var fpTemp = String(fpRaw); // 8 หลัก เสมอ (10000000–99999999)
         var fpSalt = Utilities.getUuid();
         sh.getRange(fi + 1, 4).setValue(sha256hex(fpSalt + fpTemp));
         sh.getRange(fi + 1, 5).setValue(fpSalt);
         writeAccessLog(ss, fpUser, 'forgotPassword', 'รีเซ็ต PIN ตัวเอง');
-        return jsonOut({ success:true, tempPin: fpTemp });
+        var ret = {}; ret.success = true; ret.tempPin = fpTemp;
+        return jsonOut(ret);
       }
       return jsonOut({ success:false, error:'ไม่พบ username นี้ในระบบ' });
     }

@@ -72,9 +72,14 @@ async function submitForgotPw() {
             action:'forgotPassword', username: uname, fname, lname
         })});
         const json = await res.json();
+        console.log('[forgotPw] GAS response:', JSON.stringify(json));
         if (!json.success) { showToast('❌ ' + (json.error || 'ไม่สำเร็จ'), 'error'); return; }
+        const pin = json.tempPin != null ? String(json.tempPin) : '';
+        if (!pin) { showToast('❌ GAS ไม่ส่ง PIN กลับมา — ดู console (F12) แล้วแจ้ง Admin', 'error'); return; }
         closeForgotPw();
-        document.getElementById('fp-temp-pin').textContent = json.tempPin;
+        const pinEl = document.getElementById('fp-temp-pin');
+        if (pinEl) pinEl.textContent = pin;
+        console.log('[forgotPw] pinEl.textContent after set:', pinEl ? pinEl.textContent : 'element not found');
         document.getElementById('forgot-pw-result-modal').classList.remove('hidden');
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
     finally { hideLoading(); }

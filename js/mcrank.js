@@ -127,20 +127,29 @@ async function loadMcRankOverview() {
 
 function renderMcRankKPIs() {
     var el = document.getElementById('mcr-kpi-cards');
-    if (!el || !_mcrOverview) return;
-    var ov  = _mcrOverview;
-    var tot = ov.total || 0;
-    var done = ov.statusCounts ? (ov.statusCounts.complete || 0) : 0;
-    var pend = tot - done;
-    var pct  = tot ? Math.round(done/tot*100) : 0;
+    if (!el) return;
+    var facF = document.getElementById('mcr-factory')?.value || '';
+    var machines = (typeof machineMaster !== 'undefined' ? machineMaster : []).filter(function(m){
+        return !facF || m.factory === facF;
+    });
+    var registryTotal = machines.length;
+    var byCode = {};
+    _mcrData.forEach(function(r){ byCode[String(r.machineCode||'').trim().toLowerCase()] = r; });
+    var assessed = 0;
+    machines.forEach(function(m){
+        var r = byCode[String(m.id||'').trim().toLowerCase()];
+        if (r && (r.status === 'complete' || r.status === 'partial')) assessed++;
+    });
+    var pending = registryTotal - assessed;
+    var pct = registryTotal ? Math.round(assessed / registryTotal * 100) : 0;
     function card(t, v, c) {
         return '<div class="bg-white rounded-xl border p-4 text-center">' +
                '<p class="text-xs text-gray-400 mb-1">' + t + '</p>' +
                '<p class="text-2xl font-bold" style="color:' + c + '">' + v + '</p></div>';
     }
-    el.innerHTML = card('เครื่องที่ประเมินปีนี้', tot, '#1f2937') +
-                   card('ประเมินครบ', done, '#16a085') +
-                   card('รอดำเนินการ', pend, '#e67e22') +
+    el.innerHTML = card('เครื่องจักรทั้งหมด (ทะเบียน)', registryTotal, '#1f2937') +
+                   card('ประเมินแล้ว', assessed, '#16a085') +
+                   card('รอประเมิน', pending, '#e67e22') +
                    card('ความคืบหน้า', pct + '%', pct >= 80 ? '#16a085' : '#e67e22');
 }
 
@@ -243,17 +252,23 @@ function renderMcRankTable() {
 
 function mcrFilterChanged() { renderMcRankTable(); }
 
-// populate ตัวเลือกพื้นที่ (mcr-area) จากทะเบียนเครื่อง ตามโรงงานที่เลือก
+// v2.27: populate ตัวเลือกพื้นที่ (mcr-area) ตามโรงงาน — เลือกพื้นที่ได้ต่อเมื่อเลือกโรงงานแล้ว
 function mcrPopulateAreaFilter() {
     var sel = document.getElementById('mcr-area');
     if (!sel) return;
     var fac = document.getElementById('mcr-factory')?.value || '';
+    if (!fac) {
+        sel.disabled = true;
+        sel.innerHTML = '<option value="">เลือกโรงงานก่อน</option>';
+        return;
+    }
     var cur = sel.value;
     var areas = {};
     (typeof machineMaster !== 'undefined' ? machineMaster : []).forEach(function(m){
-        if (fac && m.factory !== fac) return;
+        if (m.factory !== fac) return;
         if (m.area) areas[m.area] = true;
     });
+    sel.disabled = false;
     sel.innerHTML = '<option value="">ทุก Area</option>' + Object.keys(areas).sort().map(function(a){
         return '<option' + (a === cur ? ' selected' : '') + '>' + a + '</option>';
     }).join('');
@@ -361,8 +376,13 @@ function renderMcRankForm() {
         var reviewerBy = signed ? row.sections[secName].by : '';
         var reviewerAt = signed ? row.sections[secName].at : '';
         var sectionHdr = '<div class="mb-3">' +
-            '<div class="flex items-center justify-between">' +
-            '<p class="font-bold text-gray-700">' + secName + '</p>' +
+            '<div class="flex items-center justify-between flex-wrap gap-1">' +
+            '<div class="flex items-center gap-2 flex-wrap">' +
+              '<p class="font-bold text-gray-700">' + secName + '</p>' +
+              (signed
+                ? '<span class="text-xs text-green-800 bg-green-100 rounded-lg px-2 py-0.5">👤 ผู้ประเมิน: <b>' + reviewerBy + '</b> · 📅 ' + reviewerAt + '</span>'
+                : '') +
+            '</div>' +
             (signed
                 ? '<span class="text-xs text-green-600 font-bold">✓ เซ็นแล้ว</span>'
                 : (isLocked
@@ -370,13 +390,6 @@ function renderMcRankForm() {
                     : '<span class="text-xs text-orange-500 font-bold">รอการเซ็น</span>')
             ) +
             '</div>' +
-            (signed
-                ? '<div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 items-center text-xs bg-green-100 text-green-800 rounded-lg px-2.5 py-1.5">' +
-                  '<span class="font-bold">👤 ผู้ Review:</span><span>' + reviewerBy + '</span>' +
-                  '<span class="text-green-400">·</span>' +
-                  '<span class="font-bold">📅</span><span>' + reviewerAt + '</span>' +
-                  '</div>'
-                : '') +
             '</div>';
 
         var rows = crits.map(function(c) {
@@ -508,6 +521,21 @@ function renderMcApprovalDash() {
             '</tr>';
     }).join('');
     if (sumEl) sumEl.textContent = 'อนุมัติแล้ว ' + approved + '/' + areas.length + ' พื้นที่';
+    // v2.27 (D2): อนุมัติครบทุกพื้นที่ → หุบ, ยังไม่ครบ → กาง
+    var apBox   = document.getElementById('mcr-approval-collapse');
+    var apCaret = document.getElementById('mcr-approval-caret');
+    var allApproved = areas.length > 0 && approved === areas.length;
+    if (apBox)   apBox.classList.toggle('hidden', allApproved);
+    if (apCaret) apCaret.style.transform = allApproved ? 'rotate(-90deg)' : '';
+}
+
+// v2.27: หุบ/กาง dashboard อนุมัติฟอร์ม
+function toggleMcApprovalDash() {
+    var box   = document.getElementById('mcr-approval-collapse');
+    var caret = document.getElementById('mcr-approval-caret');
+    if (!box) return;
+    var hidden = box.classList.toggle('hidden');
+    if (caret) caret.style.transform = hidden ? 'rotate(-90deg)' : '';
 }
 
 var _mcApprovalArea = null;

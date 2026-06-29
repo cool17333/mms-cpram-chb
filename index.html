@@ -439,7 +439,7 @@
                 <label style="font-size:11px;font-weight:700;color:#7f8c8d;text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px">Password</label>
                 <div style="position:relative">
                     <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">🔑</span>
-                    <input id="lm-pin" type="password" placeholder="Password..." maxlength="12" autocomplete="off"
+                    <input id="lm-pin" type="password" placeholder="Password..." maxlength="64" autocomplete="off"
                            onkeydown="if(event.key==='Enter')doLogin()"
                            style="width:100%;border:1.5px solid #e0e4e8;border-radius:10px;padding:10px 12px 10px 38px;font-size:14px;outline:none;box-sizing:border-box"
                            onfocus="this.style.borderColor='#c0392b'" onblur="this.style.borderColor='#e0e4e8'">
@@ -495,6 +495,25 @@
   </div>
 </div>
 
+<!-- ==================== MODAL: บังคับตั้งรหัสผ่านใหม่ ==================== -->
+<div id="force-change-pin-modal" class="modal-bg hidden">
+  <div style="background:white;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:380px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#e67e22,#d35400);padding:24px;text-align:center">
+      <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.2);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:22px">🔐</div>
+      <p style="color:white;font-size:17px;font-weight:700;margin:0">ตั้งรหัสผ่านใหม่</p>
+      <p style="color:rgba(255,255,255,0.7);font-size:11px;margin:4px 0 0">คุณเข้าสู่ระบบด้วยรหัสชั่วคราว — กรุณาตั้งรหัสผ่านใหม่ก่อนใช้งาน</p>
+    </div>
+    <div style="padding:22px;display:flex;flex-direction:column;gap:12px">
+      <div><label class="lbl-ua">รหัสผ่านใหม่ <span class="text-red-500">*</span></label><input id="fc-new" type="password" maxlength="64" class="inp-ua" placeholder="อย่างน้อย 8 ตัว" autocomplete="new-password"></div>
+      <div><label class="lbl-ua">ยืนยันรหัสผ่านใหม่ <span class="text-red-500">*</span></label><input id="fc-confirm" type="password" maxlength="64" class="inp-ua" placeholder="พิมพ์อีกครั้ง" autocomplete="new-password"></div>
+      <div class="flex gap-3 justify-end pt-1">
+        <button onclick="cancelForceChangePin()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-800">ยกเลิก</button>
+        <button onclick="submitForceChangePin()" class="px-6 py-2 text-white text-sm font-bold rounded-lg" style="background:#e67e22">บันทึกรหัสผ่านใหม่</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== MODAL: ขอสมัครใช้งาน (Register) ==================== -->
 <div id="register-modal" class="modal-bg hidden" onclick="if(event.target===this)closeRegister()">
   <div style="background:white;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:380px;overflow:hidden">
@@ -509,7 +528,7 @@
         <div><label class="lbl-ua">นามสกุล <span class="text-red-500">*</span></label><input id="rg-lname" class="inp-ua" placeholder="นามสกุล"></div>
       </div>
       <div><label class="lbl-ua">Username <span class="text-red-500">*</span></label><input id="rg-user" class="inp-ua" placeholder="ตัวอักษร/ตัวเลข ไม่มีช่องว่าง" autocapitalize="none" autocomplete="off"></div>
-      <div><label class="lbl-ua">Password <span class="text-red-500">*</span></label><input id="rg-pin" type="password" maxlength="12" class="inp-ua" placeholder="8-12 ตัว"></div>
+      <div><label class="lbl-ua">Password <span class="text-red-500">*</span></label><input id="rg-pin" type="password" maxlength="64" class="inp-ua" placeholder="อย่างน้อย 8 ตัว"></div>
       <div><label class="lbl-ua">Level ที่ขอ</label>
         <select id="rg-level" class="inp-ua">
           <option>Visitor</option><option>User</option><option>QA</option><option>Production</option><option>Technician</option><option>Engineer</option><option>Safety</option><option>Supervisor</option>
@@ -3183,7 +3202,7 @@
             </div>
             <div>
                 <label class="lbl-ua">Password <span class="text-red-500">*</span></label>
-                <input id="au-pin" type="password" maxlength="12" class="inp-ua" placeholder="8-12 ตัว">
+                <input id="au-pin" type="password" maxlength="64" class="inp-ua" placeholder="อย่างน้อย 8 ตัว">
             </div>
             <div>
                 <label class="lbl-ua">Level</label>
@@ -3218,7 +3237,7 @@
         <div class="p-5 space-y-3">
             <div>
                 <label class="lbl-ua">Password ใหม่ <span class="text-red-500">*</span></label>
-                <input id="new-pin-val" type="password" maxlength="12" class="inp-ua" placeholder="8-12 ตัว">
+                <input id="new-pin-val" type="password" maxlength="64" class="inp-ua" placeholder="อย่างน้อย 8 ตัว">
             </div>
             <div class="flex gap-3 justify-end pt-2">
                 <button onclick="closeResetPinModal()" class="px-4 py-2 text-sm font-bold text-gray-500">ยกเลิก</button>

@@ -256,7 +256,6 @@ async function openClItemsEditor(mode, machineId) {
     const treeView = document.getElementById('mcie-tree-view');
     const refSec   = document.getElementById('mcie-ref-section');
     const flatLbl  = document.getElementById('mcie-flat-label');
-    document.getElementById('mcie-editor-name').value = '';
 
     if (mode === 'default-daily') {
         hdrEl.className = 'px-6 py-4 flex-shrink-0 flex justify-between items-center bg-green-700';
@@ -444,7 +443,6 @@ function openClCopyModal(type, sourceId) {
     document.getElementById('mcc-title').textContent    = `📋 Copy ${type === 'pm' ? 'PM' : 'Daily'} Items`;
     document.getElementById('mcc-subtitle').textContent = `จาก: ${sourceName} (${sourceId})`;
     document.getElementById('mcc-search').value         = '';
-    document.getElementById('mcc-editor-name').value    = '';
     document.getElementById('mcc-select-all').checked   = false;
     _mccAllMachines = clMachinesFor(fac, area).filter(m => (m.id||m.machineId||m.machine_id||'') !== sourceId);
     mccRenderList(_mccAllMachines);

@@ -60,7 +60,7 @@ function applyPermissions() {
 const PANEL_PERM = { ua: 'ua.level', log: 'ua.log' };
 
 // Visitor perms (hardcode — ไม่ต้องเรียก GAS)
-const VISITOR_PERMS = ['bd.view','bd.export','mc.view','cl.view','cl.history','cl.status','cl.export'];
+const VISITOR_PERMS = ['bd.view','bd.export','mc.view','cl.view','cl.history','cl.status','cl.export','tpm.view'];
 
 function initVisitorPerms() {
     currentUser = { username:'', name:'', level:'Visitor', perms: new Set(VISITOR_PERMS), pin:'' };

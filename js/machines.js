@@ -115,10 +115,10 @@ function renderMachTable() {
         <td class="px-4 py-2.5 text-xs leading-tight">${editInfo}</td>
         <td class="px-4 py-2.5">
             <div class="flex gap-1.5 justify-end">
-                <button onclick="machOpenEdit(${i})" title="แก้ไข"
-                    class="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">✏️ แก้ไข</button>
-                <button onclick="machDeleteRow(${i})" title="ลบ"
-                    class="px-2.5 py-1 text-xs font-bold bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors">🗑️ ลบ</button>
+                ${can('mc.edit') ? `<button onclick="machOpenEdit(${i})" title="แก้ไข"
+                    class="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">✏️ แก้ไข</button>` : ''}
+                ${can('mc.delete') ? `<button onclick="machDeleteRow(${i})" title="ลบ"
+                    class="px-2.5 py-1 text-xs font-bold bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors">🗑️ ลบ</button>` : ''}
             </div>
         </td>
     </tr>`;

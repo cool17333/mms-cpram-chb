@@ -2988,12 +2988,7 @@
             <select id="mcr-year" onchange="loadMcRankOverview()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
                 <option>2025</option><option selected>2026</option><option>2027</option>
             </select>
-            <select id="mcr-factory" onchange="loadMcRankOverview()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
-                <option value="">ทุกโรงงาน</option>
-                <option>โรงงาน 1</option><option>โรงงาน 2</option>
-            </select>
             <button onclick="loadMcRankOverview()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold">🔄</button>
-            <button data-perm="tpm.rank" onclick="openMcRankForm('')" class="hidden px-4 py-1.5 text-white text-sm font-bold rounded-lg" style="background:#2475b0">+ ประเมินเครื่อง</button>
         </div>
     </div>
 
@@ -3002,14 +2997,17 @@
 
     <!-- Form Approval Dashboard (อนุมัติฟอร์มรายปี รายพื้นที่) — v2.20 ย้ายมาจาก panel-mcapprove -->
     <div class="bg-white rounded-xl border shadow-sm mb-5">
-        <div class="flex items-center justify-between px-4 py-3 border-b">
-            <div>
-                <p class="text-sm font-bold text-gray-700">📋 อนุมัติฟอร์มประเมินรายปี (รายพื้นที่)</p>
-                <p class="text-xs text-gray-400">ต้องครบ 5 หมวดต่อพื้นที่ก่อนเปิดให้ประเมินเครื่องในพื้นที่นั้น</p>
+        <div class="flex items-center justify-between px-4 py-3 border-b cursor-pointer select-none" onclick="toggleMcApprovalDash()">
+            <div class="flex items-center gap-2">
+                <span id="mcr-approval-caret" class="text-gray-400 text-xs transition-transform">▼</span>
+                <div>
+                    <p class="text-sm font-bold text-gray-700">📋 อนุมัติฟอร์มประเมินรายปี (รายพื้นที่)</p>
+                    <p class="text-xs text-gray-400">ต้องครบ 5 หมวดต่อพื้นที่ก่อนเปิดให้ประเมินเครื่องในพื้นที่นั้น</p>
+                </div>
             </div>
             <span class="text-xs font-bold" id="mcr-approval-summary" style="color:#16a085"></span>
         </div>
-        <div class="overflow-x-auto">
+        <div id="mcr-approval-collapse" class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                     <tr>
@@ -3038,14 +3036,17 @@
 
     <!-- Filter bar -->
     <div class="flex flex-wrap gap-2 mb-3">
-        <select id="mcr-area" onchange="mcrFilterChanged()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
-            <option value="">ทุก Area</option>
+        <select id="mcr-factory" onchange="loadMcRankOverview()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+            <option value="">ทุกโรงงาน</option>
+            <option>โรงงาน 1</option><option>โรงงาน 2</option>
+        </select>
+        <select id="mcr-area" onchange="mcrFilterChanged()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm" disabled>
+            <option value="">เลือกโรงงานก่อน</option>
         </select>
         <select id="mcr-status" onchange="mcrFilterChanged()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
             <option value="">ทุกสถานะ</option>
             <option value="assessed">ประเมินแล้ว</option>
             <option value="not-assessed">ยังไม่ประเมิน</option>
-            <option value="complete">ครบ</option>
             <option value="partial">บางส่วน</option>
         </select>
         <select id="mcr-rank" onchange="mcrFilterChanged()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
@@ -3101,30 +3102,27 @@
         <div style="background:linear-gradient(135deg,#2475b0,#1a5c8a);padding:16px 20px" class="flex-shrink-0">
             <p class="text-white font-bold text-base">📊 ประเมิน Machine Criticality</p>
         </div>
-        <!-- Machine info -->
+        <!-- Machine info (v2.27: read-only auto-fill) -->
         <div class="px-5 pt-4 pb-2 flex-shrink-0 border-b border-gray-100 grid grid-cols-2 gap-3">
             <div>
-                <label class="text-xs text-gray-400 font-bold">รหัสเครื่อง *</label>
-                <input id="mcr-form-machine" type="text" placeholder="เช่น M001" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm mt-0.5">
+                <label class="text-xs text-gray-400 font-bold">รหัสเครื่อง</label>
+                <input id="mcr-form-machine" type="text" readonly class="w-full border border-gray-200 bg-gray-50 text-gray-600 rounded-lg px-3 py-1.5 text-sm mt-0.5 cursor-default">
             </div>
             <div>
                 <label class="text-xs text-gray-400 font-bold">ปี (YYYY)</label>
-                <input id="mcr-form-year" type="text" placeholder="2026" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm mt-0.5">
+                <input id="mcr-form-year" type="text" readonly class="w-full border border-gray-200 bg-gray-50 text-gray-600 rounded-lg px-3 py-1.5 text-sm mt-0.5 cursor-default">
             </div>
             <div>
                 <label class="text-xs text-gray-400 font-bold">ชื่อเครื่อง</label>
-                <input id="mcr-form-name" type="text" placeholder="ชื่อเครื่องจักร" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm mt-0.5">
+                <input id="mcr-form-name" type="text" readonly class="w-full border border-gray-200 bg-gray-50 text-gray-600 rounded-lg px-3 py-1.5 text-sm mt-0.5 cursor-default">
             </div>
             <div>
                 <label class="text-xs text-gray-400 font-bold">โรงงาน</label>
-                <select id="mcr-form-factory" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm mt-0.5">
-                    <option value="">— เลือก —</option>
-                    <option>โรงงาน 1</option><option>โรงงาน 2</option>
-                </select>
+                <input id="mcr-form-factory" type="text" readonly class="w-full border border-gray-200 bg-gray-50 text-gray-600 rounded-lg px-3 py-1.5 text-sm mt-0.5 cursor-default">
             </div>
             <div class="col-span-2">
                 <label class="text-xs text-gray-400 font-bold">Area / แผนกงาน</label>
-                <input id="mcr-form-area" type="text" placeholder="เช่น Mixing, Packing" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm mt-0.5">
+                <input id="mcr-form-area" type="text" readonly class="w-full border border-gray-200 bg-gray-50 text-gray-600 rounded-lg px-3 py-1.5 text-sm mt-0.5 cursor-default">
             </div>
         </div>
         <!-- Sections body -->
@@ -3269,19 +3267,19 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.25.1"></script>
-<script src="js/core.js?v=2.25.1"></script>
-<script src="js/machines.js?v=2.25.1"></script>
-<script src="js/breakdown-report.js?v=2.25.1"></script>
-<script src="js/breakdown-form.js?v=2.25.1"></script>
-<script src="js/records-summary.js?v=2.25.1"></script>
-<script src="js/export.js?v=2.25.1"></script>
-<script src="js/oee.js?v=2.25.1"></script>
-<script src="js/bootstrap.js?v=2.25.1"></script>
-<script src="js/checklist-core.js?v=2.25.1"></script>
-<script src="js/checklist-status.js?v=2.25.1"></script>
-<script src="js/mcrank.js?v=2.25.1"></script>
-<script src="js/user-access.js?v=2.25.1"></script>
-<script src="js/scan.js?v=2.25.1"></script>
+<script src="js/permissions.js?v=2.27"></script>
+<script src="js/core.js?v=2.27"></script>
+<script src="js/machines.js?v=2.27"></script>
+<script src="js/breakdown-report.js?v=2.27"></script>
+<script src="js/breakdown-form.js?v=2.27"></script>
+<script src="js/records-summary.js?v=2.27"></script>
+<script src="js/export.js?v=2.27"></script>
+<script src="js/oee.js?v=2.27"></script>
+<script src="js/bootstrap.js?v=2.27"></script>
+<script src="js/checklist-core.js?v=2.27"></script>
+<script src="js/checklist-status.js?v=2.27"></script>
+<script src="js/mcrank.js?v=2.27"></script>
+<script src="js/user-access.js?v=2.27"></script>
+<script src="js/scan.js?v=2.27"></script>
 </body>
 </html>

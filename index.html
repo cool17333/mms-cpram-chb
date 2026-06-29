@@ -244,7 +244,7 @@
         </div>
         <!-- Breakdown group -->
         <div class="nav-group" id="grp-bd" data-color="red">
-            <div class="sidebar-item" id="sn-bd" onclick="clToggleNavGroup('bd')">
+            <div class="sidebar-item" id="sn-bd" onclick="goBdHub()">
                 <span class="nav-icon">🚨</span><span class="flex-1">ระบบแจ้งปัญหาเครื่องจักร</span><span class="nav-chev">›</span>
             </div>
             <div class="nav-submenu" id="sub-bd">
@@ -260,7 +260,7 @@
         </div>
         <!-- TPM group -->
         <div class="nav-group" id="grp-tpm" data-color="blue">
-            <div class="sidebar-item" id="sn-tpm" onclick="clToggleNavGroup('tpm')">
+            <div class="sidebar-item" id="sn-tpm" onclick="goTpmHub()">
                 <span class="nav-icon">📈</span><span class="flex-1">ระบบ TPM</span><span class="nav-chev">›</span>
             </div>
             <div class="nav-submenu" id="sub-tpm">
@@ -271,7 +271,7 @@
         </div>
         <!-- Checklist group -->
         <div class="nav-group" id="grp-cl" data-color="green">
-            <div class="sidebar-item" id="sn-cl" onclick="clToggleNavGroup('cl')">
+            <div class="sidebar-item" id="sn-cl" onclick="goChecklist()">
                 <span class="nav-icon">✅</span><span class="flex-1">ระบบ Check List</span><span class="nav-chev">›</span>
             </div>
             <div class="nav-submenu" id="sub-cl">
@@ -3005,9 +3005,10 @@
         </select>
         <select id="mcr-status" onchange="mcrFilterChanged()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
             <option value="">ทุกสถานะ</option>
+            <option value="assessed">ประเมินแล้ว</option>
+            <option value="not-assessed">ยังไม่ประเมิน</option>
             <option value="complete">ครบ</option>
             <option value="partial">บางส่วน</option>
-            <option value="not-started">ยังไม่เริ่ม</option>
         </select>
         <select id="mcr-rank" onchange="mcrFilterChanged()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
             <option value="">ทุก Rank</option>
@@ -3230,19 +3231,19 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.22"></script>
-<script src="js/core.js?v=2.22"></script>
-<script src="js/machines.js?v=2.22"></script>
-<script src="js/breakdown-report.js?v=2.22"></script>
-<script src="js/breakdown-form.js?v=2.22"></script>
-<script src="js/records-summary.js?v=2.22"></script>
-<script src="js/export.js?v=2.22"></script>
-<script src="js/oee.js?v=2.22"></script>
-<script src="js/bootstrap.js?v=2.22"></script>
-<script src="js/checklist-core.js?v=2.22"></script>
-<script src="js/checklist-status.js?v=2.22"></script>
-<script src="js/mcrank.js?v=2.22"></script>
-<script src="js/user-access.js?v=2.22"></script>
-<script src="js/scan.js?v=2.22"></script>
+<script src="js/permissions.js?v=2.22.1"></script>
+<script src="js/core.js?v=2.22.1"></script>
+<script src="js/machines.js?v=2.22.1"></script>
+<script src="js/breakdown-report.js?v=2.22.1"></script>
+<script src="js/breakdown-form.js?v=2.22.1"></script>
+<script src="js/records-summary.js?v=2.22.1"></script>
+<script src="js/export.js?v=2.22.1"></script>
+<script src="js/oee.js?v=2.22.1"></script>
+<script src="js/bootstrap.js?v=2.22.1"></script>
+<script src="js/checklist-core.js?v=2.22.1"></script>
+<script src="js/checklist-status.js?v=2.22.1"></script>
+<script src="js/mcrank.js?v=2.22.1"></script>
+<script src="js/user-access.js?v=2.22.1"></script>
+<script src="js/scan.js?v=2.22.1"></script>
 </body>
 </html>

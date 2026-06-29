@@ -115,6 +115,7 @@ async function loadMcRankOverview() {
         renderMcRankKPIs();
         renderMcRankSectionProgress();
         renderMcRankChart();
+        mcrPopulateAreaFilter();
         renderMcRankTable();
         renderMcApprovalDash();
     } catch(e) {
@@ -185,14 +186,28 @@ function renderMcRankTable() {
     var areaF = document.getElementById('mcr-area')?.value || '';
     var stF   = document.getElementById('mcr-status')?.value || '';
     var rankF = document.getElementById('mcr-rank')?.value || '';
-    var list  = _mcrData.filter(function(r) {
-        return (!facF  || r.factory === facF) &&
-               (!areaF || r.area === areaF) &&
-               (!stF   || r.status === stF) &&
-               (!rankF || r.rank === rankF);
+    // index record ที่ประเมินแล้ว ตามรหัสเครื่อง
+    var byCode = {};
+    _mcrData.forEach(function(r){ byCode[String(r.machineCode||'').trim().toLowerCase()] = r; });
+    // ทุกเครื่องในทะเบียน (filter โรงงาน/พื้นที่) แล้ว merge กับ record
+    var machines = (typeof machineMaster !== 'undefined' ? machineMaster : []).filter(function(m){
+        return (!facF || m.factory === facF) && (!areaF || m.area === areaF);
+    });
+    var list = machines.map(function(m){
+        var r = byCode[String(m.id||'').trim().toLowerCase()];
+        var assessed = !!(r && (r.status === 'complete' || r.status === 'partial'));
+        return { machineCode:m.id, machineName:m.name, factory:m.factory, area:m.area,
+                 rank: r ? r.rank : '', finalScore: r ? r.finalScore : '',
+                 status: r ? r.status : 'not-assessed', sections: r ? r.sections : {}, assessed:assessed };
+    }).filter(function(r){
+        if (rankF && r.rank !== rankF) return false;
+        if (!stF) return true;
+        if (stF === 'assessed')     return r.assessed;
+        if (stF === 'not-assessed') return !r.assessed;
+        return r.status === stF;   // complete / partial
     });
     if (!list.length) {
-        tb.innerHTML = '<tr><td colspan="8" class="px-4 py-10 text-center text-gray-400">ไม่มีข้อมูล</td></tr>';
+        tb.innerHTML = '<tr><td colspan="7" class="px-4 py-10 text-center text-gray-400">ไม่มีเครื่องจักรตามเงื่อนไข (เลือกโรงงาน/พื้นที่)</td></tr>';
         return;
     }
     tb.innerHTML = list.map(function(r) {
@@ -203,7 +218,8 @@ function renderMcRankTable() {
             'complete':     '<span class="text-xs font-bold text-green-600">✓ ครบ</span>',
             'partial':      '<span class="text-xs font-bold text-orange-500">⏳ บางส่วน</span>',
             'not-started':  '<span class="text-xs text-gray-400">ยังไม่เริ่ม</span>',
-        }[r.status || 'not-started'] || '';
+            'not-assessed': '<span class="text-xs text-gray-400">ยังไม่ประเมิน</span>',
+        }[r.status] || '<span class="text-xs text-gray-400">ยังไม่ประเมิน</span>';
         var secDots = MC_SECTIONS_ORDER.map(function(sec) {
             var signed = r.sections && r.sections[sec] && r.sections[sec].by;
             return '<span title="' + sec + ': ' + (signed ? r.sections[sec].by : 'รอ') + '" style="color:' + (signed?'#16a085':'#d1d5db') + '">●</span>';
@@ -224,6 +240,22 @@ function renderMcRankTable() {
 }
 
 function mcrFilterChanged() { renderMcRankTable(); }
+
+// populate ตัวเลือกพื้นที่ (mcr-area) จากทะเบียนเครื่อง ตามโรงงานที่เลือก
+function mcrPopulateAreaFilter() {
+    var sel = document.getElementById('mcr-area');
+    if (!sel) return;
+    var fac = document.getElementById('mcr-factory')?.value || '';
+    var cur = sel.value;
+    var areas = {};
+    (typeof machineMaster !== 'undefined' ? machineMaster : []).forEach(function(m){
+        if (fac && m.factory !== fac) return;
+        if (m.area) areas[m.area] = true;
+    });
+    sel.innerHTML = '<option value="">ทุก Area</option>' + Object.keys(areas).sort().map(function(a){
+        return '<option' + (a === cur ? ' selected' : '') + '>' + a + '</option>';
+    }).join('');
+}
 
 // ============================================================
 // B: ASSESSMENT FORM

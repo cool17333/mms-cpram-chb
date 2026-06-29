@@ -398,14 +398,15 @@ function doPost(e) {
       const sh = ss.getSheetByName('_Machines');
       if (!sh) return jsonOut({ success: false, error: 'ไม่พบทะเบียน' });
       const vals = sh.getDataRange().getValues();
+      var delId = String(data.machineId || data.id || '').trim().toLowerCase();   // FIX: client ส่ง machineId (เดิมอ่าน data.id = undefined)
       for (let i = 1; i < vals.length; i++) {
-        if (String(vals[i][0]).trim().toLowerCase() === String(data.id||'').trim().toLowerCase()) {
+        if (String(vals[i][0]).trim().toLowerCase() === delId) {
           sh.deleteRow(i+1);
-          writeLog(ss, '-', 'ลบทะเบียน — ' + (data.id||''), data.byName||'', '');
+          writeLog(ss, '-', 'ลบทะเบียน — ' + (data.machineId || data.id || ''), data.byName||'', '');
           return jsonOut({ success: true });
         }
       }
-      return jsonOut({ success: false, error: 'ไม่พบรหัส ' + (data.id||'') });
+      return jsonOut({ success: false, error: 'ไม่พบรหัส ' + (data.machineId || data.id || '') });
     }
 
     // ---- ACCEPT job (Engineer / Admin รับงาน) ----

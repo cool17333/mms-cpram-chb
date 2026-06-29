@@ -304,7 +304,7 @@ async function openMcRankForm(machineCode) {
         // โหลด area descriptions
         var area = (row && row.area) || (mc && mc.area) || '';
         if (area) {
-            var dRes  = await fetch(GAS_URL + '?action=getAreaDescriptions&area=' + encodeURIComponent(area));
+            var dRes  = await fetch(GAS_URL + '?action=getAreaDescriptions&area=' + encodeURIComponent(area) + '&year=' + encodeURIComponent(_mcrYear));
             var dJson = await dRes.json();
             _mcrAreaDescs = dJson.success ? (dJson.data || {}) : {};
         } else {

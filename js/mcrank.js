@@ -358,14 +358,25 @@ function renderMcRankForm() {
         var canEdit   = canReviewSection(currentUser, secName);
         var isLocked  = !canEdit;
 
-        var sectionHdr = '<div class="mb-3 flex items-center justify-between">' +
+        var reviewerBy = signed ? row.sections[secName].by : '';
+        var reviewerAt = signed ? row.sections[secName].at : '';
+        var sectionHdr = '<div class="mb-3">' +
+            '<div class="flex items-center justify-between">' +
             '<p class="font-bold text-gray-700">' + secName + '</p>' +
             (signed
-                ? '<span class="text-xs text-green-600 font-bold">✓ รีวิวโดย ' + reviewer + '</span>'
+                ? '<span class="text-xs text-green-600 font-bold">✓ เซ็นแล้ว</span>'
                 : (isLocked
-                    ? '<span class="text-xs text-gray-400">รอทีม' + (SECTION_LEVEL[secName]||'') + '</span>'
+                    ? '<span class="text-xs text-gray-400">รอทีม ' + (SECTION_LEVEL[secName]||'') + '</span>'
                     : '<span class="text-xs text-orange-500 font-bold">รอการเซ็น</span>')
             ) +
+            '</div>' +
+            (signed
+                ? '<div class="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 items-center text-xs bg-green-100 text-green-800 rounded-lg px-2.5 py-1.5">' +
+                  '<span class="font-bold">👤 ผู้ Review:</span><span>' + reviewerBy + '</span>' +
+                  '<span class="text-green-400">·</span>' +
+                  '<span class="font-bold">📅</span><span>' + reviewerAt + '</span>' +
+                  '</div>'
+                : '') +
             '</div>';
 
         var rows = crits.map(function(c) {

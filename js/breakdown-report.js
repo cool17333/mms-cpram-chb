@@ -42,7 +42,6 @@ const PAGE_TITLE = {
     'cl-status':    '✅ สถานะการตรวจ',
     'oee':          '📊 ระบบ TPM — สรุป OEE',
     'mcrank':       '📊 ระบบ TPM — Ranking เครื่องจักร',
-    'mcapprove':    '📋 ระบบ TPM — อนุมัติฟอร์มประจำปี',
     'tpm-hub':      '📈 ระบบ TPM',
 };
 
@@ -603,7 +602,7 @@ function updateNavActive(panel) {
         'bd-hub':'bn-bd','form':'bn-bd','records':'bn-bd','summary':'bn-bd',
         'machines':'bn-mach',
         'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl','cl-status':'bn-cl',
-        'log':'bn-more', 'oee':'bn-more', 'mcrank':'bn-more', 'mcapprove':'bn-more', 'tpm-hub':'bn-more',
+        'log':'bn-more', 'oee':'bn-more', 'mcrank':'bn-more', 'tpm-hub':'bn-more',
     };
     document.getElementById(bnMap[panel])?.classList.add('active');
     // sidebar: single items (standalone เท่านั้น — group header จัดการใน grpMap)
@@ -625,7 +624,6 @@ function updateNavActive(panel) {
         'tpm-hub':     ['tpm','sni-tpm-hub'],
         'oee':         ['tpm','sni-tpm-oee'],
         'mcrank':      ['tpm','sni-tpm-rank'],
-        'mcapprove':   ['tpm','sni-tpm-approve'],
     };
     const gi = grpMap[panel];
     if (gi) {
@@ -663,7 +661,6 @@ function switchTab(name) {
     if (name === 'ua') { uaSwitch?.('users'); }
     if (name === 'oee') initOeePanel?.();
     if (name === 'mcrank') initMcRankPanel();
-    if (name === 'mcapprove') initFormApprovalPanel();
     if (name === 'tpm-hub') updateTpmHubStats();
     window.scrollTo(0, 0);
 }

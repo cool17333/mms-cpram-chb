@@ -115,7 +115,9 @@ async function loadMcRankOverview() {
         renderMcRankKPIs();
         renderMcRankSectionProgress();
         renderMcRankChart();
+        mcrPopulateAreaFilter();
         renderMcRankTable();
+        renderMcApprovalDash();
     } catch(e) {
         showToast('❌ ' + e.message, 'error');
     } finally {
@@ -184,14 +186,28 @@ function renderMcRankTable() {
     var areaF = document.getElementById('mcr-area')?.value || '';
     var stF   = document.getElementById('mcr-status')?.value || '';
     var rankF = document.getElementById('mcr-rank')?.value || '';
-    var list  = _mcrData.filter(function(r) {
-        return (!facF  || r.factory === facF) &&
-               (!areaF || r.area === areaF) &&
-               (!stF   || r.status === stF) &&
-               (!rankF || r.rank === rankF);
+    // index record ที่ประเมินแล้ว ตามรหัสเครื่อง
+    var byCode = {};
+    _mcrData.forEach(function(r){ byCode[String(r.machineCode||'').trim().toLowerCase()] = r; });
+    // ทุกเครื่องในทะเบียน (filter โรงงาน/พื้นที่) แล้ว merge กับ record
+    var machines = (typeof machineMaster !== 'undefined' ? machineMaster : []).filter(function(m){
+        return (!facF || m.factory === facF) && (!areaF || m.area === areaF);
+    });
+    var list = machines.map(function(m){
+        var r = byCode[String(m.id||'').trim().toLowerCase()];
+        var assessed = !!(r && (r.status === 'complete' || r.status === 'partial'));
+        return { machineCode:m.id, machineName:m.name, factory:m.factory, area:m.area,
+                 rank: r ? r.rank : '', finalScore: r ? r.finalScore : '',
+                 status: r ? r.status : 'not-assessed', sections: r ? r.sections : {}, assessed:assessed };
+    }).filter(function(r){
+        if (rankF && r.rank !== rankF) return false;
+        if (!stF) return true;
+        if (stF === 'assessed')     return r.assessed;
+        if (stF === 'not-assessed') return !r.assessed;
+        return r.status === stF;   // complete / partial
     });
     if (!list.length) {
-        tb.innerHTML = '<tr><td colspan="8" class="px-4 py-10 text-center text-gray-400">ไม่มีข้อมูล</td></tr>';
+        tb.innerHTML = '<tr><td colspan="7" class="px-4 py-10 text-center text-gray-400">ไม่มีเครื่องจักรตามเงื่อนไข (เลือกโรงงาน/พื้นที่)</td></tr>';
         return;
     }
     tb.innerHTML = list.map(function(r) {
@@ -202,7 +218,8 @@ function renderMcRankTable() {
             'complete':     '<span class="text-xs font-bold text-green-600">✓ ครบ</span>',
             'partial':      '<span class="text-xs font-bold text-orange-500">⏳ บางส่วน</span>',
             'not-started':  '<span class="text-xs text-gray-400">ยังไม่เริ่ม</span>',
-        }[r.status || 'not-started'] || '';
+            'not-assessed': '<span class="text-xs text-gray-400">ยังไม่ประเมิน</span>',
+        }[r.status] || '<span class="text-xs text-gray-400">ยังไม่ประเมิน</span>';
         var secDots = MC_SECTIONS_ORDER.map(function(sec) {
             var signed = r.sections && r.sections[sec] && r.sections[sec].by;
             return '<span title="' + sec + ': ' + (signed ? r.sections[sec].by : 'รอ') + '" style="color:' + (signed?'#16a085':'#d1d5db') + '">●</span>';
@@ -223,6 +240,22 @@ function renderMcRankTable() {
 }
 
 function mcrFilterChanged() { renderMcRankTable(); }
+
+// populate ตัวเลือกพื้นที่ (mcr-area) จากทะเบียนเครื่อง ตามโรงงานที่เลือก
+function mcrPopulateAreaFilter() {
+    var sel = document.getElementById('mcr-area');
+    if (!sel) return;
+    var fac = document.getElementById('mcr-factory')?.value || '';
+    var cur = sel.value;
+    var areas = {};
+    (typeof machineMaster !== 'undefined' ? machineMaster : []).forEach(function(m){
+        if (fac && m.factory !== fac) return;
+        if (m.area) areas[m.area] = true;
+    });
+    sel.innerHTML = '<option value="">ทุก Area</option>' + Object.keys(areas).sort().map(function(a){
+        return '<option' + (a === cur ? ' selected' : '') + '>' + a + '</option>';
+    }).join('');
+}
 
 // ============================================================
 // B: ASSESSMENT FORM
@@ -412,103 +445,7 @@ async function saveMcRankSection(section) {
     }
 }
 
-// ============================================================
-// D: RUBRIC EDITOR (admin — แก้คำอธิบาย tier ราย area)
-// ============================================================
-
-var _mcrEditorArea  = '';
-var _mcrEditorDescs = {};
-
-async function openMcRubricEditor() {
-    var area = (document.getElementById('mcr-editor-area')?.value || '').trim();
-    if (!area) { showToast('⚠️ เลือกพื้นที่ก่อน', 'error'); return; }
-    _mcrEditorArea = area;
-    showLoading('กำลังโหลด…');
-    try {
-        var res  = await fetch(GAS_URL + '?action=getAreaDescriptions&area=' + encodeURIComponent(area));
-        var json = await res.json();
-        _mcrEditorDescs = json.success ? JSON.parse(JSON.stringify(json.data||{})) : {};
-        renderMcRubricEditor();
-        document.getElementById('mcr-rubric-modal').classList.remove('hidden');
-    } catch(e) {
-        showToast('❌ ' + e.message, 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-function closeMcRubricEditor() {
-    document.getElementById('mcr-rubric-modal').classList.add('hidden');
-}
-
-function renderMcRubricEditor() {
-    var el = document.getElementById('mcr-rubric-body');
-    if (!el) return;
-    el.innerHTML = DEFAULT_CRITERIA.map(function(c) {
-        var tiersHtml = c.tiers.map(function(t) {
-            var override = (_mcrEditorDescs[String(c.id)] || {})[String(t.score)];
-            var val = override != null ? override : t.label;
-            return '<div class="flex items-start gap-2 py-1">' +
-                '<span class="shrink-0 text-xs font-bold text-gray-500 w-8 pt-1">' + t.score + '</span>' +
-                '<input type="text" id="mcred-' + c.id + '-' + t.score + '"' +
-                ' value="' + val.replace(/"/g,'&quot;') + '"' +
-                ' placeholder="' + t.label.replace(/"/g,'&quot;') + '"' +
-                ' class="flex-1 border border-gray-200 rounded px-2 py-1 text-xs">' +
-                '<button onclick="mcrResetTier(' + c.id + ',' + t.score + ')" title="รีเซ็ตเป็น DEFAULT" class="text-gray-300 hover:text-gray-600 text-xs shrink-0 pt-1">↩</button>' +
-                '</div>';
-        }).join('');
-        return '<div class="mb-4">' +
-            '<div class="flex items-center gap-2 mb-1">' +
-            '<span class="text-xs font-bold text-gray-400">#' + c.id + '</span>' +
-            '<span class="text-xs text-gray-400 px-1.5 py-0.5 rounded bg-gray-100">' + c.group + '</span>' +
-            '<span class="text-xs font-bold text-gray-700">' + c.name + '</span>' +
-            '</div>' + tiersHtml + '</div>';
-    }).join('');
-}
-
-function mcrResetTier(cid, score) {
-    var el = document.getElementById('mcred-' + cid + '-' + score);
-    if (!el) return;
-    var crit = DEFAULT_CRITERIA.find(function(c){ return c.id === cid; });
-    if (!crit) return;
-    var tier = crit.tiers.find(function(t){ return t.score === score; });
-    if (tier) el.value = tier.label;
-}
-
-function mcrResetAllTiers() {
-    DEFAULT_CRITERIA.forEach(function(c) {
-        c.tiers.forEach(function(t) { mcrResetTier(c.id, t.score); });
-    });
-    showToast('รีเซ็ตทุก tier เป็น DEFAULT แล้ว', 'info');
-}
-
-async function saveMcRubricEditor() {
-    if (!_mcrEditorArea) return;
-    var items = [];
-    DEFAULT_CRITERIA.forEach(function(c) {
-        c.tiers.forEach(function(t) {
-            var el = document.getElementById('mcred-' + c.id + '-' + t.score);
-            if (!el) return;
-            items.push({ criterionId: c.id, score: t.score, label: el.value });
-        });
-    });
-    showLoading('กำลังบันทึก…');
-    try {
-        var body = JSON.stringify({
-            action: 'setAreaDescriptions', area: _mcrEditorArea, items: items,
-            username: currentUser.username, pin: currentUser.pin,
-        });
-        var res  = await fetch(GAS_URL, { method:'POST', body: body });
-        var json = await res.json();
-        if (!json.success) throw new Error(json.error || 'ไม่สำเร็จ');
-        showToast('✅ บันทึกคำอธิบาย ' + _mcrEditorArea + ' แล้ว', 'success');
-        closeMcRubricEditor();
-    } catch(e) {
-        showToast('❌ ' + e.message, 'error');
-    } finally {
-        hideLoading();
-    }
-}
+// (RUBRIC EDITOR ลบ v2.20 — แก้ description ย้ายเข้า flow อนุมัติรายหมวด: approveFormSection)
 
 // ============================================================
 // FORM APPROVAL — อนุมัติฟอร์มประเมินรายพื้นที่รายปี
@@ -524,25 +461,22 @@ function getDistinctAreas(factory) {
     return Object.keys(set).sort().map(function(a) { return { area: a, factory: set[a] }; });
 }
 
-function initFormApprovalPanel() {
-    var y = document.getElementById('mcfa-year');
-    if (y && !y.value) y.value = _mcrYear;
-    loadFormApprovalPanel();
-}
-async function loadFormApprovalPanel() {
-    _mcrYear = (document.getElementById('mcfa-year')?.value || _mcrYear).trim();
-    showLoading('กำลังโหลด…');
-    try { await loadFormApprovals(); renderFormApprovalTable(); }
-    finally { hideLoading(); }
-}
-function renderFormApprovalTable() {
-    var tb = document.getElementById('mcfa-tbody');
+// v2.20: dashboard อนุมัติฟอร์ม (ในหน้า Ranking) — แทน panel-mcapprove เดิม, ใช้ filter mcr-factory
+function renderMcApprovalDash() {
+    var tb = document.getElementById('mcr-approval-tbody');
     if (!tb) return;
-    var fac   = document.getElementById('mcfa-factory')?.value || '';
+    var fac   = document.getElementById('mcr-factory')?.value || '';
     var areas = getDistinctAreas(fac);
-    if (!areas.length) { tb.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-gray-400">ไม่มีพื้นที่ในทะเบียนเครื่อง</td></tr>'; return; }
+    var sumEl = document.getElementById('mcr-approval-summary');
+    if (!areas.length) {
+        tb.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">ไม่มีพื้นที่ในทะเบียนเครื่อง</td></tr>';
+        if (sumEl) sumEl.textContent = '';
+        return;
+    }
+    var approved = 0;
     tb.innerHTML = areas.map(function(a) {
         var ap = _mcrApprovals[a.area];
+        if (ap && ap.status === 'approved') approved++;
         var dots = MC_SECTIONS_ORDER.map(function(sec) {
             var s = ap && ap.sections && ap.sections[sec] && ap.sections[sec].by;
             return '<span title="' + sec + (s ? ': ' + ap.sections[sec].by : ': รอ') + '" style="color:' + (s ? '#16a085' : '#d1d5db') + '">●</span>';
@@ -555,17 +489,17 @@ function renderFormApprovalTable() {
             '<td class="px-3 py-2 text-sm">' + a.area + '<div class="text-xs text-gray-400">' + (a.factory || '') + '</div></td>' +
             '<td class="px-3 py-2 text-center tracking-widest text-base">' + dots + '</td>' +
             '<td class="px-3 py-2 text-center">' + stBadge + '</td>' +
-            '<td class="px-3 py-2 text-center"><button onclick="openFormApproval(\'' + safe + '\')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">ดูฟอร์ม + อนุมัติ</button></td>' +
+            '<td class="px-3 py-2 text-center"><button onclick="openFormApproval(\'' + safe + '\')" class="text-xs font-bold text-blue-600 hover:text-blue-800 underline">ดูฟอร์ม + อนุมัติ/แก้</button></td>' +
             '</tr>';
     }).join('');
+    if (sumEl) sumEl.textContent = 'อนุมัติแล้ว ' + approved + '/' + areas.length + ' พื้นที่';
 }
-function mcfaFilterChanged() { renderFormApprovalTable(); }
 
 var _mcApprovalArea = null;
 async function openFormApproval(area) {
     _mcApprovalArea = area;
     try {
-        var dRes  = await fetch(GAS_URL + '?action=getAreaDescriptions&area=' + encodeURIComponent(area));
+        var dRes  = await fetch(GAS_URL + '?action=getAreaDescriptions&area=' + encodeURIComponent(area) + '&year=' + encodeURIComponent(_mcrYear));
         var dJson = await dRes.json();
         _mcrAreaDescs = dJson.success ? (dJson.data || {}) : {};
     } catch(e) { _mcrAreaDescs = {}; }
@@ -581,39 +515,73 @@ function renderFormApprovalBody(area) {
     if (!el) return;
     var ap = _mcrApprovals[area] || { sections: {} };
     el.innerHTML = MC_SECTIONS_ORDER.map(function(secName) {
-        var crits  = criteriaByGroup(secName);
-        var signed = ap.sections && ap.sections[secName] && ap.sections[secName].by;
-        var canEdit = canReviewSection(currentUser, secName);
+        var crits    = criteriaByGroup(secName);
+        var signed   = ap.sections && ap.sections[secName] && ap.sections[secName].by;
+        var canEdit  = canReviewSection(currentUser, secName);
+        var editable = canEdit && !signed;   // ทีมตัวเอง + ยังไม่เซ็น → แก้ desc ได้
         var critHtml = crits.map(function(c) {
-            var tierTxt = c.tiers.map(function(t) { return t.score + ' — ' + getLabelForTier(c.id, t.score); }).join('<br>');
+            var tiers = c.tiers.map(function(t) {
+                var cur = getLabelForTier(c.id, t.score);
+                if (editable) {
+                    return '<div class="flex items-center gap-2 py-0.5">' +
+                        '<span class="shrink-0 text-xs font-bold text-gray-500 w-7">' + t.score + '</span>' +
+                        '<input type="text" id="mcfad-' + c.id + '-' + t.score + '" value="' + String(cur).replace(/"/g,'&quot;') + '"' +
+                        ' placeholder="' + String(t.label).replace(/"/g,'&quot;') + '"' +
+                        ' class="flex-1 border border-gray-200 rounded px-2 py-0.5 text-xs"></div>';
+                }
+                return '<div class="text-[11px] text-gray-400">' + t.score + ' — ' + cur + '</div>';
+            }).join('');
             return '<div class="py-1.5 border-b border-gray-50"><p class="text-xs font-bold text-gray-700">' + c.id + '. ' + c.name + '</p>' +
-                   '<p class="text-[11px] text-gray-400 mt-0.5">' + tierTxt + '</p></div>';
+                   '<div class="mt-0.5">' + tiers + '</div></div>';
         }).join('');
         var hdr = '<div class="flex items-center justify-between mb-1"><p class="font-bold text-gray-700">' + secName + '</p>' +
             (signed ? '<span class="text-xs text-green-600 font-bold">✓ อนุมัติโดย ' + ap.sections[secName].by + ' · ' + ap.sections[secName].at + '</span>'
-                    : (canEdit ? '<span class="text-xs text-orange-500 font-bold">รออนุมัติ</span>'
-                               : '<span class="text-xs text-gray-400">รอทีม' + (SECTION_LEVEL[secName] || '') + '</span>')) + '</div>';
-        var btn = (!signed && canEdit)
-            ? '<div class="mt-2 flex justify-end"><button onclick="signFormApproval(\'' + secName + '\')" class="px-4 py-1.5 text-white text-xs font-bold rounded-lg" style="background:#2475b0">✅ อนุมัติฟอร์มหัวข้อนี้</button></div>'
+                    : (canEdit ? '<span class="text-xs text-orange-500 font-bold">แก้คำอธิบายได้ก่อนอนุมัติ</span>'
+                               : '<span class="text-xs text-gray-400">รอทีม ' + (SECTION_LEVEL[secName] || '') + '</span>')) + '</div>';
+        var btn = editable
+            ? '<div class="mt-2 flex justify-end"><button onclick="approveFormSection(\'' + secName + '\')" class="px-4 py-1.5 text-white text-xs font-bold rounded-lg" style="background:#2475b0">💾 บันทึกคำอธิบาย & อนุมัติ</button></div>'
             : '';
-        return '<div class="mb-4 p-3 rounded-xl border ' + (signed ? 'border-green-200 bg-green-50' : 'border-gray-100 bg-gray-50') + '">' + hdr + critHtml + btn + '</div>';
+        return '<div class="mb-4 p-3 rounded-xl border ' + (signed ? 'border-green-200 bg-green-50' : (editable ? 'border-blue-200 bg-blue-50' : 'border-gray-100 bg-gray-50')) + '">' + hdr + critHtml + btn + '</div>';
     }).join('');
 }
 
-async function signFormApproval(section) {
+async function approveFormSection(section) {
     if (!_mcApprovalArea) return;
     if (!GAS_URL) { showToast('⚠️ ตั้งค่า GAS URL ก่อน', 'error'); return; }
-    showLoading('กำลังอนุมัติ…');
+    if (!currentUser || !currentUser.username) { showToast('⚠️ เข้าสู่ระบบก่อน', 'error'); return; }
+    var crits = criteriaByGroup(section);
+    // 1) เก็บคำอธิบายที่แก้ของหัวข้อนี้
+    var items = [];
+    crits.forEach(function(c) {
+        c.tiers.forEach(function(t) {
+            var inp = document.getElementById('mcfad-' + c.id + '-' + t.score);
+            if (inp) items.push({ criterionId: c.id, score: t.score, label: inp.value });
+        });
+    });
+    showLoading('กำลังบันทึก & อนุมัติ…');
     try {
-        var res  = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({
-            action: 'setFormApproval', area: _mcApprovalArea, year: _mcrYear, section: section,
-            username: currentUser.username, pin: currentUser.pin }) });
-        var json = await res.json();
-        if (!json.success) throw new Error(json.error || 'ไม่สำเร็จ');
-        showToast('✅ อนุมัติหัวข้อ ' + section + ' แล้ว' + (json.status === 'approved' ? ' — ฟอร์มพื้นที่นี้พร้อมประเมิน' : ''), 'success');
+        // 2) save descriptions (รายปี รายหัวข้อ) — ถ้าไม่มี input (ไม่ได้แก้) ก็ข้าม
+        if (items.length) {
+            var r1 = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
+                action:'setAreaDescriptions', area:_mcApprovalArea, year:_mcrYear, items:items,
+                username:currentUser.username, pin:currentUser.pin }) });
+            var j1 = await r1.json();
+            if (!j1.success) throw new Error(j1.error || 'บันทึกคำอธิบายไม่สำเร็จ');
+        }
+        // 3) sign approval หัวข้อนี้
+        var r2 = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
+            action:'setFormApproval', area:_mcApprovalArea, year:_mcrYear, section:section,
+            username:currentUser.username, pin:currentUser.pin }) });
+        var j2 = await r2.json();
+        if (!j2.success) throw new Error(j2.error || 'อนุมัติไม่สำเร็จ');
+        showToast('✅ บันทึก & อนุมัติหัวข้อ ' + section + ' แล้ว' + (j2.status === 'approved' ? ' — พื้นที่นี้พร้อมประเมิน' : ''), 'success');
+        // 4) reload descriptions (รายปี) + approvals + dashboard
+        var dRes = await fetch(GAS_URL + '?action=getAreaDescriptions&area=' + encodeURIComponent(_mcApprovalArea) + '&year=' + encodeURIComponent(_mcrYear));
+        var dJson = await dRes.json();
+        _mcrAreaDescs = dJson.success ? (dJson.data || {}) : {};
         await loadFormApprovals();
         renderFormApprovalBody(_mcApprovalArea);
-        renderFormApprovalTable();
+        renderMcApprovalDash();
         renderMcRankTable();
     } catch(e) { showToast('❌ ' + e.message, 'error'); }
     finally { hideLoading(); }

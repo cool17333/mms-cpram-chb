@@ -255,18 +255,11 @@ async function spImpConfirm() {
     } catch(e) { showToast('เชื่อมต่อ GAS ไม่ได้', 'error'); }
 }
 
-// ---- hook switchTab ----
-const _origSwitchTab = typeof switchTab === 'function' ? switchTab : null;
-// โหลดข้อมูลเมื่อเปิด panel
+// ---- hook switchTab เพื่อโหลดข้อมูลเมื่อเปิด panel ----
 document.addEventListener('DOMContentLoaded', () => {
-    // override switchTab เพื่อ hook 'spare'
     const _baseSwitchTab = window.switchTab;
     window.switchTab = function(tab) {
         _baseSwitchTab(tab);
-        if (tab === 'spare') { spareLoad(); applyPermissionsToEl(document.getElementById('panel-spare')); }
+        if (tab === 'spare') spareLoad();
     };
-    // perm: ซ่อน/โชว์ spare.edit buttons
-    document.querySelectorAll('[data-perm="spare.edit"]').forEach(el => {
-        el.classList.toggle('hidden', !can('spare.edit'));
-    });
 });

@@ -3176,6 +3176,9 @@
             <option value="STORE">Store (คลัง)</option>
             <option value="SUPPLIER">Supplier</option>
         </select>
+        <select id="spare-filter-cat" onchange="spareRender()" class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white outline-none">
+            <option value="">ทุกหมวด</option>
+        </select>
         <input id="spare-filter-search" oninput="spareRender()" type="text" placeholder="ค้นหาชื่อ / Part No. / หมวด..." class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white outline-none flex-1 min-w-40">
     </div>
     <!-- List -->
@@ -3210,7 +3213,9 @@
             <div class="flex gap-2">
                 <div class="flex-1">
                     <label class="text-xs text-gray-700 font-bold mb-1 block">หมวด</label>
-                    <input id="sp-category" type="text" placeholder="ประเภทอะไหล่..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
+                    <select id="sp-category" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none bg-white">
+                        <option value="">— เลือกหมวด —</option>
+                    </select>
                 </div>
                 <div class="flex-1" id="sp-location-wrap">
                     <label class="text-xs text-gray-700 font-bold mb-1 block">ที่จัดเก็บ</label>
@@ -3489,7 +3494,7 @@
 <script src="js/checklist-core.js?v=2.30"></script>
 <script src="js/checklist-status.js?v=2.30"></script>
 <script src="js/mcrank.js?v=2.30"></script>
-<script src="js/spare-parts.js?v=2.30"></script>
+<script src="js/spare-parts.js?v=2.32"></script>
 <script src="js/user-access.js?v=2.30"></script>
 <script src="js/scan.js?v=2.30"></script>
 </body>

@@ -626,9 +626,13 @@ function updateNavActive(panel) {
         'mcrank':      ['tpm','sni-tpm-rank'],
     };
     const gi = grpMap[panel];
+    // Accordion: หุบ group อื่นทุกครั้งที่เปลี่ยนระบบ
+    ['bd', 'tpm', 'cl'].forEach(g => {
+        if (!gi || g !== gi[0]) document.getElementById('grp-' + g)?.classList.remove('open');
+    });
     if (gi) {
         document.getElementById('grp-' + gi[0])?.classList.add('open');
-        document.getElementById('sn-' + gi[0])?.classList.add('active'); // highlight main menu (group header) ทุกระบบ
+        document.getElementById('sn-' + gi[0])?.classList.add('active');
         document.getElementById(gi[1])?.classList.add('active');
     }
     document.getElementById('sidebar-subnav')?.classList.toggle('hidden', !isSubPanel);

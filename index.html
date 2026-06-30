@@ -3189,41 +3189,41 @@
         <div class="space-y-3">
             <div class="flex gap-2">
                 <div class="flex-1">
-                    <label class="text-xs text-gray-500 font-bold mb-1 block">ประเภท</label>
+                    <label class="text-xs text-gray-700 font-bold mb-1 block">ประเภท</label>
                     <select id="sp-type" onchange="spareTypeChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none bg-white">
                         <option value="STORE">Store (คลังบริษัท)</option>
                         <option value="SUPPLIER">Supplier (จาก supplier)</option>
                     </select>
                 </div>
                 <div class="flex-1">
-                    <label class="text-xs text-gray-500 font-bold mb-1 block">Part No.</label>
+                    <label class="text-xs text-gray-700 font-bold mb-1 block">Part No.</label>
                     <input id="sp-partno" type="text" placeholder="รหัสอะไหล่..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
                 </div>
             </div>
             <div>
-                <label class="text-xs text-gray-500 font-bold mb-1 block">ชื่ออะไหล่ <span class="text-red-400">*</span></label>
+                <label class="text-xs text-gray-700 font-bold mb-1 block">ชื่ออะไหล่ <span class="text-orange-500">*</span></label>
                 <input id="sp-name" type="text" placeholder="ชื่ออะไหล่..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
             </div>
             <div class="flex gap-2">
                 <div class="flex-1">
-                    <label class="text-xs text-gray-500 font-bold mb-1 block">หมวด</label>
+                    <label class="text-xs text-gray-700 font-bold mb-1 block">หมวด</label>
                     <input id="sp-category" type="text" placeholder="ประเภทอะไหล่..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
                 </div>
                 <div class="flex-1" id="sp-location-wrap">
-                    <label class="text-xs text-gray-500 font-bold mb-1 block">ที่จัดเก็บ</label>
+                    <label class="text-xs text-gray-700 font-bold mb-1 block">ที่จัดเก็บ</label>
                     <input id="sp-location" type="text" placeholder="Shelf / Row..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
                 </div>
                 <div class="flex-1 hidden" id="sp-supplier-wrap">
-                    <label class="text-xs text-gray-500 font-bold mb-1 block">ชื่อผู้ขาย</label>
+                    <label class="text-xs text-gray-700 font-bold mb-1 block">ชื่อผู้ขาย</label>
                     <input id="sp-supplier" type="text" placeholder="บริษัท / ร้าน..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
                 </div>
             </div>
             <div>
-                <label class="text-xs text-gray-500 font-bold mb-1 block">หมายเหตุ</label>
+                <label class="text-xs text-gray-700 font-bold mb-1 block">หมายเหตุ</label>
                 <input id="sp-note" type="text" placeholder="หมายเหตุเพิ่มเติม..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
             </div>
             <div>
-                <label class="text-xs text-gray-500 font-bold mb-1 block">รูปภาพอะไหล่</label>
+                <label class="text-xs text-gray-700 font-bold mb-1 block">รูปภาพอะไหล่</label>
                 <input id="sp-img-input" type="file" accept="image/*" onchange="spareImgPreview(this)" class="text-sm text-gray-600">
                 <div id="sp-img-preview" class="mt-2 hidden"><img id="sp-img-preview-img" class="h-24 object-contain rounded border border-gray-200"></div>
             </div>
@@ -3244,21 +3244,21 @@
         </div>
         <div class="space-y-3">
             <div>
-                <label class="text-xs text-gray-500 font-bold mb-1 block">เลือกไฟล์ Excel</label>
+                <label class="text-xs text-gray-700 font-bold mb-1 block">เลือกไฟล์ Excel</label>
                 <input id="spare-imp-file" type="file" accept=".xlsx,.xls" onchange="spImpReadFile(this)" class="text-sm text-gray-600">
             </div>
             <div id="spare-imp-col-wrap" class="hidden">
-                <p class="text-xs text-gray-500 font-bold mb-2">เลือก column ที่ตรงกัน (row แรก = header)</p>
+                <p class="text-xs text-gray-700 font-bold mb-2">เลือก column ที่ตรงกัน (row แรก = header)</p>
                 <div class="grid grid-cols-2 gap-2 text-sm" id="spare-imp-col-selects"></div>
             </div>
             <div id="spare-imp-preview" class="hidden">
-                <p class="text-xs text-gray-500 font-bold mb-2">ตัวอย่าง (5 แถวแรก)</p>
+                <p class="text-xs text-gray-700 font-bold mb-2">ตัวอย่าง (5 แถวแรก)</p>
                 <div class="overflow-x-auto"><table id="spare-imp-preview-table" class="text-xs w-full border-collapse"></table></div>
             </div>
         </div>
         <div class="flex gap-2 mt-5">
             <button id="spare-imp-confirm-btn" onclick="spImpConfirm()" class="hidden flex-1 mms-btn mms-btn-blue">✅ นำเข้า</button>
-            <button onclick="spareCloseImport()" class="mms-btn bg-gray-100 text-gray-700 hover:bg-gray-200">ปิด</button>
+            <button onclick="spareCloseImport()" class="mms-btn mms-btn-red">ปิด</button>
         </div>
     </div>
 </div>

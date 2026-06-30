@@ -630,3 +630,262 @@ async function approveFormSection(section) {
     } catch(e) { showToast('❌ ' + e.message, 'error'); }
     finally { hideLoading(); }
 }
+
+// ============================================================
+// EXPORT — PDF ผลประเมิน Ranking (timeline + ผู้ประเมิน/ผู้อนุมัติรายหัวข้อ)
+//   เลือกหลายเครื่อง · 1 เครื่อง = ขึ้นหน้าใหม่ · เฉพาะ status complete
+//   reuse _captureNode() / _download() / fmtExportDateTime() (global จาก export.js)
+// ============================================================
+
+function openMcRankExport() {
+    var done = (_mcrData || []).filter(function(r){ return r.status === 'complete'; });
+    if (!done.length) { showToast('⚠️ ยังไม่มีเครื่องที่ประเมินครบ 5 หมวด', 'warn'); return; }
+    var facSel = document.getElementById('mcx-fac-filter');
+    if (facSel) {
+        var facs = {};
+        done.forEach(function(r){ if (r.factory) facs[r.factory] = true; });
+        facSel.innerHTML = '<option value="">ทุกโรงงาน</option>' +
+            Object.keys(facs).sort().map(function(f){ return '<option>' + f + '</option>'; }).join('');
+        facSel.value = '';
+    }
+    var areaSel = document.getElementById('mcx-area-filter');
+    if (areaSel) { areaSel.innerHTML = '<option value="">ทุกพื้นที่</option>'; areaSel.value = ''; }
+    var srch = document.getElementById('mcx-search-filter');
+    if (srch) srch.value = '';
+    var all = document.getElementById('mcx-pick-all');
+    if (all) all.checked = false;
+    _mcExportRenderList();
+    document.getElementById('mcr-export-modal').classList.remove('hidden');
+}
+function closeMcRankExport() { document.getElementById('mcr-export-modal').classList.add('hidden'); }
+
+function _mcExportRenderList() {
+    var box = document.getElementById('mcx-pick-list');
+    if (!box) return;
+    var fac  = document.getElementById('mcx-fac-filter') ? document.getElementById('mcx-fac-filter').value : '';
+    var area = document.getElementById('mcx-area-filter') ? document.getElementById('mcx-area-filter').value : '';
+    var q    = (document.getElementById('mcx-search-filter') ? document.getElementById('mcx-search-filter').value : '').trim().toLowerCase();
+    var esc  = function(s){ return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var list = (_mcrData || []).filter(function(r){
+        if (r.status !== 'complete') return false;
+        if (fac  && r.factory !== fac)  return false;
+        if (area && r.area    !== area) return false;
+        if (q && String(r.machineCode||'').toLowerCase().indexOf(q) < 0 &&
+                 String(r.machineName||'').toLowerCase().indexOf(q) < 0) return false;
+        return true;
+    });
+    box.innerHTML = list.length
+        ? list.map(function(r){
+            var color = RANK_COLOR[r.rank] || '#666';
+            return '<label class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm">' +
+                '<input type="checkbox" class="mcx-cb w-4 h-4" value="' + esc(r.machineCode) + '" onchange="mcrExportCount()">' +
+                '<span class="font-bold text-gray-800">' + esc(r.machineName || r.machineCode) + '</span>' +
+                '<span class="text-gray-400 text-xs">' + esc(r.machineCode) + '</span>' +
+                '<span class="ml-auto inline-block px-2 py-0.5 rounded text-white text-xs font-bold" style="background:' + color + '">' + esc(r.rank) + '</span>' +
+                '<span class="text-gray-400 text-xs">' + esc(r.area||'') + '</span>' +
+            '</label>';
+        }).join('')
+        : '<p class="text-center text-gray-400 text-sm py-6">ไม่พบเครื่องที่ประเมินครบตามเงื่อนไข</p>';
+    mcrExportCount();
+}
+
+function mcrExportFilterFac() {
+    var fac = document.getElementById('mcx-fac-filter') ? document.getElementById('mcx-fac-filter').value : '';
+    var areaSel = document.getElementById('mcx-area-filter');
+    if (areaSel) {
+        var areas = {};
+        (_mcrData || []).forEach(function(r){
+            if (r.status !== 'complete') return;
+            if (!fac || r.factory === fac) { if (r.area) areas[r.area] = true; }
+        });
+        areaSel.innerHTML = '<option value="">ทุกพื้นที่</option>' +
+            Object.keys(areas).sort().map(function(a){ return '<option>' + a + '</option>'; }).join('');
+        areaSel.value = '';
+    }
+    _mcExportRenderList();
+}
+
+function mcrExportToggleAll(cb) {
+    document.querySelectorAll('.mcx-cb').forEach(function(x){ x.checked = cb.checked; });
+    mcrExportCount();
+}
+function mcrExportCount() {
+    var n = document.querySelectorAll('.mcx-cb:checked').length;
+    var el = document.getElementById('mcx-count');
+    if (el) el.textContent = 'เลือก ' + n + ' เครื่อง';
+}
+function mcrExportGenerate() {
+    var codes = [].slice.call(document.querySelectorAll('.mcx-cb:checked')).map(function(x){ return x.value; });
+    if (!codes.length) { showToast('⚠️ เลือกเครื่องอย่างน้อย 1 เครื่อง', 'warn'); return; }
+    closeMcRankExport();
+    exportMcRankPdf(codes);
+}
+
+async function _mcLoadDescsForAreas(areas) {
+    var map = {};
+    for (var i = 0; i < areas.length; i++) {
+        var a = areas[i];
+        try {
+            var r = await fetch(GAS_URL + '?action=getAreaDescriptions&area=' + encodeURIComponent(a) + '&year=' + encodeURIComponent(_mcrYear));
+            var j = await r.json();
+            map[a] = j.success ? (j.data || {}) : {};
+        } catch (e) { map[a] = {}; }
+    }
+    return map;
+}
+function _mcTierLabel(descs, critId, score) {
+    var ov = descs && descs[String(critId)];
+    if (ov && ov[String(score)] != null) return ov[String(score)];
+    var crit = DEFAULT_CRITERIA.find(function(c){ return c.id === critId; });
+    var tier = crit && crit.tiers.find(function(t){ return t.score === score; });
+    return tier ? tier.label : '';
+}
+
+function _mcBuildReportNode(row, descsForArea, capW) {
+    var esc = function(s){ return String(s||'').replace(/</g,'&lt;'); };
+    var color = RANK_COLOR[row.rank] || '#666';
+    var ap = (_mcrApprovals && _mcrApprovals[row.area]) || { sections:{} };
+
+    // คะแนน 15 ข้อ จัดกลุ่มตามหมวด
+    var scoreRows = MC_SECTIONS_ORDER.map(function(sec){
+        var crits = criteriaByGroup(sec);
+        return crits.map(function(c, idx){
+            var sc  = (row.scores && row.scores[c.id] != null) ? row.scores[c.id] : null;
+            var lbl = sc != null ? _mcTierLabel(descsForArea, c.id, sc) : '—';
+            return '<tr style="border-bottom:1px solid #f1f5f9">' +
+                (idx === 0 ? '<td rowspan="' + crits.length + '" style="padding:6px 8px;font-weight:700;color:#1e3a5f;background:#f8fafc;vertical-align:top;white-space:nowrap">' + esc(sec) + '</td>' : '') +
+                '<td style="padding:5px 8px;color:#64748b;text-align:center">' + c.id + '</td>' +
+                '<td style="padding:5px 8px;color:#374151">' + esc(c.name) + '</td>' +
+                '<td style="padding:5px 8px;text-align:center;font-weight:700;color:#1e293b">' + (sc != null ? sc : '—') + '</td>' +
+                '<td style="padding:5px 8px;color:#64748b">' + esc(lbl) + '</td>' +
+            '</tr>';
+        }).join('');
+    }).join('');
+
+    // ตารางผู้ประเมิน + ผู้อนุมัติ รายหัวข้อ
+    var sigRows = MC_SECTIONS_ORDER.map(function(sec){
+        var rv = row.sections && row.sections[sec];
+        var av = ap.sections && ap.sections[sec];
+        return '<tr style="border-bottom:1px solid #f1f5f9">' +
+            '<td style="padding:6px 8px;font-weight:700;color:#1e3a5f">' + esc(sec) + '</td>' +
+            '<td style="padding:6px 8px;color:#1e293b">' + esc((rv && rv.by) || '—') + '</td>' +
+            '<td style="padding:6px 8px;color:#64748b;white-space:nowrap">' + ((rv && rv.at) ? esc(fmtExportDateTime(rv.at)) : '—') + '</td>' +
+            '<td style="padding:6px 8px;color:#1e293b">' + esc((av && av.by) || '—') + '</td>' +
+            '<td style="padding:6px 8px;color:#64748b;white-space:nowrap">' + ((av && av.at) ? esc(fmtExportDateTime(av.at)) : '—') + '</td>' +
+        '</tr>';
+    }).join('');
+
+    // timeline: รวม event อนุมัติฟอร์ม (approver) + ประเมิน (assessor) เรียงตามเวลา
+    var events = [];
+    MC_SECTIONS_ORDER.forEach(function(sec){
+        var av = ap.sections && ap.sections[sec];
+        if (av && av.by) events.push({ at:av.at, label:'✅ อนุมัติฟอร์มหมวด ' + sec, by:av.by, role:'ผู้อนุมัติ (' + (SECTION_LEVEL[sec]||'') + ')' });
+        var rv = row.sections && row.sections[sec];
+        if (rv && rv.by) events.push({ at:rv.at, label:'📝 ประเมินหมวด ' + sec, by:rv.by, role:'ผู้ประเมิน (' + (SECTION_LEVEL[sec]||'') + ')' });
+    });
+    events.sort(function(a,b){ return String(a.at||'').localeCompare(String(b.at||'')); });
+    var tlRows = events.map(function(e, i){
+        return '<tr style="background:' + (i%2===0?'#ffffff':'#f8fafc') + ';border-bottom:1px solid #f1f5f9">' +
+            '<td style="padding:6px 8px;font-weight:600;color:#1e293b">' + esc(e.label) + '</td>' +
+            '<td style="padding:6px 8px;color:#64748b">' + esc(e.by) + '</td>' +
+            '<td style="padding:6px 8px;color:#64748b">' + esc(e.role) + '</td>' +
+            '<td style="padding:6px 8px;color:#374151;white-space:nowrap">' + esc(fmtExportDateTime(e.at)) + '</td>' +
+        '</tr>';
+    }).join('');
+
+    var th = 'text-align:left;padding:6px 8px;color:#64748b;border-bottom:2px solid #e2e8f0';
+    var node = document.createElement('div');
+    node.style.cssText = 'width:' + capW + "px;background:#ffffff;padding:24px 28px;box-sizing:border-box;font-family:'Prompt',sans-serif";
+    node.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:3px solid ' + color + ';padding-bottom:12px;margin-bottom:14px">' +
+            '<div style="flex:1;min-width:0">' +
+                '<div style="font-size:11px;color:#94a3b8;font-weight:700;letter-spacing:1px">MACHINE CRITICALITY RANKING • CPRAM CHB • ปี ' + esc(row.year || _mcrYear) + '</div>' +
+                '<div style="font-size:22px;font-weight:800;color:#1e293b;line-height:1.3">' + esc(row.machineName || row.machineCode) + '</div>' +
+                '<div style="font-size:12px;color:#64748b">⚙️ ' + esc(row.machineCode) + ' · 📍 ' + esc(row.area||'—') + ' (' + esc(row.factory||'—') + ')</div>' +
+            '</div>' +
+            '<div style="text-align:center;flex-shrink:0">' +
+                '<div style="font-size:11px;color:#94a3b8">RANK</div>' +
+                '<div style="font-size:42px;font-weight:900;line-height:1;color:' + color + '">' + esc(row.rank) + '</div>' +
+                '<div style="font-size:12px;color:#64748b">คะแนน ' + esc(row.finalScore) + ' (raw ' + esc(row.rawSum) + ')</div>' +
+            '</div>' +
+        '</div>' +
+        '<div style="font-size:13px;font-weight:800;color:#1e3a5f;margin-bottom:6px">📊 ตารางคะแนนการประเมิน (15 เกณฑ์)</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px">' +
+            '<thead><tr style="background:#f1f5f9">' +
+                '<th style="' + th + '">หมวด</th><th style="' + th + ';text-align:center">ข้อ</th><th style="' + th + '">เกณฑ์</th>' +
+                '<th style="' + th + ';text-align:center">คะแนน</th><th style="' + th + '">ระดับที่เลือก</th>' +
+            '</tr></thead><tbody>' + scoreRows + '</tbody>' +
+        '</table>' +
+        '<div style="font-size:13px;font-weight:800;color:#1e3a5f;margin-bottom:6px">✍️ ผู้ประเมิน / ผู้อนุมัติฟอร์ม รายหัวข้อ</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px">' +
+            '<thead><tr style="background:#f1f5f9">' +
+                '<th style="' + th + '">หมวด</th><th style="' + th + '">ผู้ประเมิน</th><th style="' + th + '">วันเวลาประเมิน</th>' +
+                '<th style="' + th + '">ผู้อนุมัติฟอร์ม</th><th style="' + th + '">วันเวลาอนุมัติ</th>' +
+            '</tr></thead><tbody>' + sigRows + '</tbody>' +
+        '</table>' +
+        '<div style="font-size:13px;font-weight:800;color:#1e3a5f;margin-bottom:6px">📋 Timeline</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:11px">' +
+            '<thead><tr style="background:#f1f5f9">' +
+                '<th style="' + th + '">เหตุการณ์</th><th style="' + th + '">ผู้ดำเนินการ</th><th style="' + th + '">บทบาท</th><th style="' + th + '">เวลา</th>' +
+            '</tr></thead><tbody>' + (tlRows || '<tr><td colspan="4" style="padding:10px;text-align:center;color:#9ca3af">—</td></tr>') + '</tbody>' +
+        '</table>';
+    return node;
+}
+
+async function exportMcRankPdf(codes) {
+    if (typeof html2canvas === 'undefined' || !window.jspdf) { showToast('❌ ไม่พบไลบรารี export', 'error'); return; }
+    var rows = codes.map(function(code){
+        return (_mcrData || []).find(function(r){ return r.machineCode === code; });
+    }).filter(Boolean);
+    if (!rows.length) { showToast('❌ ไม่พบข้อมูลเครื่องที่เลือก', 'error'); return; }
+    showLoading('กำลังสร้าง PDF…');
+    try {
+        // โหลด description รายพื้นที่ (ใช้ทำ label คะแนน) — ครั้งเดียวต่อพื้นที่
+        var areaSet = {};
+        rows.forEach(function(r){ if (r.area) areaSet[r.area] = true; });
+        var descMap = await _mcLoadDescsForAreas(Object.keys(areaSet));
+
+        var CAP_W = 1000;
+        var jsPDF = window.jspdf.jsPDF;
+        var M = 18;
+        var pdf = new jsPDF({ unit:'pt', format:'a4', orientation:'portrait' });
+        var pageW = pdf.internal.pageSize.getWidth();
+        var pageH = pdf.internal.pageSize.getHeight();
+        var availW = pageW - M*2;
+        var availH = pageH - M*2;
+        var first = true;
+
+        for (var i = 0; i < rows.length; i++) {
+            var row  = rows[i];
+            var node = _mcBuildReportNode(row, descMap[row.area] || {}, CAP_W);
+            document.body.appendChild(node);
+            var cv;
+            try { cv = await _captureNode(node, CAP_W); }
+            finally { node.remove(); }
+            // D2: 1 เครื่อง = ขึ้นหน้าใหม่; สูงเกิน 1 หน้า → หั่นหลายหน้า
+            var pxPerPt = cv.width / availW;
+            var pageHpx = Math.floor(availH * pxPerPt);
+            var sy = 0, firstSlice = true;
+            while (sy < cv.height) {
+                if (!first || !firstSlice) pdf.addPage('a4', 'portrait');
+                first = false; firstSlice = false;
+                var sh  = Math.min(pageHpx, cv.height - sy);
+                var tmp = document.createElement('canvas');
+                tmp.width = cv.width; tmp.height = sh;
+                tmp.getContext('2d').drawImage(cv, 0, sy, cv.width, sh, 0, 0, cv.width, sh);
+                pdf.addImage(tmp.toDataURL('image/jpeg', 0.9), 'JPEG', M, M, availW, sh / pxPerPt);
+                sy += sh;
+            }
+        }
+        var fname = rows.length === 1
+            ? 'Ranking_' + String(rows[0].machineCode).replace(/[^\w-]/g,'') + '.pdf'
+            : 'Ranking_' + rows.length + 'เครื่อง.pdf';
+        _download(pdf.output('datauristring'), fname);
+        showToast('✅ สร้าง PDF ' + rows.length + ' เครื่องแล้ว', 'success');
+    } catch (e) {
+        console.error('[exportMcRankPdf]', e);
+        showToast('❌ ' + e.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}

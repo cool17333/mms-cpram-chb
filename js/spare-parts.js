@@ -81,7 +81,7 @@ function spareRender() {
 function spareOpenEdit(item) {
     _spEditing    = item || null;
     _spImgDataUrl = null;
-    document.getElementById('spare-edit-title').textContent = item ? 'แก้ไขอะไหล่' : 'เพิ่มอะไหล่';
+    document.getElementById('spare-edit-title').textContent = item ? '🔩 แก้ไขอะไหล่' : '🔩 เพิ่มอะไหล่';
     document.getElementById('sp-type').value     = item ? (item.type || 'STORE') : 'STORE';
     document.getElementById('sp-partno').value   = item ? (item.partNo   || '') : '';
     document.getElementById('sp-name').value     = item ? (item.name     || '') : '';

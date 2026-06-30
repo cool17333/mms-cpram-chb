@@ -8,6 +8,15 @@ let _spImpRows = [];         // import state (แยกจาก _impRows ขอ
 let _spImpHeaders = [];
 let _spImpColMap  = {};      // { partNo, name, category, location, note }
 
+const SP_CATEGORIES = [
+    'Bolt & Nut','Connector','Contact cleaner','Control Parts',
+    'Distributing Electrical','Gas','Motor','Option เครื่องจักร',
+    'Pneumatic / Hydraulic','Seal / O-RING','Sensor / Transmitor',
+    'Switch','Tool','Transmission','Valve / Gauge','จาระบี',
+    'น้ำมันหล่อลื่น','สารทำความเย็น','อุปกรณ์ก่อสร้าง / ซ่อมสร้าง',
+    'อุปกรณ์ระบบน้ำ / ปรับอากาศ','อุปกรณ์ไฟฟ้าติดตั้ง','โซเวนท์ / หมึก',
+];
+
 // ---- โหลด + render ----
 async function spareLoad() {
     if (!GAS_URL) return;
@@ -21,12 +30,14 @@ async function spareLoad() {
 
 function spareRender() {
     const typeF   = (document.getElementById('spare-filter-type')   || {}).value || '';
+    const catF    = (document.getElementById('spare-filter-cat')    || {}).value || '';
     const searchF = ((document.getElementById('spare-filter-search') || {}).value || '').toLowerCase();
     const wrap    = document.getElementById('spare-list-wrap');
     if (!wrap) return;
 
     const filtered = _spData.filter(p => {
         if (typeF && p.type !== typeF) return false;
+        if (catF && p.category !== catF) return false;
         if (searchF) {
             const hay = ((p.name||'') + ' ' + (p.partNo||'') + ' ' + (p.category||'')).toLowerCase();
             if (hay.indexOf(searchF) < 0) return false;
@@ -188,7 +199,13 @@ const SP_IMP_FIELDS = [
 ];
 function spImpBuild() {
     const guess = key => {
-        const patterns = { partNo:['part no','partno','รหัส'], name:['name','ชื่อ','อะไหล่'], category:['categ','หมวด'], location:['locat','location','จัดเก็บ','shelf'], note:['note','หมาย'] };
+        const patterns = {
+            partNo:   ['code(ใหม่)', 'part no', 'partno', 'รหัส', 'code'],
+            name:     ['description (ใหม่)', 'material desc', 'name', 'ชื่อ', 'อะไหล่'],
+            category: ['คำอธิบาย matl', 'ค าอธิบาย', 'categ', 'หมวด'],
+            location: ['new bin', 'bin', 'locat', 'location', 'จัดเก็บ', 'shelf'],
+            note:     ['note', 'หมาย'],
+        };
         const pats = patterns[key] || [];
         const idx = _spImpHeaders.findIndex(h => pats.some(p => String(h).toLowerCase().includes(p)));
         return idx >= 0 ? String(idx) : '';
@@ -266,6 +283,13 @@ async function spImpConfirm() {
 
 // ---- hook switchTab เพื่อโหลดข้อมูลเมื่อเปิด panel ----
 document.addEventListener('DOMContentLoaded', () => {
+    // populate category dropdowns
+    const catOpts = SP_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+    const editCat = document.getElementById('sp-category');
+    if (editCat) editCat.innerHTML = '<option value="">— เลือกหมวด —</option>' + catOpts;
+    const filterCat = document.getElementById('spare-filter-cat');
+    if (filterCat) filterCat.innerHTML = '<option value="">ทุกหมวด</option>' + catOpts;
+
     const _baseSwitchTab = window.switchTab;
     window.switchTab = function(tab) {
         _baseSwitchTab(tab);

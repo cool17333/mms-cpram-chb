@@ -258,6 +258,9 @@
         <div class="sidebar-item" id="sn-mach" onclick="goMachines()">
             <span class="nav-icon">🗂️</span><span>ระบบ Machine List</span>
         </div>
+        <div class="sidebar-item" id="sn-spare" data-perm="spare.view" onclick="switchTab('spare')">
+            <span class="nav-icon">🔩</span><span>ทะเบียนอะไหล่</span>
+        </div>
         <!-- TPM group -->
         <div class="nav-group" id="grp-tpm" data-color="blue">
             <div class="sidebar-item" id="sn-tpm" data-perm="tpm.view" onclick="goTpmHub()">
@@ -1712,6 +1715,7 @@
             <label class="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-1">รหัสเครื่องจักร (Machine ID)</label>
             <input id="inp-machine-id" type="text" list="machine-id-list" oninput="onMachineIdLookup()" autocomplete="off" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 transition-colors" placeholder="พิมพ์/เลือกรหัส (อิงทะเบียนเครื่องจักร)">
             <datalist id="machine-id-list"></datalist>
+            <datalist id="spare-hint"></datalist>
         </div>
         <div>
             <label class="text-xs font-bold uppercase tracking-widest text-gray-500 block mb-1">สาย / ตำแหน่ง (Line)</label>
@@ -3149,6 +3153,116 @@
 </div>
 </div><!-- end panel-mcrank -->
 
+<!-- ==================== PANEL: ทะเบียนอะไหล่ ==================== -->
+<div id="panel-spare" class="tab-panel p-4 md:p-6 hidden">
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800">🔩 ทะเบียนอะไหล่</h2>
+            <p class="text-xs text-gray-400 mt-0.5">Store (คลังบริษัท) · Supplier (จาก supplier)</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <button onclick="spareOpenImport()" data-perm="spare.edit" class="hidden mms-btn-sm bg-blue-500 hover:bg-blue-600 text-white">📥 Import Excel</button>
+            <button onclick="spareOpenEdit(null)" data-perm="spare.edit" class="hidden mms-btn-sm mms-btn-primary">+ เพิ่มอะไหล่</button>
+        </div>
+    </div>
+    <!-- Filter bar -->
+    <div class="flex flex-wrap gap-2 mb-4">
+        <select id="spare-filter-type" onchange="spareRender()" class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white outline-none">
+            <option value="">ทุกประเภท</option>
+            <option value="STORE">Store (คลัง)</option>
+            <option value="SUPPLIER">Supplier</option>
+        </select>
+        <input id="spare-filter-search" oninput="spareRender()" type="text" placeholder="ค้นหาชื่อ / Part No. / หมวด..." class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white outline-none flex-1 min-w-40">
+    </div>
+    <!-- List -->
+    <div id="spare-list-wrap" class="space-y-2"></div>
+</div><!-- end panel-spare -->
+
+<!-- MODAL: เพิ่ม/แก้อะไหล่ -->
+<div id="spare-edit-modal" class="modal-bg hidden" onclick="if(event.target===this)spareCloseEdit()">
+    <div class="modal-box max-w-lg w-full" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between mb-4">
+            <h3 id="spare-edit-title" class="font-bold text-gray-800">เพิ่มอะไหล่</h3>
+            <button onclick="spareCloseEdit()" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <label class="text-xs text-gray-500 font-bold mb-1 block">ประเภท</label>
+                    <select id="sp-type" onchange="spareTypeChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none bg-white">
+                        <option value="STORE">Store (คลังบริษัท)</option>
+                        <option value="SUPPLIER">Supplier (จาก supplier)</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="text-xs text-gray-500 font-bold mb-1 block">Part No.</label>
+                    <input id="sp-partno" type="text" placeholder="รหัสอะไหล่..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
+                </div>
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 font-bold mb-1 block">ชื่ออะไหล่ <span class="text-red-400">*</span></label>
+                <input id="sp-name" type="text" placeholder="ชื่ออะไหล่..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
+            </div>
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <label class="text-xs text-gray-500 font-bold mb-1 block">หมวด</label>
+                    <input id="sp-category" type="text" placeholder="ประเภทอะไหล่..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
+                </div>
+                <div class="flex-1" id="sp-location-wrap">
+                    <label class="text-xs text-gray-500 font-bold mb-1 block">ที่จัดเก็บ</label>
+                    <input id="sp-location" type="text" placeholder="Shelf / Row..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
+                </div>
+                <div class="flex-1 hidden" id="sp-supplier-wrap">
+                    <label class="text-xs text-gray-500 font-bold mb-1 block">ชื่อผู้ขาย</label>
+                    <input id="sp-supplier" type="text" placeholder="บริษัท / ร้าน..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
+                </div>
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 font-bold mb-1 block">หมายเหตุ</label>
+                <input id="sp-note" type="text" placeholder="หมายเหตุเพิ่มเติม..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 font-bold mb-1 block">รูปภาพอะไหล่</label>
+                <input id="sp-img-input" type="file" accept="image/*" onchange="spareImgPreview(this)" class="text-sm text-gray-600">
+                <div id="sp-img-preview" class="mt-2 hidden"><img id="sp-img-preview-img" class="h-24 object-contain rounded border border-gray-200"></div>
+            </div>
+        </div>
+        <div class="flex gap-2 mt-5">
+            <button onclick="spareSaveEdit()" class="flex-1 mms-btn mms-btn-primary">บันทึก</button>
+            <button onclick="spareCloseEdit()" class="mms-btn bg-gray-100 text-gray-700 hover:bg-gray-200">ยกเลิก</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Import Excel อะไหล่ (Store) -->
+<div id="spare-import-modal" class="modal-bg hidden" onclick="if(event.target===this)spareCloseImport()">
+    <div class="modal-box max-w-2xl w-full" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-gray-800">📥 Import อะไหล่ Store จาก Excel</h3>
+            <button onclick="spareCloseImport()" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <label class="text-xs text-gray-500 font-bold mb-1 block">เลือกไฟล์ Excel</label>
+                <input id="spare-imp-file" type="file" accept=".xlsx,.xls" onchange="spImpReadFile(this)" class="text-sm text-gray-600">
+            </div>
+            <div id="spare-imp-col-wrap" class="hidden">
+                <p class="text-xs text-gray-500 font-bold mb-2">เลือก column ที่ตรงกัน (row แรก = header)</p>
+                <div class="grid grid-cols-2 gap-2 text-sm" id="spare-imp-col-selects"></div>
+            </div>
+            <div id="spare-imp-preview" class="hidden">
+                <p class="text-xs text-gray-500 font-bold mb-2">ตัวอย่าง (5 แถวแรก)</p>
+                <div class="overflow-x-auto"><table id="spare-imp-preview-table" class="text-xs w-full border-collapse"></table></div>
+            </div>
+        </div>
+        <div class="flex gap-2 mt-5">
+            <button id="spare-imp-confirm-btn" onclick="spImpConfirm()" class="hidden flex-1 mms-btn mms-btn-primary">✅ นำเข้า</button>
+            <button onclick="spareCloseImport()" class="mms-btn bg-gray-100 text-gray-700 hover:bg-gray-200">ปิด</button>
+        </div>
+    </div>
+</div>
+
 <!-- panel-mcapprove ลบ v2.20 → ย้ายเป็น dashboard ในหน้า Ranking (mcfa-modal คงไว้ใช้ใน flow อนุมัติ) -->
 
 <!-- ==================== MODAL: อนุมัติฟอร์มรายพื้นที่ ==================== -->
@@ -3336,19 +3450,20 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.29"></script>
-<script src="js/core.js?v=2.29"></script>
-<script src="js/machines.js?v=2.29"></script>
-<script src="js/breakdown-report.js?v=2.29"></script>
-<script src="js/breakdown-form.js?v=2.29"></script>
-<script src="js/records-summary.js?v=2.29"></script>
-<script src="js/export.js?v=2.29"></script>
-<script src="js/oee.js?v=2.29"></script>
-<script src="js/bootstrap.js?v=2.29"></script>
-<script src="js/checklist-core.js?v=2.29"></script>
-<script src="js/checklist-status.js?v=2.29"></script>
-<script src="js/mcrank.js?v=2.29"></script>
-<script src="js/user-access.js?v=2.29"></script>
-<script src="js/scan.js?v=2.29"></script>
+<script src="js/permissions.js?v=2.30"></script>
+<script src="js/core.js?v=2.30"></script>
+<script src="js/machines.js?v=2.30"></script>
+<script src="js/breakdown-report.js?v=2.30"></script>
+<script src="js/breakdown-form.js?v=2.30"></script>
+<script src="js/records-summary.js?v=2.30"></script>
+<script src="js/export.js?v=2.30"></script>
+<script src="js/oee.js?v=2.30"></script>
+<script src="js/bootstrap.js?v=2.30"></script>
+<script src="js/checklist-core.js?v=2.30"></script>
+<script src="js/checklist-status.js?v=2.30"></script>
+<script src="js/mcrank.js?v=2.30"></script>
+<script src="js/spare-parts.js?v=2.30"></script>
+<script src="js/user-access.js?v=2.30"></script>
+<script src="js/scan.js?v=2.30"></script>
 </body>
 </html>

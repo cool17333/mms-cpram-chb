@@ -49,6 +49,16 @@ Object.keys(_TPM_DEFAULT).forEach(function(role){
   PERM_MATRIX[role]['tpm.view']=v[0]; PERM_MATRIX[role]['tpm.rank']=v[1];
   PERM_MATRIX[role]['tpm.approve']=v[2]; PERM_MATRIX[role]['tpm.desc']=v[3];
 });
+// v2.30: spare perm codes [spare.view, spare.edit]
+var _SPARE_DEFAULT = {
+  Visitor:[1,0], User:[1,0], QA:[1,0], Production:[1,0], Technician:[1,0],
+  Engineer:[1,1], Safety:[1,0], Supervisor:[1,0], Administrator:[1,1]
+};
+Object.keys(_SPARE_DEFAULT).forEach(function(role){
+  if (!PERM_MATRIX[role]) return;
+  var v = _SPARE_DEFAULT[role];
+  PERM_MATRIX[role]['spare.view']=v[0]; PERM_MATRIX[role]['spare.edit']=v[1];
+});
 
 // ============================================================
 // PHASE 3 — Sheet-backed permission matrix (อ่านจาก _Permissions sheet, cache 60s)
@@ -80,7 +90,7 @@ function seedPermissions() {
   sh.clearContents();
   sh.getRange(1,1,1,3).setValues([['role','perm_code','allow']]).setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
   const ROLES = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
-  const CODES = ['bd.view','bd.export','bd.report','bd.accept','bd.editdoc','bd.close','bd.whywhy','bd.manual','bd.cancel','mc.view','mc.edit','mc.delete','mc.add','mc.import','mc.backup','mc.restore','cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar','ua.add','ua.del','ua.level','ua.perm','ua.log','tpm.view','tpm.rank','tpm.approve','tpm.desc'];
+  const CODES = ['bd.view','bd.export','bd.report','bd.accept','bd.editdoc','bd.close','bd.whywhy','bd.manual','bd.cancel','mc.view','mc.edit','mc.delete','mc.add','mc.import','mc.backup','mc.restore','cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar','ua.add','ua.del','ua.level','ua.perm','ua.log','tpm.view','tpm.rank','tpm.approve','tpm.desc','spare.view','spare.edit'];
   const rows = [];
   ROLES.forEach(function(role) { CODES.forEach(function(code) { rows.push([role, code, PERM_MATRIX[role][code] || 0]); }); });
   sh.getRange(2,1,rows.length,3).setValues(rows);
@@ -1045,6 +1055,20 @@ function doPost(e) {
       return jsonOut({ success:true });
     }
 
+    // ---- SPARE PARTS: spareUpsert ----
+    if (data.action === 'spareUpsert') {
+      if (!userCan(ss, data.username, data.pin, 'spare.edit'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ spare.edit' });
+      return jsonOut(spareUpsert_(data));
+    }
+
+    // ---- SPARE PARTS: spareBulkImport ----
+    if (data.action === 'spareBulkImport') {
+      if (!userCan(ss, data.username, data.pin, 'spare.edit'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ spare.edit' });
+      return jsonOut(spareBulkImport_(data));
+    }
+
     // ---- CREATE new row ----
     // ล็อกกันเลขรันชนกันเวลาหลายคนแจ้งพร้อมกัน
     const lock = LockService.getScriptLock();
@@ -1135,13 +1159,15 @@ function authorizeDrive() {
 }
 
 // อัปโหลดรูป (dataURL) ขึ้น Drive → คืน fileId / ถ้าเป็น id เดิมอยู่แล้วก็คืนเดิม
-function saveImgToDrive(val) {
+// folderName: โฟลเดอร์ปลายทาง (default = 'BreakdownReport_Images' เพื่อ backward-compat)
+function saveImgToDrive(val, folderName) {
   if (!val || String(val).indexOf('data:') !== 0) return val || '';
   const m = String(val).match(/^data:([^;]+);base64,(.*)$/);
   if (!m) return '';
-  const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], 'bd_' + Date.now() + '_' + Math.floor(Math.random() * 1e5));
-  const it = DriveApp.getFoldersByName('BreakdownReport_Images');
-  const folder = it.hasNext() ? it.next() : DriveApp.createFolder('BreakdownReport_Images');
+  const fname  = folderName || 'BreakdownReport_Images';
+  const blob   = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], 'img_' + Date.now() + '_' + Math.floor(Math.random() * 1e5));
+  const it     = DriveApp.getFoldersByName(fname);
+  const folder = it.hasNext() ? it.next() : DriveApp.createFolder(fname);
   return folder.createFile(blob).getId();
 }
 
@@ -1228,17 +1254,94 @@ function writeLog(ss, tracking, action, byName, status) {
   ]);
 }
 
+// ============================================================
+// SPARE PARTS — ทะเบียนอะไหล่ (ระบบ ②)
+// ============================================================
+function spareSheet_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('_SpareParts');
+  if (!sh) {
+    sh = ss.insertSheet('_SpareParts');
+    const hdr = ['partId','partNo','name','type','category','location','supplier','imageId','note','active','updatedAt'];
+    sh.getRange(1,1,1,hdr.length).setValues([hdr]).setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function spareList_() {
+  const rows = spareSheet_().getDataRange().getValues(), out = [];
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][9] === false) continue;   // J active=false
+    out.push({ partId:rows[i][0], partNo:rows[i][1], name:rows[i][2], type:rows[i][3],
+               category:rows[i][4], location:rows[i][5], supplier:rows[i][6],
+               imageId:rows[i][7], note:rows[i][8] });
+  }
+  return { success:true, data:out };
+}
+function spareUpsert_(data) {
+  const sh = spareSheet_(), rows = sh.getDataRange().getValues();
+  const imageId = data.imageId ? saveImgToDrive(data.imageId, 'SpareParts_Images') : '';
+  const id = data.partId || ('SP-' + Date.now() + Math.floor(Math.random()*1e3));
+  let rowIdx = -1;
+  for (let i=1;i<rows.length;i++) if (rows[i][0] === data.partId) { rowIdx = i+1; break; }
+  const rec = [ id, data.partNo||'', data.name||'', data.type||'STORE', data.category||'',
+                data.location||'', data.supplier||'',
+                imageId || data.existingImageId || '',
+                data.note||'', data.active===false?false:true, new Date() ];
+  if (rowIdx > 0) sh.getRange(rowIdx,1,1,rec.length).setValues([rec]);
+  else            sh.appendRow(rec);
+  return { success:true, partId:id };
+}
+function spareBulkImport_(data) {
+  const sh = spareSheet_(), rows = sh.getDataRange().getValues();
+  const idx = {};
+  for (let i=1;i<rows.length;i++) idx[String(rows[i][1]).toLowerCase()] = i;   // partNo→row(0-based)
+  (data.items||[]).forEach(it => {
+    const key = String(it.partNo||'').toLowerCase(); if (!key) return;
+    const rec = [ it.partId || ('SP-'+Date.now()+Math.floor(Math.random()*1e4)),
+                  it.partNo, it.name||'', 'STORE', it.category||'', it.location||'', '', '', it.note||'', true, new Date() ];
+    if (idx[key] != null) sh.getRange(idx[key]+1,1,1,rec.length).setValues([rec]);
+    else                  sh.appendRow(rec);
+  });
+  return { success:true, count:(data.items||[]).length };
+}
+// Tools → Run → migrateSparePerms_runOnce (append spare.view/spare.edit ไม่ทับ custom)
+function migrateSparePerms_runOnce() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sh = ss.getSheetByName('_Permissions');
+  if (!sh || sh.getLastRow() < 2) { seedPermissions(); return; }
+  var existing = {};
+  sh.getDataRange().getValues().slice(1).forEach(function(r){ existing[String(r[0]).trim()+'|'+String(r[1]).trim()] = true; });
+  var ROLES = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
+  var SPARE_DEFAULT = {
+    Visitor:[1,0], User:[1,0], QA:[1,0], Production:[1,0], Technician:[1,0],
+    Engineer:[1,1], Safety:[1,0], Supervisor:[1,0], Administrator:[1,1]
+  };
+  var rows = [];
+  ROLES.forEach(function(role){
+    var v = SPARE_DEFAULT[role]||[0,0];
+    [['spare.view',v[0]],['spare.edit',v[1]]].forEach(function(pair){
+      if (existing[role+'|'+pair[0]]) return;
+      rows.push([role, pair[0], pair[1]]);
+    });
+  });
+  if (rows.length) sh.getRange(sh.getLastRow()+1, 1, rows.length, 3).setValues(rows);
+  CacheService.getScriptCache().remove('perm_matrix');
+  Logger.log('migrateSparePerms: appended ' + rows.length + ' spare rows');
+}
+
 // โรงงาน → รหัส CHB (โรงงาน 1 → CHB1, โรงงาน 2 → CHB2)
 function factoryToCHB(factory) {
   const m = String(factory || '').match(/(\d+)/);
   return 'CHB' + (m ? m[1] : 'X');
 }
 
+// Route A: เก็บ parts เป็น JSON (ครบ 5 ฟิลด์รวม remark) แทน string เดิม
 function buildPartsStr(parts) {
-  return (parts || [])
-    .filter(p => p.name)
-    .map(p => `${p.name}${p.partNo ? ' (' + p.partNo + ')' : ''} x${p.qty || 1} ${p.unit || 'ชิ้น'}`)
-    .join(' | ');
+  const arr = (parts || []).filter(p => p && p.name).map(p => ({
+    name: p.name||'', partNo: p.partNo||'', qty: p.qty||'', unit: p.unit||'', remark: p.remark||''
+  }));
+  return arr.length ? JSON.stringify(arr) : '';
 }
 
 // ============================================================
@@ -1377,6 +1480,7 @@ function doGet(e) {
     if (action === 'getRankingOverview')  return doGetRankingOverview_(e.parameter);
     if (action === 'getAreaDescriptions') return doGetAreaDescriptions_(e.parameter);
     if (action === 'getFormApprovals')    return doGetFormApprovals_(e.parameter);
+    if (action === 'spareList')           return jsonOut(spareList_());
 
     return jsonOut({ success: false, error: 'Unknown action' });
 

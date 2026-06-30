@@ -194,7 +194,7 @@ function spImpBuild() {
         const opts = _spImpHeaders.map((h, i) => `<option value="${i}">${h || '(col ' + (i+1) + ')'}</option>`).join('');
         const sel  = guess(f.key);
         return `<div>
-            <label class="text-xs text-gray-500 block mb-1">${f.label}</label>
+            <label class="text-xs text-gray-700 font-bold block mb-1">${f.label}</label>
             <select id="sp-imp-col-${f.key}" class="w-full border border-gray-200 rounded px-2 py-1 text-sm">
                 <option value="">— ไม่เลือก —</option>${opts}
             </select>

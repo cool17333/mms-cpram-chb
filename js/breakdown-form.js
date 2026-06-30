@@ -546,7 +546,7 @@ function createPartRow(index) {
     tr.className = 'part-row border-b border-gray-100 transition-colors';
     tr.innerHTML = `
         <td class="px-3 py-2 text-center text-gray-400 font-bold text-sm part-num">${index}</td>
-        <td class="px-4 py-2"><input type="text" class="w-full bg-transparent outline-none text-gray-800 font-medium text-sm px-1" placeholder="ชื่ออะไหล่..."></td>
+        <td class="px-4 py-2"><input type="text" list="spare-hint" onchange="onPartNamePick(this)" class="w-full bg-transparent outline-none text-gray-800 font-medium text-sm px-1" placeholder="ชื่ออะไหล่..."></td>
         <td class="px-3 py-2"><input type="text" class="w-full bg-transparent outline-none text-gray-600 text-center text-sm px-1" placeholder="-"></td>
         <td class="px-3 py-2"><input type="number" min="0" class="w-full bg-transparent outline-none text-gray-900 text-center font-bold text-sm px-1 border-b-2 border-gray-200 focus:border-orange-500 transition-colors" placeholder="0"></td>
         <td class="px-3 py-2"><input type="text" class="w-full bg-transparent outline-none text-gray-600 text-center text-sm px-1" placeholder="ชิ้น"></td>
@@ -984,6 +984,19 @@ function openEditMode(item, stage = 'edit') {
         loadWhyImages(item.whyImages),
     ]);
 
+    // restore ตารางอะไหล่ (R5 — แก้บั๊ก openEditMode ไม่คืน parts)
+    const ptb = document.getElementById('parts-tbody');
+    ptb.innerHTML = '';
+    const pArr = parsePartsField(item.parts);
+    if (pArr.length) {
+        pArr.forEach((p, i) => {
+            const tr = createPartRow(i + 1);
+            const c  = tr.querySelectorAll('input');
+            c[0].value=p.name||''; c[1].value=p.partNo||''; c[2].value=p.qty||''; c[3].value=p.unit||''; c[4].value=p.remark||'';
+            ptb.appendChild(tr);
+        });
+    } else { addPartRow(); }
+
     calcDowntime();
 
     switchTab('form');
@@ -1000,5 +1013,46 @@ function cancelEdit() {
     resetFormFields();
     currentTracking = '';
     setFormStage('report');
+}
+
+// ============================================================
+// SPARE PARTS HINT — datalist + auto-fill (B1/B2)
+// ============================================================
+// parse คอลัมน์ parts: JSON ใหม่ หรือ legacy string เก่า
+function parsePartsField(v) {
+    if (!v) return [];
+    const s = String(v).trim();
+    if (s[0] === '[') { try { return JSON.parse(s); } catch(e){} }
+    // legacy "name (partNo) xqty unit | ..." → best-effort (remark เก่าไม่มี)
+    return s.split(' | ').filter(Boolean).map(seg => {
+        const m = seg.match(/^(.*?)(?:\s*\(([^)]*)\))?\s*x(\S+)\s*(.*)$/);
+        return m ? { name:(m[1]||'').trim(), partNo:(m[2]||'').trim(), qty:(m[3]||'').trim(), unit:(m[4]||'').trim(), remark:'' }
+                 : { name:seg.trim(), partNo:'', qty:'', unit:'', remark:'' };
+    });
+}
+
+let SPARE_CACHE = [];
+async function loadSpareCache() {
+    if (!GAS_URL) return;
+    try {
+        const r = await fetch(GAS_URL + '?action=spareList');
+        const j = await r.json();
+        SPARE_CACHE = j.success ? (j.data || []) : [];
+        fillSpareHint();
+    } catch(e){}
+}
+function fillSpareHint() {
+    const dl = document.getElementById('spare-hint'); if (!dl) return;
+    dl.innerHTML = SPARE_CACHE.map(p => {
+        const tag = p.type === 'SUPPLIER' ? '(Supplier) ' + (p.supplier||'') : '(Store) ' + (p.location||'');
+        const pn  = p.partNo ? '[' + p.partNo + '] ' : '';
+        return `<option value="${String(p.name||'').replace(/"/g,'&quot;')}">${pn}${tag}</option>`;
+    }).join('');
+}
+function onPartNamePick(inp) {
+    const hit = SPARE_CACHE.find(p => (p.name||'') === inp.value);
+    if (!hit) return;
+    const c = inp.closest('tr').querySelectorAll('input');
+    if (hit.partNo && !c[1].value) c[1].value = hit.partNo;
 }
 

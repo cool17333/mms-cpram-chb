@@ -32,6 +32,7 @@ window.addEventListener('DOMContentLoaded', () => {
         initHubStats();
         refreshDashboard(); // fire-and-forget — ไม่ block loadHomeDash
         loadHomeDash();     // ยิงพร้อมกัน ไม่รอ getAll
+        loadSpareCache();   // โหลด hint ทะเบียนอะไหล่ (breakdown-form.js)
         if (_isScan) {
             const _preselect = _scanMode === 'bd-report' ? 'bd' : _scanMode === 'daily' ? 'daily' : '';
             enterScan(_scanId, _preselect);

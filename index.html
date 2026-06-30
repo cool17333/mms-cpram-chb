@@ -2096,6 +2096,20 @@
             <h2 class="text-lg font-bold text-white flex items-center gap-2">📱 Generate QR เครื่องจักร</h2>
             <p class="text-xs text-blue-200 mt-0.5">เลือกเครื่อง + กำหนดขนาด แล้วสร้าง PDF</p>
         </div>
+        <div class="px-6 py-3 border-b border-gray-100 flex flex-col gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2">
+                <select id="qr-fac-filter" onchange="qrPickerFilterFac()"
+                        class="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+                    <option value="">ทุกโรงงาน</option>
+                </select>
+                <select id="qr-area-filter" onchange="_qrPickerRenderList()"
+                        class="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+                    <option value="">ทุกพื้นที่</option>
+                </select>
+            </div>
+            <input id="qr-search-filter" type="text" placeholder="ค้นหารหัส / ชื่อเครื่องจักร..." oninput="_qrPickerRenderList()"
+                   class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+        </div>
         <div class="px-6 py-3 border-b border-gray-100 flex items-center gap-4 flex-shrink-0">
             <label class="flex items-center gap-2 text-sm font-bold text-gray-700 cursor-pointer">
                 <input type="checkbox" id="qr-pick-all" onchange="qrPickerToggleAll(this)" class="w-4 h-4"> เลือกทั้งหมด
@@ -3286,19 +3300,19 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.27"></script>
-<script src="js/core.js?v=2.27"></script>
-<script src="js/machines.js?v=2.27"></script>
-<script src="js/breakdown-report.js?v=2.27"></script>
-<script src="js/breakdown-form.js?v=2.27"></script>
-<script src="js/records-summary.js?v=2.27"></script>
-<script src="js/export.js?v=2.27"></script>
-<script src="js/oee.js?v=2.27"></script>
-<script src="js/bootstrap.js?v=2.27"></script>
-<script src="js/checklist-core.js?v=2.27"></script>
-<script src="js/checklist-status.js?v=2.27"></script>
-<script src="js/mcrank.js?v=2.27"></script>
-<script src="js/user-access.js?v=2.27"></script>
-<script src="js/scan.js?v=2.27"></script>
+<script src="js/permissions.js?v=2.28"></script>
+<script src="js/core.js?v=2.28"></script>
+<script src="js/machines.js?v=2.28"></script>
+<script src="js/breakdown-report.js?v=2.28"></script>
+<script src="js/breakdown-form.js?v=2.28"></script>
+<script src="js/records-summary.js?v=2.28"></script>
+<script src="js/export.js?v=2.28"></script>
+<script src="js/oee.js?v=2.28"></script>
+<script src="js/bootstrap.js?v=2.28"></script>
+<script src="js/checklist-core.js?v=2.28"></script>
+<script src="js/checklist-status.js?v=2.28"></script>
+<script src="js/mcrank.js?v=2.28"></script>
+<script src="js/user-access.js?v=2.28"></script>
+<script src="js/scan.js?v=2.28"></script>
 </body>
 </html>

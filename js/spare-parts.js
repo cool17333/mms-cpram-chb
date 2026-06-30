@@ -155,13 +155,16 @@ function spareOpenImport() {
     document.getElementById('spare-imp-file').value = '';
     document.getElementById('spare-imp-col-wrap').classList.add('hidden');
     document.getElementById('spare-imp-preview').classList.add('hidden');
-    document.getElementById('spare-imp-confirm-btn').classList.add('hidden');
+    const lbl = document.getElementById('spare-imp-file-label');
+    if (lbl) lbl.textContent = 'คลิกเพื่อเลือกไฟล์ Excel หรือ CSV';
     document.getElementById('spare-import-modal').classList.remove('hidden');
 }
 function spareCloseImport() { document.getElementById('spare-import-modal').classList.add('hidden'); }
 
 function spImpReadFile(input) {
     const file = input.files[0]; if (!file) return;
+    const lbl = document.getElementById('spare-imp-file-label');
+    if (lbl) lbl.textContent = '⏳ กำลังอ่าน ' + file.name + '...';
     const reader = new FileReader();
     reader.onload = e => {
         const wb  = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
@@ -170,6 +173,7 @@ function spImpReadFile(input) {
         if (raw.length < 2) { showToast('ไฟล์ว่างหรือไม่มีข้อมูล', 'error'); return; }
         _spImpHeaders = raw[0].map(String);
         _spImpRows    = raw.slice(1);
+        if (lbl) lbl.textContent = '✅ ' + file.name + ' (' + _spImpRows.length + ' แถว)';
         spImpBuild();
     };
     reader.readAsArrayBuffer(file);
@@ -192,22 +196,19 @@ function spImpBuild() {
     const wrap = document.getElementById('spare-imp-col-selects');
     wrap.innerHTML = SP_IMP_FIELDS.map(f => {
         const opts = _spImpHeaders.map((h, i) => `<option value="${i}">${h || '(col ' + (i+1) + ')'}</option>`).join('');
-        const sel  = guess(f.key);
         return `<div>
             <label class="text-xs text-gray-700 font-bold block mb-1">${f.label}</label>
-            <select id="sp-imp-col-${f.key}" class="w-full border border-gray-200 rounded px-2 py-1 text-sm">
+            <select id="sp-imp-col-${f.key}" onchange="spImpPreview()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
                 <option value="">— ไม่เลือก —</option>${opts}
             </select>
         </div>`;
     }).join('');
-    // auto-select guessed
     SP_IMP_FIELDS.forEach(f => {
         const g = guess(f.key);
         if (g !== '') { const el = document.getElementById('sp-imp-col-' + f.key); if (el) el.value = g; }
     });
     document.getElementById('spare-imp-col-wrap').classList.remove('hidden');
     spImpPreview();
-    document.getElementById('spare-imp-confirm-btn').classList.remove('hidden');
 }
 
 function spImpPreview() {
@@ -217,8 +218,16 @@ function spImpPreview() {
         return { label: f.label, idx: el && el.value !== '' ? Number(el.value) : -1 };
     });
     const tbl = document.getElementById('spare-imp-preview-table');
-    tbl.innerHTML = `<thead><tr>${cols.map(c => `<th class="border border-gray-200 px-2 py-1 bg-gray-50">${c.label}</th>`).join('')}</tr></thead>
-        <tbody>${sample.map(row => `<tr>${cols.map(c => `<td class="border border-gray-200 px-2 py-1">${c.idx >= 0 ? (row[c.idx]||'') : ''}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    tbl.innerHTML = `<thead class="bg-gray-50 sticky top-0 border-b border-gray-200"><tr>
+        ${cols.map(c => `<th class="px-3 py-2 text-left text-gray-600 font-bold">${c.label}</th>`).join('')}
+    </tr></thead>
+    <tbody>
+        ${sample.map(row => `<tr class="border-b border-gray-100">
+            ${cols.map(c => `<td class="px-3 py-2">${c.idx >= 0 ? (row[c.idx]||'') : '<span class="text-gray-300">—</span>'}</td>`).join('')}
+        </tr>`).join('')}
+    </tbody>`;
+    const countEl = document.getElementById('spare-imp-count');
+    if (countEl) countEl.textContent = _spImpRows.length + ' รายการ';
     document.getElementById('spare-imp-preview').classList.remove('hidden');
 }
 

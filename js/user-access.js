@@ -325,10 +325,14 @@ async function renderPermMatrix() {
                 <th class="px-3 py-2 text-left text-gray-500 font-bold uppercase tracking-wider" style="position:sticky;top:0;z-index:6;background:#eef2f6;box-shadow:inset 0 -1px 0 #e5e7eb">Permission${canEdit ? ' <span class="text-[10px] text-orange-400 font-normal normal-case">(คลิกเพื่อแก้)</span>' : ''}</th>
                 ${roles.map(r => `<th class="px-2 py-2 text-center font-bold text-gray-600" style="position:sticky;top:0;z-index:5;background:#eef2f6;box-shadow:inset 0 -1px 0 #e5e7eb">${shortRole(r)}</th>`).join('')}
             </tr></thead><tbody>`;
-        groups.forEach(g => {
-            html += `<tr class="bg-gray-50/60"><td colspan="${roles.length+1}" class="px-3 py-1.5 font-bold text-gray-600 text-xs">${g.label}</td></tr>`;
+        groups.forEach((g, gi) => {
+            html += `<tr id="perm-ghdr-${gi}" onclick="togglePermGroup(${gi})" class="bg-gray-50/60 cursor-pointer select-none hover:bg-gray-100 transition-colors">
+                <td colspan="${roles.length+1}" class="px-3 py-1.5 font-bold text-gray-600 text-xs">
+                    <span class="perm-chev mr-1 text-gray-400 inline-block transition-transform">▶</span>${g.label}
+                </td>
+            </tr>`;
             g.codes.forEach(code => {
-                html += `<tr class="border-t border-gray-100 hover:bg-gray-50">
+                html += `<tr class="perm-group-${gi} hidden border-t border-gray-100 hover:bg-gray-50">
                     <td class="px-3 py-2 text-gray-700">${PERM_LABEL[code] || code}<div class="text-[10px] text-gray-300 font-mono">${code}</div></td>
                     ${roles.map(r => {
                         const ok = !!(matrix[r] && matrix[r][code]);
@@ -375,6 +379,12 @@ async function setPermissionToggle(role, code, currentVal) {
         showToast(`✅ ${verb}สำเร็จ`, 'success');
         renderPermMatrix();
     }
+}
+
+function togglePermGroup(gi) {
+    document.querySelectorAll('.perm-group-' + gi).forEach(r => r.classList.toggle('hidden'));
+    const ico = document.querySelector('#perm-ghdr-' + gi + ' .perm-chev');
+    if (ico) ico.textContent = ico.textContent === '▶' ? '▼' : '▶';
 }
 
 // ---- Access log ----

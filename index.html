@@ -2130,6 +2130,41 @@
     </div>
 </div>
 
+<!-- ==================== MC RANKING EXPORT PICKER ==================== -->
+<div id="mcr-export-modal" class="modal-bg hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="bg-blue-600 px-6 py-4 flex-shrink-0">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">📄 Export PDF ผลประเมิน Ranking</h2>
+            <p class="text-xs text-blue-200 mt-0.5">เลือกเครื่องที่ประเมินครบ 5 หมวด → PDF (timeline + ผู้ประเมิน/ผู้อนุมัติ)</p>
+        </div>
+        <div class="px-6 py-3 border-b border-gray-100 flex flex-col gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2">
+                <select id="mcx-fac-filter" onchange="mcrExportFilterFac()"
+                        class="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+                    <option value="">ทุกโรงงาน</option>
+                </select>
+                <select id="mcx-area-filter" onchange="_mcExportRenderList()"
+                        class="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-blue-500">
+                    <option value="">ทุกพื้นที่</option>
+                </select>
+            </div>
+            <input id="mcx-search-filter" type="text" placeholder="ค้นหารหัส / ชื่อเครื่องจักร..." oninput="_mcExportRenderList()"
+                   class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500">
+        </div>
+        <div class="px-6 py-3 border-b border-gray-100 flex items-center gap-4 flex-shrink-0">
+            <label class="flex items-center gap-2 text-sm font-bold text-gray-700 cursor-pointer">
+                <input type="checkbox" id="mcx-pick-all" onchange="mcrExportToggleAll(this)" class="w-4 h-4"> เลือกทั้งหมด
+            </label>
+            <span id="mcx-count" class="text-xs text-gray-500">เลือก 0 เครื่อง</span>
+        </div>
+        <div id="mcx-pick-list" class="p-4 overflow-y-auto flex-1 space-y-1"></div>
+        <div class="flex gap-3 justify-end px-6 py-4 border-t border-gray-100 flex-shrink-0">
+            <button onclick="closeMcRankExport()" class="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900">ยกเลิก</button>
+            <button onclick="mcrExportGenerate()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full text-sm">📄 สร้าง PDF</button>
+        </div>
+    </div>
+</div>
+
 <!-- ==================== TRACKING RESULT MODAL (หลังแจ้ง BD / Checklist) ==================== -->
 <div id="tracking-modal" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
@@ -3021,6 +3056,7 @@
             <select id="mcr-year" onchange="loadMcRankOverview()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
                 <option>2025</option><option selected>2026</option><option>2027</option>
             </select>
+            <button onclick="openMcRankExport()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold">📄 Export PDF</button>
             <button onclick="loadMcRankOverview()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-bold">🔄</button>
         </div>
     </div>
@@ -3300,19 +3336,19 @@
 
 </div><!-- end app-content -->
 
-<script src="js/permissions.js?v=2.28"></script>
-<script src="js/core.js?v=2.28"></script>
-<script src="js/machines.js?v=2.28"></script>
-<script src="js/breakdown-report.js?v=2.28"></script>
-<script src="js/breakdown-form.js?v=2.28"></script>
-<script src="js/records-summary.js?v=2.28"></script>
-<script src="js/export.js?v=2.28"></script>
-<script src="js/oee.js?v=2.28"></script>
-<script src="js/bootstrap.js?v=2.28"></script>
-<script src="js/checklist-core.js?v=2.28"></script>
-<script src="js/checklist-status.js?v=2.28"></script>
-<script src="js/mcrank.js?v=2.28"></script>
-<script src="js/user-access.js?v=2.28"></script>
-<script src="js/scan.js?v=2.28"></script>
+<script src="js/permissions.js?v=2.29"></script>
+<script src="js/core.js?v=2.29"></script>
+<script src="js/machines.js?v=2.29"></script>
+<script src="js/breakdown-report.js?v=2.29"></script>
+<script src="js/breakdown-form.js?v=2.29"></script>
+<script src="js/records-summary.js?v=2.29"></script>
+<script src="js/export.js?v=2.29"></script>
+<script src="js/oee.js?v=2.29"></script>
+<script src="js/bootstrap.js?v=2.29"></script>
+<script src="js/checklist-core.js?v=2.29"></script>
+<script src="js/checklist-status.js?v=2.29"></script>
+<script src="js/mcrank.js?v=2.29"></script>
+<script src="js/user-access.js?v=2.29"></script>
+<script src="js/scan.js?v=2.29"></script>
 </body>
 </html>

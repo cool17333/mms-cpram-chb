@@ -574,16 +574,32 @@ function removePartRow(btn) {
 const imgList = { before: [], after: [] };
 let _imgLoadPromise = Promise.resolve();           // รอโหลดรูปจาก Drive ก่อน export
 
-// ย่อรูปก่อนเก็บ (กว้าง/สูงไม่เกิน 1280px, JPEG) — ลดขนาดอัปโหลด/เก็บ Drive
-function compressImage(dataUrl, cb) {
+// ย่อรูปก่อนเก็บ — การันตี ≤maxKB (default 250KB); ลด quality ก่อน จากนั้นลดขนาดภาพ
+function compressImage(dataUrl, cb, maxKB) {
+    maxKB = maxKB || 250;
     const img = new Image();
     img.onload = () => {
-        const MAX = 1280;
         let w = img.width, h = img.height;
+        const MAX = 1280;
         if (w > MAX || h > MAX) { const s = MAX / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
-        const c = document.createElement('canvas'); c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img, 0, 0, w, h);
-        try { cb(c.toDataURL('image/jpeg', 0.72)); } catch (e) { cb(dataUrl); }
+        const limit = maxKB * 1024;
+        const sizeOf = u => Math.round((u.length - (u.indexOf(',') + 1)) * 0.75);
+        const render = (ww, hh, q) => {
+            const c = document.createElement('canvas'); c.width = ww; c.height = hh;
+            c.getContext('2d').drawImage(img, 0, 0, ww, hh);
+            return c.toDataURL('image/jpeg', q);
+        };
+        try {
+            let q = 0.72, out = render(w, h, q);
+            while (sizeOf(out) > limit && q > 0.35) { q -= 0.1; out = render(w, h, q); }
+            let guard = 0;
+            while (sizeOf(out) > limit && guard++ < 6) {
+                w = Math.round(w * 0.85); h = Math.round(h * 0.85);
+                q = 0.6; out = render(w, h, q);
+                while (sizeOf(out) > limit && q > 0.35) { q -= 0.1; out = render(w, h, q); }
+            }
+            cb(out);
+        } catch (e) { cb(dataUrl); }
     };
     img.onerror = () => cb(dataUrl);
     img.src = dataUrl;

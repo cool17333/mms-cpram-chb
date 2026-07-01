@@ -118,10 +118,12 @@ function spareImgPreview(input) {
     const file = input.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = e => {
-        _spImgDataUrl = e.target.result;
-        const img = document.getElementById('sp-img-preview-img');
-        img.src = _spImgDataUrl;
-        document.getElementById('sp-img-preview').classList.remove('hidden');
+        compressImage(e.target.result, d => {
+            _spImgDataUrl = d;
+            const img = document.getElementById('sp-img-preview-img');
+            img.src = _spImgDataUrl;
+            document.getElementById('sp-img-preview').classList.remove('hidden');
+        });
     };
     reader.readAsDataURL(file);
 }

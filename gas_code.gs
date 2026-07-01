@@ -172,7 +172,7 @@ function seedInitialAdmin() {
 // ============================================================
 // USER REGISTRATION (v2.12) — self-service request → admin approve
 // ============================================================
-var REGISTER_LEVELS = ['Visitor','User','Technician'];       // สมัครเองได้เฉพาะ non-signing (team QA/Production/Engineer/Safety/Supervisor = admin ตั้งให้ กัน escalation)
+var REGISTER_LEVELS = ['User','QA','Production','Technician','Engineer','Safety','Supervisor'];       // ขอเองได้ทุก level ยกเว้น Visitor/Administrator (level จริง admin ตั้งตอนอนุมัติ)
 var ALL_LEVELS      = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
 
 function ensurePendingUsers(ss) {

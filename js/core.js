@@ -100,7 +100,7 @@ async function submitRegister() {
     const lname = (document.getElementById('rg-lname')?.value || '').trim();
     const uname = (document.getElementById('rg-user')?.value  || '').trim();
     const pin   = (document.getElementById('rg-pin')?.value   || '').trim();
-    const level = document.getElementById('rg-level')?.value  || 'Visitor';
+    const level = document.getElementById('rg-level')?.value  || 'User';
     if (!fname || !lname || !uname || !pin) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
     if (!/^[A-Za-z0-9_.]+$/.test(uname)) { showToast('⚠️ Username ใช้ a-z 0-9 _ . (ห้ามเว้นวรรค)', 'error'); return; }
     if (pin.length < 8) { showToast('⚠️ Password ต้องอย่างน้อย 8 ตัว', 'error'); return; }

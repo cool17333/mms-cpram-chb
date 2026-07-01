@@ -62,6 +62,9 @@ window.addEventListener('DOMContentLoaded', () => {
         { id:'accept-modal',           confirm:()=>confirmAccept(),        close:()=>closeAcceptModal() },
         { id:'cancel-modal',           confirm:()=>confirmCancel(),        close:()=>closeCancelModal(), enter:false }, // มี textarea เหตุผล → Enter = ขึ้นบรรทัด
         { id:'success-modal',          confirm:()=>closeSuccessModal(),    close:()=>closeSuccessModal() },
+        { id:'pmr-edit-modal',         confirm:()=>pmrSaveEdit(),          close:()=>pmrCloseEdit() },
+        { id:'pmr-done-modal',         confirm:()=>pmrConfirmDone(),       close:()=>pmrCloseDone() },
+        { id:'pmr-history-modal',      confirm:()=>pmrCloseHistory(),      close:()=>pmrCloseHistory() },
     ];
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter' && e.key !== 'Escape') return;

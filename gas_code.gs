@@ -1097,6 +1097,20 @@ function doPost(e) {
       return jsonOut(spareDelete_(data));
     }
 
+    // ---- PM REPLACEMENT: pmReplaceUpsert ----
+    if (data.action === 'pmReplaceUpsert') {
+      if (!userCan(ss, data.username, data.pin, 'cl.pm'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ cl.pm' });
+      return jsonOut(pmReplaceUpsert_(data));
+    }
+
+    // ---- PM REPLACEMENT: pmReplaceDone ----
+    if (data.action === 'pmReplaceDone') {
+      if (!userCan(ss, data.username, data.pin, 'cl.pm'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ cl.pm' });
+      return jsonOut(pmReplaceDone_(data));
+    }
+
     // ---- CREATE new row ----
     // ล็อกกันเลขรันชนกันเวลาหลายคนแจ้งพร้อมกัน
     const lock = LockService.getScriptLock();
@@ -1434,6 +1448,124 @@ function migrateSparePerms_runOnce() {
   Logger.log('migrateSparePerms: appended ' + rows.length + ' spare rows');
 }
 
+// ============================================================
+// PM REPLACEMENT — PM ประเภทที่ 2 (เปลี่ยนอะไหล่ตามรอบปฏิทิน)
+// ============================================================
+function pmReplacePlanSheet_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('_PmReplacePlan');
+  if (!sh) {
+    sh = ss.insertSheet('_PmReplacePlan');
+    const hdr = ['planId','machineId','partId','partLabel','cycleValue','cycleUnit','startDate','lastDone','nextDue','locationImageId','note','active','updatedAt'];
+    sh.getRange(1,1,1,hdr.length).setValues([hdr]).setBackground('#16a085').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function pmReplaceLogSheet_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('_PmReplaceLog');
+  if (!sh) {
+    sh = ss.insertSheet('_PmReplaceLog');
+    const hdr = ['logId','planId','machineId','partId','doneDate','by','photoId','note','nextDueAfter','at'];
+    sh.getRange(1,1,1,hdr.length).setValues([hdr]).setBackground('#16a085').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+// คำนวณ nextDue (ปฏิทิน)
+function pmNextDue_(base, cycleValue, cycleUnit) {
+  const d = new Date(base);
+  if (cycleUnit === 'day') d.setDate(d.getDate() + Number(cycleValue||0));
+  else if (cycleUnit === 'year') d.setFullYear(d.getFullYear() + Number(cycleValue||0));
+  else d.setMonth(d.getMonth() + Number(cycleValue||0));   // default month
+  return d;
+}
+// status เทียบวันนี้ (เตือนล่วงหน้า 30 วัน)
+function pmStatus_(nextDue) {
+  if (!nextDue) return 'ok';
+  const days = Math.floor((new Date(nextDue) - new Date()) / 864e5);
+  return days < 0 ? 'overdue' : days <= 30 ? 'soon' : 'ok';
+}
+
+function pmReplaceList_(machineId) {
+  const rows = pmReplacePlanSheet_().getDataRange().getValues();
+  const spareRows = spareSheet_().getDataRange().getValues();
+  const spareMap = {};
+  for (let i = 1; i < spareRows.length; i++) spareMap[String(spareRows[i][0])] = { imageId: spareRows[i][7] };
+  const out = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0]) continue;                 // ข้ามแถวว่าง
+    if (r[11] === false) continue;        // L active=false
+    if (machineId && String(r[1]) !== String(machineId)) continue;
+    const sp = spareMap[String(r[2])] || {};
+    out.push({
+      planId: r[0], machineId: r[1], partId: r[2], partLabel: r[3],
+      cycleValue: r[4], cycleUnit: r[5], startDate: r[6], lastDone: r[7],
+      nextDue: r[8], locationImageId: r[9], note: r[10],
+      partImageId: sp.imageId || '',
+      status: pmStatus_(r[8]),
+    });
+  }
+  return { success:true, data: out };
+}
+
+function pmReplaceUpsert_(data) {
+  const sh = pmReplacePlanSheet_(), rows = sh.getDataRange().getValues();
+  const locImg = data.locationImageId ? saveImgToDrive(data.locationImageId, 'PmReplace_Images') : '';
+  const id = data.planId || ('PR-' + Date.now() + Math.floor(Math.random()*1e3));
+  let rowIdx = -1;
+  for (let i=1;i<rows.length;i++) if (rows[i][0] === data.planId) { rowIdx = i+1; break; }
+  const startDate = data.startDate || Utilities.formatDate(new Date(),'Asia/Bangkok','yyyy-MM-dd');
+  const lastDone  = rowIdx > 0 ? rows[rowIdx-1][7] : '';   // preserve lastDone เดิมตอนแก้ไข
+  const base      = lastDone || startDate;
+  const nextDue   = pmNextDue_(base, data.cycleValue, data.cycleUnit || 'month');
+  const rec = [
+    id, data.machineId||'', data.partId||'', data.partLabel||'',
+    Number(data.cycleValue)||0, data.cycleUnit||'month', startDate, lastDone,
+    Utilities.formatDate(nextDue,'Asia/Bangkok','yyyy-MM-dd'),
+    locImg || data.existingLocationImageId || '',
+    data.note||'', true, new Date()
+  ];
+  if (rowIdx > 0) sh.getRange(rowIdx,1,1,rec.length).setValues([rec]);
+  else            sh.appendRow(rec);
+  return { success:true, planId:id };
+}
+
+function pmReplaceDone_(data) {
+  const sh = pmReplacePlanSheet_(), rows = sh.getDataRange().getValues();
+  let rowIdx = -1;
+  for (let i=1;i<rows.length;i++) if (rows[i][0] === data.planId) { rowIdx = i+1; break; }
+  if (rowIdx < 0) return { success:false, error:'ไม่พบแผน' };
+  const r = rows[rowIdx-1];
+  const doneDate   = data.doneDate || Utilities.formatDate(new Date(),'Asia/Bangkok','yyyy-MM-dd');
+  const nextDue    = pmNextDue_(doneDate, r[4], r[5]);
+  const nextDueStr = Utilities.formatDate(nextDue,'Asia/Bangkok','yyyy-MM-dd');
+  sh.getRange(rowIdx, 8, 1, 2).setValues([[doneDate, nextDueStr]]);   // H lastDone, I nextDue
+  sh.getRange(rowIdx, 13).setValue(new Date());                       // M updatedAt
+
+  const photoId = data.photoId ? saveImgToDrive(data.photoId, 'PmReplace_Images') : '';
+  pmReplaceLogSheet_().appendRow([
+    'PRL-' + Date.now(), data.planId, r[1], r[2], doneDate,
+    data.byName || '', photoId, data.note||'', nextDueStr, new Date()
+  ]);
+  return { success:true, nextDue: nextDueStr };
+}
+
+function pmReplaceLog_(planId) {
+  const rows = pmReplaceLogSheet_().getDataRange().getValues();
+  const out = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0]) continue;
+    if (planId && String(r[1]) !== String(planId)) continue;
+    out.push({ logId:r[0], planId:r[1], machineId:r[2], partId:r[3], doneDate:r[4], by:r[5], photoId:r[6], note:r[7], nextDueAfter:r[8] });
+  }
+  return { success:true, data: out.reverse() };   // ล่าสุดก่อน
+}
+
 // โรงงาน → รหัส CHB (โรงงาน 1 → CHB1, โรงงาน 2 → CHB2)
 function factoryToCHB(factory) {
   const m = String(factory || '').match(/(\d+)/);
@@ -1585,6 +1717,8 @@ function doGet(e) {
     if (action === 'getAreaDescriptions') return doGetAreaDescriptions_(e.parameter);
     if (action === 'getFormApprovals')    return doGetFormApprovals_(e.parameter);
     if (action === 'spareList')           return jsonOut(spareList_());
+    if (action === 'pmReplaceList')       return jsonOut(pmReplaceList_(e.parameter.machineId||''));
+    if (action === 'pmReplaceLog')        return jsonOut(pmReplaceLog_(e.parameter.planId||''));
 
     return jsonOut({ success: false, error: 'Unknown action' });
 

@@ -379,7 +379,7 @@ function _buildWhyNodeHtml(node, label, depth) {
         <div style="display:flex;align-items:flex-start;gap:5px">
             ${connector}
             <div style="flex:1">
-                <div style="background:${bg};border:1px solid ${border};border-radius:7px;padding:6px 12px;display:flex;align-items:center;gap:8px">
+                <div style="background:${bg};border:1px solid ${border};border-radius:7px;padding:6px 12px;display:flex;align-items:center;gap:8px${isLeaf ? '' : ';margin-bottom:5px'}">
                     <span style="font-size:11px;font-weight:700;color:#94a3b8;flex-shrink:0">WHY ${label}</span>
                     <span style="font-size:14px;color:${txtCol};font-weight:${isLeaf?700:500}">${text.replace(/</g,'&lt;')}${rootTag}</span>
                 </div>

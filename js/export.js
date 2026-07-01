@@ -372,7 +372,7 @@ function _buildWhyNodeHtml(node, label, depth) {
     const bg      = isLeaf ? '#fef2f2' : depth === 0 ? '#eff6ff' : '#f8fafc';
     const border  = isLeaf ? '#fecaca' : depth === 0 ? '#bfdbfe' : '#e2e8f0';
     const txtCol  = isLeaf ? '#dc2626' : depth === 0 ? '#1e3a5f' : '#374151';
-    const rootTag = isLeaf ? `<span style="font-size:9px;background:#dc2626;color:#fff;border-radius:4px;padding:2px 6px;margin-left:6px;display:inline-flex;align-items:center;line-height:1.4;vertical-align:middle">Root Cause</span>` : '';
+    const rootTag = isLeaf ? `<span style="font-size:9px;background:#dc2626;color:#fff;border-radius:4px;padding:3px 6px;margin-left:6px;display:inline-flex;align-items:center;line-height:1;vertical-align:middle">Root Cause</span>` : '';
     const connector = depth > 0 ? `<div style="width:12px;height:1px;background:#cbd5e1;margin-top:10px;flex-shrink:0"></div>` : '';
     const children  = (node.children || []).map((ch, j) => _buildWhyNodeHtml(ch, `${label}.${j+1}`, depth+1)).join('');
     return `<div style="margin-left:${indent}px;margin-bottom:5px">
@@ -395,7 +395,7 @@ function _pptImgWithThumbs(arr, label, labelBg, labelColor) {
     const main = arr[0].data || arr[0];
     const thumbs = arr.slice(1);
     return `<div style="display:flex;flex-direction:column;gap:4px;height:100%">
-        <div style="background:${labelBg};color:${labelColor};font-size:11px;font-weight:700;border-radius:5px;padding:5px 10px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;line-height:1.4">${label}</div>
+        <div style="background:${labelBg};color:${labelColor};font-size:11px;font-weight:700;border-radius:5px;padding:6px 10px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;line-height:1">${label}</div>
         <div style="flex:1;min-height:0;border-radius:8px;overflow:hidden;background:#ffffff;border:1px solid #f1f5f9;display:flex;align-items:center;justify-content:center">
             <img src="${main}" style="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain">
         </div>
@@ -467,25 +467,25 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
             </div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
-            <div style="background:${ss.bg};color:${ss.c};border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;line-height:1.4">${ss.lbl}</div>
-            ${d.downtimeMin ? `<div style="background:#fef2f2;color:#dc2626;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;line-height:1.4">⚠️ Downtime: ${dtStr}${over24 ? ' ⚠️เกิน 24 ชม.' : ''}</div>` : ''}
+            <div style="background:${ss.bg};color:${ss.c};border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;line-height:1">${ss.lbl}</div>
+            ${d.downtimeMin ? `<div style="background:#fef2f2;color:#dc2626;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;line-height:1">⚠️ Downtime: ${dtStr}${over24 ? ' ⚠️เกิน 24 ชม.' : ''}</div>` : ''}
           </div>
         </div>
       </div>
 
-      <!-- BODY: แถวบน (ข้อมูล+มาตรการ+อะไหล่ / รูปภาพ) 50% + แถวล่าง (Why-Why) 50% -->
+      <!-- BODY: บน = ข้อมูล+มาตรการ+อะไหล่ / รูปภาพ (สูงตามเนื้อหาจริง) — ล่าง = Why-Why (ดูดพื้นที่ที่เหลือ กันเปล่าเปลือง) -->
       <div style="flex:1;display:flex;flex-direction:column;gap:10px;padding:10px 14px;min-height:0;overflow:hidden">
 
-        <!-- TOP HALF (60%) -->
-        <div style="flex:3;display:grid;grid-template-columns:1.1fr 0.9fr;grid-template-rows:minmax(0,1fr);gap:10px;min-height:0;overflow:hidden">
+        <!-- TOP: ${hasWhy ? 'สูงตามเนื้อหา (ไม่มี Why-Why ดูดที่เหลือ)' : 'ไม่มี Why-Why → เต็มพื้นที่'} -->
+        <div style="${hasWhy ? 'flex-shrink:0;' : 'flex:1;min-height:0;'}display:grid;grid-template-columns:1.1fr 0.9fr;gap:10px;overflow:hidden">
 
-          <!-- TOP-LEFT: ข้อมูล + มาตรการ + อะไหล่ -->
-          <div style="display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden">
+          <!-- TOP-LEFT: ข้อมูล + มาตรการ + อะไหล่ (แต่ละการ์ดสูงตามเนื้อหาของตัวเอง) -->
+          <div style="display:flex;flex-direction:column;gap:10px;overflow:hidden">
 
             <!-- Card: ข้อมูลปัญหา -->
-            <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;flex:1;min-height:0;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-              <div style="font-size:13px;font-weight:800;color:#d97706;margin-bottom:8px;flex-shrink:0">ℹ️ ข้อมูลปัญหาและตำแหน่ง</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;flex-shrink:0">
+            <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <div style="font-size:13px;font-weight:800;color:#d97706;margin-bottom:8px">ℹ️ ข้อมูลปัญหาและตำแหน่ง</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
                 <div>
                   <div style="font-size:10px;color:#94a3b8;font-weight:600;margin-bottom:2px">ตำแหน่ง / สาย (LINE)</div>
                   <div style="font-size:15px;font-weight:700;color:#1e293b">${(d.line||'—').replace(/</g,'&lt;')}</div>
@@ -495,29 +495,29 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
                   <div style="font-size:15px;font-weight:700;color:#1e293b">${(d.bdType||'—').replace(/</g,'&lt;')}</div>
                 </div>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0">
-                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;justify-content:center">
-                  <div style="font-size:10px;color:#dc2626;font-weight:700;margin-bottom:3px;flex-shrink:0">ปัญหาที่พบ (PROBLEM)</div>
-                  <div style="font-size:14px;color:#dc2626;font-weight:600;white-space:pre-wrap;line-height:1.4;flex-shrink:0">${(d.problem||'—').replace(/</g,'&lt;')}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
+                  <div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:4px">🔴 ปัญหาที่พบ (PROBLEM)</div>
+                  <div style="font-size:14px;color:#dc2626;font-weight:600;white-space:pre-wrap;line-height:1.4">${(d.problem||'—').replace(/</g,'&lt;')}</div>
                 </div>
-                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;justify-content:center">
-                  <div style="font-size:10px;color:#d97706;font-weight:700;margin-bottom:3px;flex-shrink:0">อุปกรณ์ที่เกิดปัญหา</div>
-                  <div style="font-size:14px;color:#92400e;font-weight:600;white-space:pre-wrap;line-height:1.4;flex-shrink:0">${(d.device||'—').replace(/</g,'&lt;')}</div>
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
+                  <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:4px">⚙️ อุปกรณ์ที่เกิดปัญหา</div>
+                  <div style="font-size:14px;color:#92400e;font-weight:600;white-space:pre-wrap;line-height:1.4">${(d.device||'—').replace(/</g,'&lt;')}</div>
                 </div>
               </div>
             </div>
 
             <!-- Card: มาตรการ -->
-            <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;flex:1;min-height:0;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-              <div style="font-size:13px;font-weight:800;color:#374151;margin-bottom:8px;flex-shrink:0">📋 แผนมาตรการแก้ไขและป้องกัน</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0">
+            <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+              <div style="font-size:13px;font-weight:800;color:#374151;margin-bottom:8px">📋 แผนมาตรการแก้ไขและป้องกัน</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                 <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
-                  <div style="font-size:11px;font-weight:700;color:#ea580c;margin-bottom:4px;flex-shrink:0">🔧 มาตรการแก้ไข (Corrective)</div>
-                  <div style="font-size:13px;color:#431407;white-space:pre-wrap;line-height:1.5;flex-shrink:0">${(d.corrective||'—').replace(/</g,'&lt;')}</div>
+                  <div style="font-size:11px;font-weight:700;color:#ea580c;margin-bottom:4px">🔧 มาตรการแก้ไข (Corrective)</div>
+                  <div style="font-size:14px;color:#431407;white-space:pre-wrap;line-height:1.4">${(d.corrective||'—').replace(/</g,'&lt;')}</div>
                 </div>
                 <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
-                  <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:4px;flex-shrink:0">🛡️ มาตรการป้องกัน (Preventive)</div>
-                  <div style="font-size:13px;color:#14532d;white-space:pre-wrap;line-height:1.5;flex-shrink:0">${(d.preventive||'—').replace(/</g,'&lt;')}</div>
+                  <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:4px">🛡️ มาตรการป้องกัน (Preventive)</div>
+                  <div style="font-size:14px;color:#14532d;white-space:pre-wrap;line-height:1.4">${(d.preventive||'—').replace(/</g,'&lt;')}</div>
                 </div>
               </div>
             </div>
@@ -525,8 +525,8 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
             ${partsHtml}
           </div>
 
-          <!-- TOP-RIGHT: รูปภาพ (รูปหลักใหญ่ + thumbnails) -->
-          <div style="display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden">
+          <!-- TOP-RIGHT: รูปภาพ — ยืดเต็มความสูงแถว (grid stretch อัตโนมัติ เท่ากับความสูง TOP-LEFT) -->
+          <div style="display:flex;flex-direction:column;gap:8px;overflow:hidden">
             <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;flex:1;min-height:0;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.04)">
               <div style="font-size:13px;font-weight:800;color:#2563eb;margin-bottom:8px;flex-shrink:0">📷 รูปภาพสภาพอุปกรณ์ ก่อน-หลัง ดำเนินการ</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;min-height:0">
@@ -538,8 +538,8 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
 
         </div>
 
-        ${hasWhy ? `<!-- BOTTOM HALF: Why-Why (40%) -->
-        <div style="flex:2;background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;min-height:0;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${hasWhy ? `<!-- BOTTOM: Why-Why ดูดพื้นที่ที่เหลือทั้งหมด (ไม่บังคับสัดส่วนตายตัว) -->
+        <div style="flex:1;background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;min-height:0;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.04)">
           <div style="font-size:13px;font-weight:800;color:#1e3a5f;margin-bottom:8px;flex-shrink:0">🌿 การวิเคราะห์แบบรากต้นไม้ (Why-Why Tree Analysis)</div>
           <div style="flex:1;min-height:0;overflow:hidden">${whyHtml}</div>
         </div>` : ''}

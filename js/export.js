@@ -120,7 +120,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v2.10';
+const EXPORT_VER = 'v2.51';
 
 // แปลงวันเวลาทุก format → "dd-MM-yyyy HH:mm น." สำหรับ export (PNG header + PDF timeline)
 function fmtExportDateTime(v) {

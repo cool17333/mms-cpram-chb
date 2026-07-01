@@ -303,7 +303,9 @@ async function spImpConfirm() {
         })});
         const j = await r.json();
         if (j.success) {
-            showToast('นำเข้าสำเร็จ ' + j.count + ' รายการ ✅', 'success');
+            let msg = '✅ นำเข้าเสร็จ — เพิ่มใหม่ ' + (j.added||0) + ' · อัปเดต ' + (j.updated||0);
+            if (j.addedNoCode) msg += ' · ไม่มีรหัส ' + j.addedNoCode + ' (re-import จะซ้ำ)';
+            showToast(msg, 'success');
             spareCloseImport();
             await spareLoad();
             loadSpareCache();

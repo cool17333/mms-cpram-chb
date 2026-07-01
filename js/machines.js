@@ -290,6 +290,7 @@ async function saveMachines() {
     const clean = machineMaster.filter(m => String(m.id).trim());
     if (!clean.length) { showToast('⚠️ รายการว่าง — ไม่บันทึก (กันข้อมูลหาย)', 'error'); return; }
     if (!confirm(`บันทึกทะเบียนเครื่องจักรทั้งหมด ${clean.length} รายการ?\n(ของเดิมจะถูกสำรองไว้ให้อัตโนมัติ)`)) return;
+    showLoading('กำลังบันทึก…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
             body: JSON.stringify({ action:'setMachines', username: currentUser.username, pin: currentUser.pin, machines: clean }) });
@@ -297,12 +298,14 @@ async function saveMachines() {
         if (json && json.success) { showToast(`✅ บันทึก ${json.count} เครื่องจักรแล้ว`, 'success'); machineList=[]; loadMachines(); }
         else showToast('❌ บันทึกไม่สำเร็จ: ' + (json && json.error || ''), 'error');
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 // กู้คืนทะเบียนเครื่องจักรจากข้อมูลสำรองล่าสุด (_Machines_bak)
 async function restoreMachines() {
     if (!can('mc.restore')) { showToast('⚠️ ไม่มีสิทธิ์กู้คืน', 'error'); return; }
     if (!confirm('กู้คืนทะเบียนเครื่องจักรจากข้อมูลสำรองล่าสุด?\n(เขียนทับรายการปัจจุบัน)')) return;
+    showLoading('กำลังกู้คืน…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
             body: JSON.stringify({ action:'restoreMachines', username: currentUser.username, pin: currentUser.pin }) });
@@ -310,6 +313,7 @@ async function restoreMachines() {
         if (json && json.success) { showToast(`✅ กู้คืน ${json.count} เครื่องจักรแล้ว`, 'success'); loadMachineMaster(); machineList=[]; loadMachines(); }
         else showToast('❌ กู้คืนไม่สำเร็จ: ' + (json && json.error || ''), 'error');
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 // สำรองข้อมูลทะเบียนเครื่องจักรเป็นไฟล์ JSON
@@ -431,6 +435,7 @@ async function confirmCancel() {
     if (!byName) { showToast('⚠️ กรุณาเข้าสู่ระบบก่อนดำเนินการ', 'error'); closeCancelModal(); openLogin(); return; }
     const item = _cancelItem;
     closeCancelModal();
+    showLoading('กำลังยกเลิกงาน…');
     try {
         await fetch(GAS_URL, {
             method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
@@ -438,8 +443,9 @@ async function confirmCancel() {
                 tracking: item.tracking, username: currentUser.username, pin: currentUser.pin, byName, cancelReason: reason }),
         });
         showToast('🚫 ยกเลิกงานเรียบร้อย — กำลังรีโหลด', 'info');
-        setTimeout(loadRecords, 900);
+        setTimeout(() => { hideLoading(); loadRecords(); }, 900);
     } catch (err) {
+        hideLoading();
         showToast('❌ ยกเลิกไม่สำเร็จ: ' + err.message, 'error');
     }
 }
@@ -450,6 +456,7 @@ async function openLog(tracking) {
     document.getElementById('log-tracking').textContent = tracking;
     document.getElementById('log-body').innerHTML = '<p class="text-gray-400 animate-pulse text-center py-6">กำลังโหลด...</p>';
     document.getElementById('log-modal').classList.remove('hidden');
+    showLoading('กำลังโหลดประวัติ…');
     try {
         const res  = await fetch(`${GAS_URL}?action=getLog&tracking=${encodeURIComponent(tracking)}`);
         const json = await res.json();
@@ -463,5 +470,6 @@ async function openLog(tracking) {
     } catch (err) {
         document.getElementById('log-body').innerHTML = '<p class="text-red-500 text-center py-6">โหลด log ไม่สำเร็จ</p>';
     }
+    finally { hideLoading(); }
 }
 

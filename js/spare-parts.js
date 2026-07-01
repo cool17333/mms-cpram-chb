@@ -21,11 +21,13 @@ const SP_CATEGORIES = [
 // ---- โหลด + render ----
 async function spareLoad() {
     if (!GAS_URL) return;
+    showLoading('กำลังโหลดอะไหล่…');
     try {
         const r = await fetch(GAS_URL + '?action=spareList');
         const j = await r.json();
         _spData = j.success ? (j.data || []) : [];
     } catch(e) { _spData = []; }
+    finally { hideLoading(); }
     spareRender();
 }
 
@@ -174,8 +176,8 @@ async function spareSaveEdit() {
         existingImageId:  _spEditing ? (_spEditing.imageId || '') : '',
     };
 
+    showLoading('กำลังบันทึก…');
     try {
-        showToast('กำลังบันทึก...', 'info');
         const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
         const j = await r.json();
         if (j.success) {
@@ -185,6 +187,7 @@ async function spareSaveEdit() {
             loadSpareCache();   // refresh datalist hint
         } else { showToast('เกิดข้อผิดพลาด: ' + (j.error||''), 'error'); }
     } catch(e) { showToast('เชื่อมต่อ GAS ไม่ได้', 'error'); }
+    finally { hideLoading(); }
 }
 
 // ---- import Excel (Store) ----
@@ -293,8 +296,8 @@ async function spImpConfirm() {
         .filter(it => it.name);
 
     if (!items.length) { showToast('ไม่พบข้อมูลที่จะนำเข้า', 'error'); return; }
+    showLoading('กำลังนำเข้า ' + items.length + ' รายการ…');
     try {
-        showToast('กำลังนำเข้า ' + items.length + ' รายการ...', 'info');
         const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action: 'spareBulkImport', username: currentUser.username, pin: currentUser.pin, items
         })});
@@ -306,6 +309,7 @@ async function spImpConfirm() {
             loadSpareCache();
         } else { showToast('เกิดข้อผิดพลาด: ' + (j.error||''), 'error'); }
     } catch(e) { showToast('เชื่อมต่อ GAS ไม่ได้', 'error'); }
+    finally { hideLoading(); }
 }
 
 // ---- multi-select delete ----

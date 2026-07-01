@@ -272,6 +272,7 @@ async function confirmAccept() {
     if (!_acceptItem) return;
     const item = _acceptItem;
     closeAcceptModal();
+    showLoading('กำลังรับงาน…');
     try {
         await fetch(GAS_URL, {
             method: 'POST', mode: 'no-cors',
@@ -286,8 +287,9 @@ async function confirmAccept() {
             }),
         });
         showToast('✅ รับงานเรียบร้อย — ' + acceptedBy, 'success');
-        setTimeout(() => { switchTab('records'); checkRecordsSetup(); }, 700);
+        setTimeout(() => { switchTab('records'); checkRecordsSetup(); hideLoading(); }, 700);
     } catch (err) {
+        hideLoading();
         showToast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
     }
 }
@@ -561,6 +563,7 @@ async function submitReportPopup() {
 
     const btn = document.getElementById('rm-submit');
     btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+    showLoading('กำลังบันทึก…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(data) });
         const json = await res.json();
@@ -574,6 +577,7 @@ async function submitReportPopup() {
         showToast('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
     } finally {
         btn.disabled = false; btn.textContent = '🚨 แจ้ง Breakdown';
+        hideLoading();
     }
 }
 
@@ -803,6 +807,7 @@ async function loadAllLog() {
     setVisible('log-bd-loading', true);
     setVisible('log-bd-empty', false);
     document.getElementById('log-bd-tbody').innerHTML = '';
+    showLoading('กำลังโหลด Log…');
     try {
         const res  = await fetch(`${GAS_URL}?action=getLog`);
         const json = await res.json();
@@ -811,6 +816,7 @@ async function loadAllLog() {
         showToast('❌ โหลด Log ไม่สำเร็จ: ' + e.message, 'error');
         _allBdLog = [];
     }
+    finally { hideLoading(); }
     setVisible('log-bd-loading', false);
     renderBdLog();
 

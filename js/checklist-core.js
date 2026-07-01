@@ -154,15 +154,20 @@ function clGetPmDatesForMonth(machineId, year, month) {
 async function clFetch(params) {
     const url = new URL(GAS_URL);
     Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
-    const r = await fetch(url.toString());
-    return r.json();
+    const overlay = params.action !== 'getImage';
+    if (overlay) showLoading('กำลังโหลด…');
+    try { const r = await fetch(url.toString()); return await r.json(); }
+    finally { if (overlay) hideLoading(); }
 }
 async function clPost(body) {
-    const res = await fetch(GAS_URL, {
-        method:'POST',
-        body: JSON.stringify({ ...body, username: currentUser.username, pin: currentUser.pin }),
-    });
-    return res.json();
+    showLoading('กำลังบันทึก…');
+    try {
+        const res = await fetch(GAS_URL, {
+            method:'POST',
+            body: JSON.stringify({ ...body, username: currentUser.username, pin: currentUser.pin }),
+        });
+        return await res.json();
+    } finally { hideLoading(); }
 }
 
 // ---- HUB ----

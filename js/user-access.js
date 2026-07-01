@@ -108,6 +108,7 @@ async function submitAddUser() {
     if (!fname || !lname || !uname || !pin) { showToast('⚠️ กรอกข้อมูลให้ครบ', 'error'); return; }
     if (pin.length < 8) { showToast('⚠️ Password ต้องอย่างน้อย 8 ตัว', 'error'); return; }
     const name = `${fname} ${lname}`.trim();
+    showLoading('กำลังเพิ่มผู้ใช้…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'addUser', username: currentUser.username, pin: currentUser.pin,
@@ -119,6 +120,7 @@ async function submitAddUser() {
         showToast('✅ เพิ่มผู้ใช้ ' + name + ' สำเร็จ', 'success');
         loadUaUsers();
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 // ---- Pending requests (คำขอใช้งาน) ----
@@ -197,6 +199,7 @@ function closeApproveModal() { document.getElementById('approve-modal').classLis
 async function uaConfirmApprove() {
     if (!_uaApproveId) return;
     const level = document.getElementById('ap-level')?.value || 'Visitor';
+    showLoading('กำลังอนุมัติ…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'approveUser', username: currentUser.username, pin: currentUser.pin,
@@ -208,10 +211,12 @@ async function uaConfirmApprove() {
         showToast('✅ อนุมัติแล้ว — ดึงเข้าระบบเรียบร้อย', 'success');
         loadUaPending();
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 async function uaRejectPending(pendingId, uname) {
     if (!confirm(`ปฏิเสธคำขอของ "${uname}"?`)) return;
+    showLoading('กำลังปฏิเสธ…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'rejectUser', username: currentUser.username, pin: currentUser.pin, pendingId
@@ -221,6 +226,7 @@ async function uaRejectPending(pendingId, uname) {
         showToast('ปฏิเสธคำขอแล้ว', 'info');
         loadUaPending();
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 // ---- Set level ----
@@ -235,6 +241,7 @@ function uaOpenSetLevel(userId, currentLevel) {
 }
 
 async function uaSetLevel(userId, level) {
+    showLoading('กำลังเปลี่ยน Level…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'setUserLevel', username: currentUser.username, pin: currentUser.pin, userId, level
@@ -244,6 +251,7 @@ async function uaSetLevel(userId, level) {
         showToast('✅ เปลี่ยน Level สำเร็จ', 'success');
         loadUaUsers();
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 // ---- Reset PIN modal ----
@@ -260,6 +268,7 @@ async function submitResetPin() {
     if (!_uaPending) return;
     const newPin = (document.getElementById('new-pin-val')?.value || '').trim();
     if (newPin.length < 8) { showToast('⚠️ Password ต้องอย่างน้อย 8 ตัว', 'error'); return; }
+    showLoading('กำลังรีเซ็ต PIN…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'resetUserPin', username: currentUser.username, pin: currentUser.pin,
@@ -270,10 +279,12 @@ async function submitResetPin() {
         closeResetPinModal();
         showToast('✅ รีเซ็ต PIN สำเร็จ', 'success');
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 // ---- Toggle active ----
 async function uaToggleActive(userId, active) {
+    showLoading('กำลังอัปเดตสถานะ…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'toggleUserActive', username: currentUser.username, pin: currentUser.pin, userId, active
@@ -283,11 +294,13 @@ async function uaToggleActive(userId, active) {
         showToast(active ? '✅ เปิดใช้งานแล้ว' : '✅ ระงับบัญชีแล้ว', 'success');
         loadUaUsers();
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 // ---- Delete user ----
 async function uaDeleteUser(userId, name) {
     if (!confirm(`ยืนยันลบผู้ใช้ "${name}"?\nไม่สามารถกู้คืนได้`)) return;
+    showLoading('กำลังลบผู้ใช้…');
     try {
         const res  = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({
             action:'deleteUser', username: currentUser.username, pin: currentUser.pin, userId
@@ -297,6 +310,7 @@ async function uaDeleteUser(userId, name) {
         showToast('✅ ลบผู้ใช้ ' + name + ' แล้ว', 'success');
         loadUaUsers();
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
+    finally { hideLoading(); }
 }
 
 // (uaOpenSetDept/uaSetDept ลบออก v2.21 — ยุบแผนกเข้า Level)
@@ -306,6 +320,7 @@ async function renderPermMatrix() {
     const el = document.getElementById('ua-perm-matrix');
     if (!GAS_URL) { el.innerHTML = '<p class="text-gray-400 py-6">⚠️ ยังไม่ได้ตั้งค่า GAS URL</p>'; return; }
     el.innerHTML = '<p class="text-gray-400 py-6 text-center animate-pulse">⏳ กำลังโหลด...</p>';
+    showLoading('กำลังโหลดสิทธิ์…');
     try {
         const res  = await fetch(`${GAS_URL}?action=getPermissions`);
         const json = await res.json();
@@ -348,11 +363,13 @@ async function renderPermMatrix() {
         html += '</tbody></table>';
         el.innerHTML = html;
     } catch (e) { el.innerHTML = '<p class="text-red-400 py-6 text-center">❌ โหลดไม่สำเร็จ: ' + e.message + '</p>'; }
+    finally { hideLoading(); }
 }
 
 // ---- Permission toggle ----
 async function setPermission(role, code, allow) {
     if (!GAS_URL) { showToast('⚠️ ยังไม่ได้ตั้งค่า GAS URL', 'warn'); return false; }
+    showLoading('กำลังบันทึกสิทธิ์…');
     try {
         const res = await fetch(GAS_URL, {
             method: 'POST',
@@ -368,6 +385,7 @@ async function setPermission(role, code, allow) {
         if (!json.success) { showToast('❌ ' + (json.error || 'แก้สิทธิ์ไม่สำเร็จ'), 'error'); return false; }
         return true;
     } catch (e) { showToast('❌ Network error: ' + e.message, 'error'); return false; }
+    finally { hideLoading(); }
 }
 
 async function setPermissionToggle(role, code, currentVal) {
@@ -393,6 +411,7 @@ async function loadUaLog() {
     const el = document.getElementById('ua-log-body');
     if (!GAS_URL) { el.innerHTML = '<p class="text-gray-400 py-6">⚠️ ยังไม่ได้ตั้งค่า GAS URL</p>'; return; }
     el.innerHTML = '<p class="text-gray-400 py-4 text-center animate-pulse">⏳ กำลังโหลด...</p>';
+    showLoading('กำลังโหลดประวัติ…');
     try {
         const res  = await fetch(`${GAS_URL}?action=getAccessLog`);
         const json = await res.json();
@@ -408,4 +427,5 @@ async function loadUaLog() {
                 <div class="text-xs text-gray-400 mt-0.5">โดย: <b>${r.username || '—'}</b></div>
             </div>`).join('');
     } catch (e) { el.innerHTML = '<p class="text-red-400 py-6 text-center">❌ ' + e.message + '</p>'; }
+    finally { hideLoading(); }
 }

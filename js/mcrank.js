@@ -541,11 +541,13 @@ function toggleMcApprovalDash() {
 var _mcApprovalArea = null;
 async function openFormApproval(area) {
     _mcApprovalArea = area;
+    showLoading('กำลังโหลด…');
     try {
         var dRes  = await fetch(GAS_URL + '?action=getAreaDescriptions&area=' + encodeURIComponent(area) + '&year=' + encodeURIComponent(_mcrYear));
         var dJson = await dRes.json();
         _mcrAreaDescs = dJson.success ? (dJson.data || {}) : {};
     } catch(e) { _mcrAreaDescs = {}; }
+    finally { hideLoading(); }
     var aEl = document.getElementById('mcfa-area');
     if (aEl) aEl.textContent = area;
     renderFormApprovalBody(area);

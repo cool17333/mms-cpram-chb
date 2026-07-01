@@ -1254,7 +1254,11 @@ function clScTab(tab) {
     _clScCurrentTab = tab;
     document.getElementById('clsc-daily-view').classList.toggle('hidden', tab !== 'daily');
     document.getElementById('clsc-pm-view').classList.toggle('hidden', tab !== 'pm');
+    document.getElementById('clsc-pmrep-view')?.classList.toggle('hidden', tab !== 'pmrep');
     document.getElementById('clsc-tab-daily').className = tab==='daily' ? 'mms-btn mms-btn-green' : 'mms-btn';
     document.getElementById('clsc-tab-pm').className    = tab==='pm'    ? 'mms-btn mms-btn-green' : 'mms-btn';
+    const pmrepBtn = document.getElementById('clsc-tab-pmrep');
+    if (pmrepBtn) pmrepBtn.className = tab==='pmrep' ? 'mms-btn mms-btn-green' : 'mms-btn';
+    if (tab === 'pmrep') { if (typeof initPmReplace === 'function') initPmReplace(); return; }   // PM Replacement มี init/data ของตัวเอง
     renderClSchedule();
 }

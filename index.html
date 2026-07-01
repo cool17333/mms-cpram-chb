@@ -300,7 +300,6 @@
                 <div class="sidebar-subitem" id="sni-cl-summary" onclick="switchTab('cl-summary')">สรุป / KPI</div>
                 <div class="sidebar-subitem" id="sni-cl-calendar" onclick="switchTab('cl-calendar')">ปฏิทิน PM</div>
                 <div class="sidebar-subitem" id="sni-cl-schedule" onclick="switchTab('cl-schedule')">รายละเอียดตรวจสอบ</div>
-                <div class="sidebar-subitem" id="sni-cl-pmrep" data-perm="cl.pm" onclick="switchTab('pm-replace')">PM เปลี่ยนอะไหล่</div>
                 <div class="sidebar-subitem" id="sni-cl-status" onclick="switchTab('cl-status')">สถานะการตรวจ</div>
             </div>
         </div>
@@ -1566,9 +1565,10 @@
         </div>
         <button onclick="loadClSchedule()" class="mms-btn text-sm">🔄 รีเฟรช</button>
     </div>
-    <div class="flex gap-2 mb-4">
+    <div class="flex gap-2 mb-4 flex-wrap">
         <button id="clsc-tab-daily" onclick="clScTab('daily')" class="mms-btn mms-btn-green">📋 Daily Items</button>
         <button id="clsc-tab-pm" onclick="clScTab('pm')" class="mms-btn">🔧 แผน PM</button>
+        <button id="clsc-tab-pmrep" onclick="clScTab('pmrep')" class="mms-btn" data-perm="cl.pm">🔩 PM Replacement</button>
     </div>
     <div id="clsc-daily-view">
         <div class="mms-card overflow-hidden">
@@ -1675,6 +1675,25 @@
             </div>
         </div>
     </div>
+    <div id="clsc-pmrep-view" class="hidden">
+        <div class="mms-card overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex flex-wrap gap-3 justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-sm">🔩 PM Replacement — เปลี่ยนอะไหล่ตามรอบ</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">ตั้งรอบเปลี่ยนอะไหล่รายเครื่อง · เตือนเมื่อครบกำหนด</p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <select id="pmr-machine-select" onchange="pmrLoadForMachine()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none bg-white w-56">
+                        <option value="">-- เลือกเครื่องจักร --</option>
+                    </select>
+                    <button onclick="pmrOpenAdd()" data-perm="cl.pm" class="hidden mms-btn mms-btn-red text-sm">➕ ตั้งค่าเปลี่ยนอะไหล่</button>
+                </div>
+            </div>
+            <div id="pmr-list-wrap" class="p-4 space-y-3">
+                <p class="text-gray-400 text-sm text-center py-8">เลือกเครื่องจักรเพื่อดูแผนเปลี่ยนอะไหล่</p>
+            </div>
+        </div>
+    </div>
 </div>
 </div><!-- end panel-cl-schedule -->
 
@@ -1724,27 +1743,6 @@
 </div>
 </div><!-- end panel-cl-status -->
 
-<!-- ==================== PANEL: PM REPLACEMENT (เปลี่ยนอะไหล่ตามรอบ) ==================== -->
-<div id="panel-pm-replace" class="tab-panel p-4 md:p-6">
-<div class="max-w-5xl mx-auto">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div>
-            <h2 class="text-xl font-bold text-gray-800">🔧 PM เปลี่ยนอะไหล่ (Replacement)</h2>
-            <p class="text-xs text-gray-400 mt-0.5">วางแผน + บันทึกการเปลี่ยนอะไหล่ตามรอบปฏิทิน</p>
-        </div>
-        <button onclick="pmrOpenAdd()" data-perm="cl.pm" class="hidden mms-btn mms-btn-red text-sm">+ เพิ่มแผน</button>
-    </div>
-    <div class="mb-4">
-        <label class="text-xs font-bold text-gray-500 block mb-1">เลือกเครื่องจักร</label>
-        <select id="pmr-machine-select" onchange="pmrLoadForMachine()" class="w-full md:w-96 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none bg-white">
-            <option value="">-- เลือกเครื่องจักร --</option>
-        </select>
-    </div>
-    <div id="pmr-list-wrap" class="space-y-3">
-        <p class="text-gray-400 text-sm text-center py-8">เลือกเครื่องจักรเพื่อดูแผนเปลี่ยนอะไหล่</p>
-    </div>
-</div>
-</div><!-- end panel-pm-replace -->
 
 <!-- MODAL: เพิ่ม/แก้แผนเปลี่ยนอะไหล่ -->
 <div id="pmr-edit-modal" class="modal-bg hidden" onclick="if(event.target===this)pmrCloseEdit()">
@@ -1774,17 +1772,17 @@
                 </div>
             </div>
             <div>
-                <label class="text-xs text-gray-700 font-bold mb-1 block">วันเริ่ม/ติดตั้ง <span class="text-orange-500">*</span></label>
-                <input id="pmr-start-date" type="date" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
+                <label class="text-xs text-gray-700 font-bold mb-1 block">เดือนที่เริ่ม <span class="text-orange-500">*</span></label>
+                <input id="pmr-start-date" type="month" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
+            </div>
+            <div>
+                <label class="text-xs text-gray-700 font-bold mb-1 block">รูปภาพบริเวณที่เปลี่ยน <span class="text-orange-500">*</span></label>
+                <input id="pmr-loc-img-input" type="file" accept="image/*" onchange="pmrLocImgPreview(this)" class="text-sm text-gray-600">
+                <div id="pmr-loc-img-preview" class="mt-2 hidden"><img id="pmr-loc-img-preview-img" class="h-24 object-contain rounded border border-gray-200"></div>
             </div>
             <div>
                 <label class="text-xs text-gray-700 font-bold mb-1 block">หมายเหตุ</label>
                 <input id="pmr-note" type="text" placeholder="หมายเหตุเพิ่มเติม..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-            </div>
-            <div>
-                <label class="text-xs text-gray-700 font-bold mb-1 block">รูปตำแหน่งบนเครื่อง</label>
-                <input id="pmr-loc-img-input" type="file" accept="image/*" onchange="pmrLocImgPreview(this)" class="text-sm text-gray-600">
-                <div id="pmr-loc-img-preview" class="mt-2 hidden"><img id="pmr-loc-img-preview-img" class="h-24 object-contain rounded border border-gray-200"></div>
             </div>
             <div class="flex gap-2 pt-2">
                 <button onclick="pmrSaveEdit()" class="flex-1 mms-btn mms-btn-blue">💾 บันทึก</button>
@@ -3676,14 +3674,14 @@
 <script src="js/permissions.js?v=2.30"></script>
 <script src="js/core.js?v=2.36"></script>
 <script src="js/machines.js?v=2.37"></script>
-<script src="js/breakdown-report.js?v=2.40"></script>
+<script src="js/breakdown-report.js?v=2.42"></script>
 <script src="js/breakdown-form.js?v=2.38"></script>
-<script src="js/pm-replacement.js?v=2.40"></script>
+<script src="js/pm-replacement.js?v=2.42"></script>
 <script src="js/records-summary.js?v=2.30"></script>
 <script src="js/export.js?v=2.30"></script>
 <script src="js/oee.js?v=2.34"></script>
 <script src="js/bootstrap.js?v=2.40"></script>
-<script src="js/checklist-core.js?v=2.34"></script>
+<script src="js/checklist-core.js?v=2.42"></script>
 <script src="js/checklist-status.js?v=2.30"></script>
 <script src="js/mcrank.js?v=2.36"></script>
 <script src="js/spare-parts.js?v=2.39"></script>

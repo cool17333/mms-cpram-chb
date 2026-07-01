@@ -1331,12 +1331,20 @@ function nextSupplierPartNo_(rows) {
   return 'SUP-' + String(max+1).padStart(4,'0');
 }
 function spareDelete_(data) {
-  const sh = spareSheet_(), rows = sh.getDataRange().getValues();
+  const sh = spareSheet_();
+  const rows = sh.getDataRange().getValues();
   const ids = {}; (data.partIds||[]).forEach(function(id){ ids[String(id)] = true; });
+  const keep = [rows[0]];   // header
   var n = 0;
-  for (var i=rows.length-1; i>=1; i--) {
-    if (ids[String(rows[i][0])]) { sh.deleteRow(i+1); n++; }
+  for (var i = 1; i < rows.length; i++) {
+    if (ids[String(rows[i][0])]) n++;
+    else keep.push(rows[i]);
   }
+  if (n === 0) return { success:true, count:0 };
+  const W = rows[0].length;
+  sh.getRange(1, 1, keep.length, W).setValues(keep);          // เขียนแถวที่เหลือทับด้านบน (1 op)
+  const extra = rows.length - keep.length;
+  if (extra > 0) sh.deleteRows(keep.length + 1, extra);        // ลบแถวส่วนเกินครั้งเดียว (1 op) — ไม่ deleteRow ทีละแถว
   return { success:true, count:n };
 }
 function spareBulkImport_(data) {

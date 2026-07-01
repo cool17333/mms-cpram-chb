@@ -181,10 +181,10 @@ async function spareSaveEdit() {
         const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify(payload) });
         const j = await r.json();
         if (j.success) {
-            showToast('บันทึกสำเร็จ ✅', 'success');
             spareCloseEdit();
             await spareLoad();
             loadSpareCache();   // refresh datalist hint
+            showSuccessModal('บันทึกอะไหล่สำเร็จ', name);
         } else { showToast('เกิดข้อผิดพลาด: ' + (j.error||''), 'error'); }
     } catch(e) { showToast('เชื่อมต่อ GAS ไม่ได้', 'error'); }
     finally { hideLoading(); }
@@ -303,12 +303,12 @@ async function spImpConfirm() {
         })});
         const j = await r.json();
         if (j.success) {
-            let msg = '✅ นำเข้าเสร็จ — เพิ่มใหม่ ' + (j.added||0) + ' · อัปเดต ' + (j.updated||0);
-            if (j.addedNoCode) msg += ' · ไม่มีรหัส ' + j.addedNoCode + ' (re-import จะซ้ำ)';
-            showToast(msg, 'success');
+            let detail = 'เพิ่มใหม่ ' + (j.added||0) + ' · อัปเดต ' + (j.updated||0);
+            if (j.addedNoCode) detail += ' · ไม่มีรหัส ' + j.addedNoCode + ' (re-import จะซ้ำ)';
             spareCloseImport();
             await spareLoad();
             loadSpareCache();
+            showSuccessModal('นำเข้าอะไหล่สำเร็จ', detail);
         } else { showToast('เกิดข้อผิดพลาด: ' + (j.error||''), 'error'); }
     } catch(e) { showToast('เชื่อมต่อ GAS ไม่ได้', 'error'); }
     finally { hideLoading(); }
@@ -335,14 +335,25 @@ async function spareDeleteSelected() {
     const ids = [..._spSelected];
     if (!ids.length) { showToast('ยังไม่ได้เลือกรายการ', 'error'); return; }
     if (!confirm('ลบอะไหล่ที่เลือก ' + ids.length + ' รายการ?\n(ลบถาวร กู้คืนไม่ได้)')) return;
-    showLoading('กำลังลบ ' + ids.length + ' รายการ…');
+    const total = ids.length, CHUNK = 100;   // ลบทีละ 100 → โชว์จำนวนวิ่ง (ปรับได้: มาก=เร็ว/หยาบ, น้อย=ช้า/ละเอียด)
+    let done = 0, deleted = 0, failed = false;
+    showProgress(0, total, 'กำลังลบ 0/' + total + ' รายการ');
     try {
-        const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'spareDelete', username:currentUser.username, pin:currentUser.pin, partIds:ids }) });
-        const j = await r.json();
-        if (j.success) { showToast('ลบสำเร็จ ' + j.count + ' รายการ ✅', 'success'); _spSelected.clear(); await spareLoad(); loadSpareCache(); }
-        else showToast('เกิดข้อผิดพลาด: ' + (j.error||''), 'error');
-    } catch(e) { showToast('เชื่อมต่อ GAS ไม่ได้', 'error'); }
+        for (let i = 0; i < ids.length; i += CHUNK) {
+            const chunk = ids.slice(i, i + CHUNK);
+            const r = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'spareDelete', username:currentUser.username, pin:currentUser.pin, partIds:chunk }) });
+            const j = await r.json();
+            if (!j.success) { failed = true; showToast('เกิดข้อผิดพลาด: ' + (j.error||''), 'error'); break; }
+            deleted += (j.count || 0);
+            done += chunk.length;
+            updateProgress(done, total, 'กำลังลบ ' + done + '/' + total + ' รายการ');
+        }
+    } catch(e) { failed = true; showToast('เชื่อมต่อ GAS ไม่ได้', 'error'); }
     finally { hideLoading(); }
+    _spSelected.clear();
+    await spareLoad();
+    loadSpareCache();
+    if (!failed) showSuccessModal('ลบอะไหล่สำเร็จ', 'ลบ ' + deleted + ' รายการ');
 }
 
 // ---- hook switchTab เพื่อโหลดข้อมูลเมื่อเปิด panel ----

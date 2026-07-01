@@ -2231,6 +2231,16 @@
     </div>
 </div>
 
+<!-- ==================== SUCCESS MODAL (generic — เพิ่ม/ลบ/นำเข้า สำเร็จ) ==================== -->
+<div id="success-modal" class="modal-bg hidden" onclick="if(event.target===this)closeSuccessModal()">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+    <div class="text-5xl mb-3">✅</div>
+    <h3 id="success-modal-title" class="text-lg font-bold text-gray-800 mb-1">สำเร็จ</h3>
+    <p id="success-modal-detail" class="text-sm text-gray-500 mb-5"></p>
+    <button onclick="closeSuccessModal()" class="mms-btn mms-btn-blue w-full justify-center text-sm">ตกลง</button>
+  </div>
+</div>
+
 <!-- ==================== TRACKING RESULT MODAL (หลังแจ้ง BD / Checklist) ==================== -->
 <div id="tracking-modal" class="modal-bg hidden">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
@@ -2787,6 +2797,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
             <p class="text-xs font-bold uppercase tracking-widest text-gray-400">🔎 กรองข้อมูล</p>
             <div class="flex flex-wrap gap-2">
+                <button onclick="loadMachineMaster()" class="mms-btn text-sm" style="background:#f0f2f5;color:var(--mms-text)">🔄 รีเฟรช</button>
                 <button onclick="machOpenAdd()" class="mms-btn mms-btn-blue text-sm">➕ เพิ่มเครื่องจักร</button>
                 <button onclick="machOpenImport()" class="mms-btn text-sm" style="background:#f0f2f5;color:var(--mms-text)">📥 นำเข้า Excel</button>
                 <button onclick="backupData()" class="mms-btn text-sm" style="background:#eafaf1;color:#1a7a45">💾 สำรองข้อมูล</button>
@@ -3224,6 +3235,7 @@
             <p class="text-xs text-gray-400 mt-0.5">Store (คลังบริษัท) · Supplier (จาก supplier)</p>
         </div>
         <div class="flex gap-2 flex-wrap">
+            <button onclick="spareLoad()" class="mms-btn text-sm" style="background:#f0f2f5;color:var(--mms-text)">🔄 รีเฟรช</button>
             <button onclick="spareOpenImport()" data-perm="spare.edit" class="hidden mms-btn mms-btn-blue text-sm">📥 Import Excel</button>
             <button onclick="spareOpenEdit(null)" data-perm="spare.edit" class="hidden mms-btn mms-btn-red text-sm">+ เพิ่มอะไหล่</button>
         </div>
@@ -3549,17 +3561,17 @@
 
 <script src="js/permissions.js?v=2.30"></script>
 <script src="js/core.js?v=2.36"></script>
-<script src="js/machines.js?v=2.34"></script>
+<script src="js/machines.js?v=2.37"></script>
 <script src="js/breakdown-report.js?v=2.34"></script>
-<script src="js/breakdown-form.js?v=2.36"></script>
+<script src="js/breakdown-form.js?v=2.37"></script>
 <script src="js/records-summary.js?v=2.30"></script>
 <script src="js/export.js?v=2.30"></script>
 <script src="js/oee.js?v=2.34"></script>
-<script src="js/bootstrap.js?v=2.36"></script>
+<script src="js/bootstrap.js?v=2.37"></script>
 <script src="js/checklist-core.js?v=2.34"></script>
 <script src="js/checklist-status.js?v=2.30"></script>
 <script src="js/mcrank.js?v=2.36"></script>
-<script src="js/spare-parts.js?v=2.35"></script>
+<script src="js/spare-parts.js?v=2.37"></script>
 <script src="js/asset-hub.js?v=2.33"></script>
 <script src="js/user-access.js?v=2.36"></script>
 <script src="js/scan.js?v=2.30"></script>

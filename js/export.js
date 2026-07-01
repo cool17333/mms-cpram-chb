@@ -372,7 +372,7 @@ function _buildWhyNodeHtml(node, label, depth) {
     const bg      = isLeaf ? '#fef2f2' : depth === 0 ? '#eff6ff' : '#f8fafc';
     const border  = isLeaf ? '#fecaca' : depth === 0 ? '#bfdbfe' : '#e2e8f0';
     const txtCol  = isLeaf ? '#dc2626' : depth === 0 ? '#1e3a5f' : '#374151';
-    const rootTag = isLeaf ? `<span style="font-size:9px;background:#dc2626;color:#fff;border-radius:4px;padding:3px 6px;margin-left:6px;display:inline-flex;align-items:center;line-height:1;vertical-align:middle">Root Cause</span>` : '';
+    const rootTag = isLeaf ? `<span style="font-size:9px;background:#dc2626;color:#fff;border-radius:4px;padding:0 6px 6px;margin-left:6px;display:inline-flex;align-items:center;line-height:1;vertical-align:middle">Root Cause</span>` : '';
     const connector = depth > 0 ? `<div style="width:12px;height:1px;background:#cbd5e1;margin-top:10px;flex-shrink:0"></div>` : '';
     const children  = (node.children || []).map((ch, j) => _buildWhyNodeHtml(ch, `${label}.${j+1}`, depth+1)).join('');
     return `<div style="margin-left:${indent}px;margin-bottom:5px">
@@ -395,7 +395,7 @@ function _pptImgWithThumbs(arr, label, labelBg, labelColor) {
     const main = arr[0].data || arr[0];
     const thumbs = arr.slice(1);
     return `<div style="display:flex;flex-direction:column;gap:4px;height:100%">
-        <div style="background:${labelBg};color:${labelColor};font-size:11px;font-weight:700;border-radius:5px;padding:6px 10px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;line-height:1">${label}</div>
+        <div style="background:${labelBg};color:${labelColor};font-size:11px;font-weight:700;border-radius:5px;padding:0 10px 12px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;line-height:1">${label}</div>
         <div style="flex:1;min-height:0;border-radius:8px;overflow:hidden;background:#ffffff;border:1px solid #f1f5f9;display:flex;align-items:center;justify-content:center">
             <img src="${main}" style="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain">
         </div>
@@ -467,8 +467,8 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
             </div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
-            <div style="background:${ss.bg};color:${ss.c};border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;line-height:1">${ss.lbl}</div>
-            ${d.downtimeMin ? `<div style="background:#fef2f2;color:#dc2626;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;line-height:1">⚠️ Downtime: ${dtStr}${over24 ? ' ⚠️เกิน 24 ชม.' : ''}</div>` : ''}
+            <div style="background:${ss.bg};color:${ss.c};border-radius:20px;padding:0 12px 8px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;line-height:1">${ss.lbl}</div>
+            ${d.downtimeMin ? `<div style="background:#fef2f2;color:#dc2626;border-radius:20px;padding:0 10px 6px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;line-height:1">⚠️ Downtime: ${dtStr}${over24 ? ' ⚠️เกิน 24 ชม.' : ''}</div>` : ''}
           </div>
         </div>
       </div>

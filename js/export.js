@@ -475,7 +475,7 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
       </div>
 
       <!-- BODY -->
-      <div style="flex:1;display:grid;grid-template-columns:1.1fr 0.9fr;gap:8px;padding:8px 12px;min-height:0;overflow:hidden">
+      <div style="flex:1;display:grid;grid-template-columns:1.1fr 0.9fr;grid-template-rows:minmax(0,1fr);gap:8px;padding:8px 12px;min-height:0;overflow:hidden">
 
         <!-- LEFT COL -->
         <div style="display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden">

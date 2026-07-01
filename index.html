@@ -2667,7 +2667,7 @@
         <div class="flex flex-wrap gap-3 items-end">
             <div>
                 <label class="text-xs font-bold text-gray-500 block mb-1">โรงงาน</label>
-                <select id="rec-factory" onchange="updateRecArea()"
+                <select id="rec-factory" onchange="updateRecArea();loadRecords()"
                         class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 cursor-pointer">
                     <option value="">ทั้งหมด</option>
                     <option value="โรงงาน 1">โรงงาน 1</option>
@@ -2676,7 +2676,7 @@
             </div>
             <div>
                 <label class="text-xs font-bold text-gray-500 block mb-1">พื้นที่</label>
-                <select id="rec-area" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 cursor-pointer">
+                <select id="rec-area" onchange="loadRecords()" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 cursor-pointer">
                     <option value="">ทั้งหมด</option>
                 </select>
             </div>
@@ -2716,7 +2716,7 @@
             </div>
             <div>
                 <label class="text-xs font-bold text-gray-500 block mb-1">เดือน</label>
-                <input type="month" id="rec-month"
+                <input type="month" id="rec-month" onchange="loadRecords()"
                        class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-orange-500 cursor-pointer">
             </div>
             <button onclick="loadRecords()"
@@ -3679,8 +3679,8 @@
 <script src="js/breakdown-report.js?v=2.40"></script>
 <script src="js/breakdown-form.js?v=2.38"></script>
 <script src="js/pm-replacement.js?v=2.40"></script>
-<script src="js/records-summary.js?v=2.30"></script>
-<script src="js/export.js?v=2.30"></script>
+<script src="js/records-summary.js?v=2.41"></script>
+<script src="js/export.js?v=2.41"></script>
 <script src="js/oee.js?v=2.34"></script>
 <script src="js/bootstrap.js?v=2.40"></script>
 <script src="js/checklist-core.js?v=2.34"></script>

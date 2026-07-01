@@ -79,12 +79,28 @@ const STATUS_BADGE = {
     'ยกเลิกงาน':            'bg-gray-100 text-gray-400',
 };
 
+// normalize วันที่ทุก format → YYYY-MM-DD (ISO / Thai dd/MM/yyyy / JS Date string เช่น "Wed Jan 07 2026")
+function fmtRecordDate(v) {
+    if (!v) return '—';
+    v = String(v);
+    let m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);          // ISO
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})/);            // Thai dd/MM/yyyy
+    if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+    const d = new Date(v);                                // JS Date string / อื่นๆ
+    if (!isNaN(d)) {
+        const p = n => String(n).padStart(2,'0');
+        return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+    }
+    return v.slice(0,10);
+}
+
 function renderRecordsTable(rows) {
     const tbody = document.getElementById('rec-tbody');
     document.getElementById('rec-count').textContent = `${rows.length} รายการ`;
     tbody.innerHTML = rows.map((r) => {
         const dt   = r.downtimeMin ? `${Math.floor(r.downtimeMin/60)}ชม.${r.downtimeMin%60}น.` : '—';
-        const date = (r.timestamp||'').slice(0,10);
+        const date = fmtRecordDate(r.timestamp);
         const badge= STATUS_BADGE[r.status] || 'bg-gray-100 text-gray-600';
         const isCancelled = r.status === 'ยกเลิกงาน';
         const isWaiting   = r.status === 'รอรับงาน' || r.status === 'แจ้ง Breakdown';

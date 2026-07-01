@@ -1299,6 +1299,7 @@ function spareSheet_() {
 function spareList_() {
   const rows = spareSheet_().getDataRange().getValues(), out = [];
   for (let i = 1; i < rows.length; i++) {
+    if (!rows[i][0]) continue;            // ข้ามแถวว่าง (กัน junk row ค้าง)
     if (rows[i][9] === false) continue;   // J active=false
     out.push({ partId:rows[i][0], partNo:rows[i][1], name:rows[i][2], type:rows[i][3],
                category:rows[i][4], location:rows[i][5], supplier:rows[i][6],
@@ -1342,9 +1343,16 @@ function spareDelete_(data) {
   }
   if (n === 0) return { success:true, count:0 };
   const W = rows[0].length;
-  sh.getRange(1, 1, keep.length, W).setValues(keep);          // เขียนแถวที่เหลือทับด้านบน (1 op)
-  const extra = rows.length - keep.length;
-  if (extra > 0) sh.deleteRows(keep.length + 1, extra);        // ลบแถวส่วนเกินครั้งเดียว (1 op) — ไม่ deleteRow ทีละแถว
+  if (keep.length > 1) {
+    sh.getRange(1, 1, keep.length, W).setValues(keep);          // เขียนแถวที่เหลือทับด้านบน (1 op)
+    const extra = rows.length - keep.length;
+    if (extra > 0) sh.deleteRows(keep.length + 1, extra);        // ลบแถวส่วนเกินครั้งเดียว (1 op)
+  } else {
+    // ลบข้อมูลทั้งหมด → unfreeze header ก่อน กัน Sheets error "cannot delete all non-frozen rows"
+    sh.setFrozenRows(0);
+    sh.deleteRows(2, rows.length - 1);
+    sh.setFrozenRows(1);
+  }
   return { success:true, count:n };
 }
 function spareBulkImport_(data) {

@@ -402,7 +402,7 @@ async function loadMachines() {
         const json = await res.json();
         machineList = json.data || [];
         // populate machineMaster ด้วย endpoint เดียวกัน ป้องกัน loadHomeDash ยิง getMachines ซ้ำ
-        machineMaster = machineList.map(m => ({ id:m.id||'', name:m.name||'', factory:m.factory||'', area:m.area||'', line:m.line||'', editedBy:m.editedBy||'', editedAt:m.editedAt||'' }));
+        machineMaster = machineList.map(m => ({ id:m.id||'', name:m.name||'', factory:m.factory||'', area:m.area||'', line:m.line||'', editedBy:m.editedBy||'', editedAt:m.editedAt||'', rank:m.rank||'', rankYear:m.rankYear||'' }));
         refilterMachineIdHints();
         const nameDl = document.getElementById('machine-name-list');
         if (nameDl) nameDl.innerHTML = [...new Set(machineList.map(m => m.name).filter(Boolean))].map(n => `<option value="${esc(n)}"></option>`).join('');

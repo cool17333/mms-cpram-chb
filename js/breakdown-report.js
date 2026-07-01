@@ -30,6 +30,7 @@ const PAGE_TITLE = {
     form:           '🚨 แจ้ง Breakdown',
     records:        '📋 รายการ Breakdown',
     summary:        '📊 สรุปข้อมูล Breakdown',
+    'asset-hub':    '📋 ระบบทะเบียน — ภาพรวม',
     machines:       '🗂️ ระบบ Machine List',
     checklist:      '✅ ระบบ Check List',
     log:            '📋 Log ระบบ (Admin)',
@@ -600,13 +601,13 @@ function updateNavActive(panel) {
     const bnMap = {
         'home':'bn-home',
         'bd-hub':'bn-bd','form':'bn-bd','records':'bn-bd','summary':'bn-bd',
-        'machines':'bn-mach',
+        'machines':'bn-mach', 'asset-hub':'bn-mach', 'spare':'bn-mach',
         'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl','cl-status':'bn-cl',
         'log':'bn-more', 'oee':'bn-more', 'mcrank':'bn-more', 'tpm-hub':'bn-more',
     };
     document.getElementById(bnMap[panel])?.classList.add('active');
     // sidebar: single items (standalone เท่านั้น — group header จัดการใน grpMap)
-    const snMap = { 'home':'sn-home', 'machines':'sn-mach', 'log':'sn-log' };
+    const snMap = { 'home':'sn-home', 'log':'sn-log' };
     if (snMap[panel]) document.getElementById(snMap[panel])?.classList.add('active');
     // sidebar: group + sub-item
     const grpMap = {
@@ -624,10 +625,13 @@ function updateNavActive(panel) {
         'tpm-hub':     ['tpm','sni-tpm-hub'],
         'oee':         ['tpm','sni-tpm-oee'],
         'mcrank':      ['tpm','sni-tpm-rank'],
+        'asset-hub':   ['asset','sni-asset-hub'],
+        'machines':    ['asset','sni-asset-mach'],
+        'spare':       ['asset','sni-asset-spare'],
     };
     const gi = grpMap[panel];
     // Accordion: หุบ group อื่นทุกครั้งที่เปลี่ยนระบบ
-    ['bd', 'tpm', 'cl'].forEach(g => {
+    ['bd', 'tpm', 'cl', 'asset'].forEach(g => {
         if (!gi || g !== gi[0]) document.getElementById('grp-' + g)?.classList.remove('open');
     });
     if (gi) {
@@ -666,6 +670,7 @@ function switchTab(name) {
     if (name === 'oee') initOeePanel?.();
     if (name === 'mcrank') initMcRankPanel();
     if (name === 'tpm-hub') updateTpmHubStats();
+    if (name === 'asset-hub') renderAssetHub();
     window.scrollTo(0, 0);
 }
 

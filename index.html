@@ -258,11 +258,16 @@
                 <div class="sidebar-subitem" id="sni-bd-summary" onclick="goSummary()">สรุป</div>
             </div>
         </div>
-        <div class="sidebar-item" id="sn-mach" onclick="goMachines()">
-            <span class="nav-icon">🗂️</span><span>ระบบ Machine List</span>
-        </div>
-        <div class="sidebar-item" id="sn-spare" data-perm="spare.view" onclick="switchTab('spare')">
-            <span class="nav-icon">🔩</span><span>ทะเบียนอะไหล่</span>
+        <!-- Asset group -->
+        <div class="nav-group" id="grp-asset" data-color="amber">
+            <div class="sidebar-item" id="sn-asset" onclick="goAssetHub()">
+                <span class="nav-icon">📋</span><span class="flex-1">ระบบทะเบียน</span><span class="nav-chev">›</span>
+            </div>
+            <div class="nav-submenu" id="sub-asset">
+                <div class="sidebar-subitem" id="sni-asset-hub"   onclick="goAssetHub()">ภาพรวม</div>
+                <div class="sidebar-subitem" id="sni-asset-mach"  onclick="goMachines()">ทะเบียนเครื่องจักร</div>
+                <div class="sidebar-subitem" id="sni-asset-spare" data-perm="spare.view" onclick="switchTab('spare')">ทะเบียนอะไหล่</div>
+            </div>
         </div>
         <!-- TPM group -->
         <div class="nav-group" id="grp-tpm" data-color="blue">
@@ -323,8 +328,8 @@
     <div class="bnav-tab" id="bn-bd" onclick="goBdHub()">
         <span class="bnav-icon">🚨</span><span>แจ้งซ่อม/BD</span>
     </div>
-    <div class="bnav-tab" id="bn-mach" onclick="goMachines()">
-        <span class="bnav-icon">🗂️</span><span>Machine List</span>
+    <div class="bnav-tab" id="bn-mach" onclick="goAssetHub()">
+        <span class="bnav-icon">📋</span><span>ระบบทะเบียน</span>
     </div>
     <div class="bnav-tab" id="bn-cl" onclick="goChecklist()">
         <span class="bnav-icon">✅</span><span>Check List</span>
@@ -939,6 +944,50 @@
 </div>
 
 </div><!-- end panel-tpm-hub -->
+
+<!-- ==================== PANEL: ระบบทะเบียน HUB ==================== -->
+<div id="panel-asset-hub" class="tab-panel">
+  <div class="mms-header py-6 px-4 md:px-8" style="background:linear-gradient(135deg,#b45309,#d97706)">
+    <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+      <div>
+        <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">ระบบจัดการเครื่องจักร · CPRAM CHB</p>
+        <h1 class="text-xl md:text-2xl font-bold text-white">📋 ระบบทะเบียน</h1>
+      </div>
+      <div class="flex gap-2 text-sm flex-wrap">
+        <span class="mms-stat-chip" id="assethub-stat-mc">🏭 เครื่องจักร: —</span>
+        <span class="mms-stat-chip" id="assethub-stat-sp">🔩 อะไหล่: —</span>
+      </div>
+    </div>
+  </div>
+  <div class="max-w-5xl mx-auto px-4 md:px-8 py-6">
+    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">เลือกการดำเนินการ</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+      <div class="mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #d97706" onclick="goMachines()">
+        <div class="text-4xl mb-3">🗂️</div>
+        <h3 class="font-bold mb-1" style="color:var(--mms-text)">ทะเบียนเครื่องจักร</h3>
+        <p class="text-xs mb-4" style="color:var(--mms-text-sub)">Machine List · นำเข้า Excel</p>
+        <button class="mms-btn w-full justify-center text-sm" style="background:#d97706;color:#fff" onclick="event.stopPropagation();goMachines()">🗂️ ไปทะเบียนเครื่องจักร</button>
+      </div>
+      <div class="mms-card p-6 cursor-pointer text-center" data-perm="spare.view" style="border-top:5px solid #7c3aed" onclick="switchTab('spare')">
+        <div class="text-4xl mb-3">🔩</div>
+        <h3 class="font-bold mb-1" style="color:var(--mms-text)">ทะเบียนอะไหล่</h3>
+        <p class="text-xs mb-4" style="color:var(--mms-text-sub)">Store / Supplier · นำเข้า Excel</p>
+        <button class="mms-btn w-full justify-center text-sm" style="background:#7c3aed;color:#fff" onclick="event.stopPropagation();switchTab('spare')">🔩 ไปทะเบียนอะไหล่</button>
+      </div>
+    </div>
+    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">📊 ภาพรวมข้อมูล</p>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div class="mms-card p-5">
+        <h3 class="font-bold text-sm mb-3" style="color:var(--mms-text)">เครื่องจักรตาม Rank แยกโรงงาน</h3>
+        <div id="assethub-mc-table"></div>
+      </div>
+      <div class="mms-card p-5">
+        <h3 class="font-bold text-sm mb-3" style="color:var(--mms-text)">อะไหล่ตามประเภท</h3>
+        <div id="assethub-sp-table"></div>
+      </div>
+    </div>
+  </div>
+</div><!-- end panel-asset-hub -->
 
 
 <!-- ==================== PANEL: LOG VIEWER ==================== -->
@@ -3495,6 +3544,7 @@
 <script src="js/checklist-status.js?v=2.30"></script>
 <script src="js/mcrank.js?v=2.30"></script>
 <script src="js/spare-parts.js?v=2.33"></script>
+<script src="js/asset-hub.js?v=2.33"></script>
 <script src="js/user-access.js?v=2.30"></script>
 <script src="js/scan.js?v=2.30"></script>
 </body>

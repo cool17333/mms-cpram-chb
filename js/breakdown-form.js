@@ -222,6 +222,24 @@ function showSuccessModal(title, detail) {
   document.getElementById('success-modal')?.classList.remove('hidden');
 }
 function closeSuccessModal() { document.getElementById('success-modal')?.classList.add('hidden'); }
+
+// เลข animate ระหว่างรอ GAS 1 request (ประมาณ, cap 95%) → snap เลขจริงตอน stop
+let _countAnimTimer = null;
+function startCountAnim(total, label, estMs) {
+  stopCountAnim();
+  estMs = estMs || Math.max(1500, total * 3);   // เดา ~3ms/รายการ ขั้นต่ำ 1.5 วิ
+  const start = performance.now();
+  showProgress(0, total, label + '0/' + total + ' รายการ');
+  _countAnimTimer = setInterval(() => {
+    const t = Math.min(0.95, (performance.now() - start) / estMs);   // cap 95% จนกว่าจะยืนยัน
+    const cur = Math.round(total * t);
+    updateProgress(cur, total, label + cur + '/' + total + ' รายการ');
+  }, 80);
+}
+function stopCountAnim(finalDone, total, label) {
+  if (_countAnimTimer) { clearInterval(_countAnimTimer); _countAnimTimer = null; }
+  if (finalDone != null) updateProgress(finalDone, total, label + finalDone + '/' + total + ' รายการ');
+}
 function showToast(msg, type = 'success') {
     const toast = document.getElementById('toast');
     const inner = document.getElementById('toast-inner');

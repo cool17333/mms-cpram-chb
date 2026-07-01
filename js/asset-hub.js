@@ -2,7 +2,8 @@
 function goAssetHub() { switchTab('asset-hub'); }
 
 async function renderAssetHub() {
-    if (!machineMaster.length) await loadMachineMaster();
+    // reload ถ้า machineMaster ว่าง หรือไม่มี field rank (loadMachines ตอนเปิดแอปตัด rank ทิ้ง)
+    if (!machineMaster.length || !machineMaster.some(m => 'rank' in m)) await loadMachineMaster();
     if (typeof _spData === 'undefined' || !_spData.length) { if (typeof spareLoad === 'function') await spareLoad(); }
 
     // เครื่องจักร: นับ rank แยกโรงงาน

@@ -49,11 +49,12 @@ function applyRecordFilter() {
     const q   = (document.getElementById('rec-machine-id')?.value || '').trim().toLowerCase();
     const tk  = (document.getElementById('rec-tracking')?.value || '').trim().toLowerCase();
     const st  = document.getElementById('rec-status')?.value || '';
+    const stValues = st ? st.split('|') : [];   // "รับงานแล้ว|กำลังดำเนินการแก้ไข" → รวม legacy เข้าฟิลเตอร์เดียว
     const et  = document.getElementById('rec-event-type')?.value || '';
     const rows = _lastRecords.filter(r =>
         (!q  || String(r.machineId || '').toLowerCase().includes(q)) &&
         (!tk || String(r.tracking  || '').toLowerCase().includes(tk)) &&
-        (!st || r.status === st) &&
+        (!stValues.length || stValues.includes(r.status)) &&
         (!et || r.eventType === et)
     );
 
@@ -135,7 +136,7 @@ function renderRecordsTable(rows) {
             <td class="px-4 py-3 font-bold text-gray-900 text-sm">${r.machineName||'—'}${r.machineId?`<br><span class="text-gray-400 font-normal text-xs">${r.machineId}</span>`:''}</td>
             <td class="px-4 py-3 text-xs text-gray-600">${r.factory||''}<br><span class="text-gray-400">${r.area||''}</span></td>
             <td class="px-4 py-3 text-center">
-                <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold ${badge}">${r.status||'—'}</span>
+                <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold ${badge}">${statusLabel(r.status)||'—'}</span>
             </td>
             <td class="px-4 py-3 text-center text-sm font-bold text-orange-600">${dt}</td>
             <td class="px-4 py-3 text-center">${etHtml}${bdHtml}${!etHtml&&!bdHtml?'<span class="text-gray-400 text-xs">—</span>':''}</td>

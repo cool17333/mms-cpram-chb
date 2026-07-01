@@ -41,7 +41,6 @@ const PAGE_TITLE = {
     'cl-calendar':  '📅 ปฏิทิน PM',
     'cl-schedule':  '🔧 รายละเอียดตรวจสอบ',
     'cl-status':    '✅ สถานะการตรวจ',
-    'pm-replace':   '🔧 PM เปลี่ยนอะไหล่',
     'oee':          '📊 ระบบ TPM — สรุป OEE',
     'mcrank':       '📊 ระบบ TPM — Ranking เครื่องจักร',
     'tpm-hub':      '📈 ระบบ TPM',
@@ -583,7 +582,7 @@ async function submitReportPopup() {
 }
 
 const BD_SUB_PANELS = new Set(['form', 'records', 'summary']);
-const CL_SUB_PANELS = new Set(['cl-form', 'cl-list', 'cl-summary', 'cl-calendar', 'cl-schedule', 'cl-status', 'pm-replace']);
+const CL_SUB_PANELS = new Set(['cl-form', 'cl-list', 'cl-summary', 'cl-calendar', 'cl-schedule', 'cl-status']);
 
 // ===== NAV helpers =====
 function openMoreSheet() {
@@ -607,7 +606,7 @@ function updateNavActive(panel) {
         'home':'bn-home',
         'bd-hub':'bn-bd','form':'bn-bd','records':'bn-bd','summary':'bn-bd',
         'machines':'bn-mach', 'asset-hub':'bn-mach', 'spare':'bn-mach',
-        'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl','cl-status':'bn-cl','pm-replace':'bn-cl',
+        'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl','cl-status':'bn-cl',
         'log':'bn-more', 'oee':'bn-more', 'mcrank':'bn-more', 'tpm-hub':'bn-more',
     };
     document.getElementById(bnMap[panel])?.classList.add('active');
@@ -627,7 +626,6 @@ function updateNavActive(panel) {
         'cl-calendar': ['cl','sni-cl-calendar'],
         'cl-schedule': ['cl','sni-cl-schedule'],
         'cl-status':   ['cl','sni-cl-status'],
-        'pm-replace':  ['cl','sni-cl-pmrep'],
         'tpm-hub':     ['tpm','sni-tpm-hub'],
         'oee':         ['tpm','sni-tpm-oee'],
         'mcrank':      ['tpm','sni-tpm-rank'],
@@ -672,7 +670,6 @@ function switchTab(name) {
     if (name === 'cl-calendar') initClCalendar();
     if (name === 'cl-schedule') initClSchedule();
     if (name === 'cl-status') initClStatus();
-    if (name === 'pm-replace') initPmReplace();
     if (name === 'ua') { uaSwitch?.('users'); }
     if (name === 'oee') initOeePanel?.();
     if (name === 'mcrank') initMcRankPanel();

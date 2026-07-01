@@ -98,11 +98,11 @@ function pmrOpenAdd() {
     _pmrEditing = null;
     _pmrLocImgDataUrl = null;
     _pmrPickedPart = null;
-    document.getElementById('pmr-edit-title').textContent = '🔧 เพิ่มแผนเปลี่ยนอะไหล่';
+    document.getElementById('pmr-edit-title').textContent = '🔩 ตั้งค่า PM Replacement';
     document.getElementById('pmr-part-input').value = '';
     document.getElementById('pmr-cycle-value').value = '';
     document.getElementById('pmr-cycle-unit').value = 'month';
-    document.getElementById('pmr-start-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('pmr-start-date').value = new Date().toISOString().slice(0,7);   // เดือนปี (YYYY-MM)
     document.getElementById('pmr-note').value = '';
     document.getElementById('pmr-loc-img-input').value = '';
     document.getElementById('pmr-loc-img-preview').classList.add('hidden');
@@ -113,11 +113,11 @@ function pmrOpenEdit(p) {
     _pmrEditing = p;
     _pmrLocImgDataUrl = null;
     _pmrPickedPart = { partId: p.partId, name: p.partLabel, partNo: '' };
-    document.getElementById('pmr-edit-title').textContent = '🔧 แก้ไขแผนเปลี่ยนอะไหล่';
+    document.getElementById('pmr-edit-title').textContent = '🔩 แก้ไข PM Replacement';
     document.getElementById('pmr-part-input').value = p.partLabel || '';
     document.getElementById('pmr-cycle-value').value = p.cycleValue || '';
     document.getElementById('pmr-cycle-unit').value = p.cycleUnit || 'month';
-    document.getElementById('pmr-start-date').value = String(p.startDate||'').slice(0,10);
+    document.getElementById('pmr-start-date').value = String(p.startDate||'').slice(0,7);   // เดือนปี (YYYY-MM)
     document.getElementById('pmr-note').value = p.note || '';
     document.getElementById('pmr-loc-img-input').value = '';
     document.getElementById('pmr-loc-img-preview').classList.add('hidden');
@@ -160,9 +160,11 @@ async function pmrSaveEdit() {
     const cycleUnit  = document.getElementById('pmr-cycle-unit').value;
     const startDate  = document.getElementById('pmr-start-date').value;
     const note       = document.getElementById('pmr-note').value.trim();
+    const hasImg = !!_pmrLocImgDataUrl || (_pmrEditing && _pmrEditing.locationImageId);
     if (!_pmrPickedPart) { showToast('⚠️ กรุณาเลือกอะไหล่จากรายการ', 'error'); return; }
     if (!cycleValue || cycleValue < 1) { showToast('⚠️ กรุณาระบุรอบเปลี่ยน', 'error'); return; }
-    if (!startDate) { showToast('⚠️ กรุณาระบุวันเริ่ม', 'error'); return; }
+    if (!startDate) { showToast('⚠️ กรุณาระบุเดือนที่เริ่ม', 'error'); return; }
+    if (!hasImg) { showToast('⚠️ กรุณาแนบรูปภาพบริเวณที่เปลี่ยน', 'error'); return; }
 
     const partLabel = _pmrPickedPart.partNo ? _pmrPickedPart.partNo + ' - ' + _pmrPickedPart.name : _pmrPickedPart.name;
     const payload = {

@@ -179,6 +179,7 @@ async function openOeeConfig() {
     document.getElementById('oee-cfg-note').value    = '';
 
     // โหลด config ที่ตั้งไว้แล้วมาแสดง
+    showLoading('กำลังโหลดค่าที่ตั้งไว้…');
     try {
         var res  = await fetch(GAS_URL + '?action=getMachineConfig');
         var json = await res.json();
@@ -195,6 +196,7 @@ async function openOeeConfig() {
             listEl.classList.add('hidden');
         }
     } catch (e) { /* ไม่แสดง config list ก็ยังใช้งานได้ */ }
+    finally { hideLoading(); }
 
     document.getElementById('oee-config-modal').classList.remove('hidden');
 }

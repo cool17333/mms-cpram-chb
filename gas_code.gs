@@ -172,7 +172,7 @@ function seedInitialAdmin() {
 // ============================================================
 // USER REGISTRATION (v2.12) — self-service request → admin approve
 // ============================================================
-var REGISTER_LEVELS = ['Visitor','User','Technician'];       // สมัครเองได้เฉพาะ non-signing (team QA/Production/Engineer/Safety/Supervisor = admin ตั้งให้ กัน escalation)
+var REGISTER_LEVELS = ['User','QA','Production','Technician','Engineer','Safety','Supervisor'];       // ขอเองได้ทุก level ยกเว้น Visitor/Administrator (level จริง admin ตั้งตอนอนุมัติ)
 var ALL_LEVELS      = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
 
 function ensurePendingUsers(ss) {
@@ -1340,17 +1340,58 @@ function spareDelete_(data) {
   return { success:true, count:n };
 }
 function spareBulkImport_(data) {
-  const sh = spareSheet_(), rows = sh.getDataRange().getValues();
-  const idx = {};
-  for (let i=1;i<rows.length;i++) idx[String(rows[i][1]).toLowerCase()] = i;   // partNo→row(0-based)
-  (data.items||[]).forEach(it => {
-    const key = String(it.partNo||'').toLowerCase(); if (!key) return;
-    const rec = [ it.partId || ('SP-'+Date.now()+Math.floor(Math.random()*1e4)),
-                  it.partNo, it.name||'', 'STORE', it.category||'', it.location||'', '', '', it.note||'', true, new Date() ];
-    if (idx[key] != null) sh.getRange(idx[key]+1,1,1,rec.length).setValues([rec]);
-    else                  sh.appendRow(rec);
+  const sh = spareSheet_();
+  const rows = sh.getDataRange().getValues();   // rows[0] = header
+  const W = 11;                                  // ต้องตรงกับ schema _SpareParts
+
+  // index แถวเดิมด้วย partNo (normalize: trim + lowercase)
+  const idx = {};                               // key → array index ใน rows[]
+  for (let i = 1; i < rows.length; i++) {
+    const k = String(rows[i][1] || '').trim().toLowerCase();
+    if (k) idx[k] = i;
+  }
+
+  const now = new Date();
+  let added = 0, updated = 0, addedNoCode = 0;
+  const appendRows   = [];
+  const pendingByKey = {};                       // key → index ใน appendRows[] (dedup ใหม่ภายในไฟล์)
+  let seq = 0;
+  const newId = () => 'SP-' + Date.now() + '-' + (seq++);   // กัน collision ในลูปแน่น
+
+  (data.items || []).forEach(it => {
+    const key  = String(it.partNo || '').trim().toLowerCase();
+    const name = it.name || '', cat = it.category || '', loc = it.location || '', note = it.note || '';
+
+    if (!key) {
+      // ไม่มีรหัส → append เสมอ (ไม่มี key ให้ dedup); type=STORE, supplier/img ว่าง
+      appendRows.push([ newId(), '', name, 'STORE', cat, loc, '', '', note, true, now ]);
+      added++; addedNoCode++;
+      return;
+    }
+
+    if (idx[key] != null) {
+      // มีในชีต → REPLACE เฉพาะฟิลด์ import, preserve partId(0)/type(3)/supplier(6)/imageId(7)/active(9)
+      const r = rows[idx[key]];
+      r[1] = it.partNo; r[2] = name; r[4] = cat; r[5] = loc; r[8] = note; r[10] = now;
+      updated++;
+    } else if (pendingByKey[key] != null) {
+      // partNo ซ้ำ "ภายในไฟล์" (ยังไม่มีในชีต) → merge ทับ pending (last wins) ไม่เพิ่มแถว
+      const r = appendRows[pendingByKey[key]];
+      r[1] = it.partNo; r[2] = name; r[4] = cat; r[5] = loc; r[8] = note; r[10] = now;
+    } else {
+      // ใหม่จริง → append + จด key
+      pendingByKey[key] = appendRows.length;
+      appendRows.push([ newId(), it.partNo, name, 'STORE', cat, loc, '', '', note, true, now ]);
+      added++;
+    }
   });
-  return { success:true, count:(data.items||[]).length };
+
+  // เขียนกลับ batch เดียว: rewrite แถวข้อมูลเดิม (ที่ไม่แตะ = เขียนทับด้วยค่าเดิม ปลอดภัย)
+  if (rows.length > 1) sh.getRange(2, 1, rows.length - 1, W).setValues(rows.slice(1));
+  // append แถวใหม่ batch เดียว
+  if (appendRows.length) sh.getRange(sh.getLastRow() + 1, 1, appendRows.length, W).setValues(appendRows);
+
+  return { success:true, added:added, updated:updated, addedNoCode:addedNoCode, total:(data.items||[]).length };
 }
 // Tools → Run → migrateSparePerms_runOnce (v2.33 — append spare.view/edit/delete ไม่ทับ custom)
 function migrateSparePerms_runOnce() {

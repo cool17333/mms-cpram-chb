@@ -498,11 +498,11 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                 <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
                   <div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:4px">🔴 ปัญหาที่พบ (PROBLEM)</div>
-                  <div style="font-size:14px;color:#dc2626;font-weight:600;white-space:pre-wrap;line-height:1.4">${(d.problem||'—').replace(/</g,'&lt;')}</div>
+                  <div style="font-size:14px;color:#dc2626;white-space:pre-wrap;line-height:1.4">${(d.problem||'—').replace(/</g,'&lt;')}</div>
                 </div>
                 <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
                   <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:4px">⚙️ อุปกรณ์ที่เกิดปัญหา</div>
-                  <div style="font-size:14px;color:#92400e;font-weight:600;white-space:pre-wrap;line-height:1.4">${(d.device||'—').replace(/</g,'&lt;')}</div>
+                  <div style="font-size:14px;color:#92400e;white-space:pre-wrap;line-height:1.4">${(d.device||'—').replace(/</g,'&lt;')}</div>
                 </div>
               </div>
             </div>

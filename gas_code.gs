@@ -313,6 +313,7 @@ const HEADERS = [
   'Why-Why Images (JSON)',// index 30
   'ประเภทเหตุการณ์',     // index 31 (Breakdown / Adjustment)
   'เหตุผลยกเลิก',        // index 32
+  'แก้ไขล่าสุด',         // index 33 = updatedAt (bump ทุก write — ใช้เรียงรายการ)
 ];
 
 // ============================================================
@@ -479,6 +480,7 @@ function doPost(e) {
       if (!sheet || !data.rowIndex) throw new Error('Sheet or rowIndex not found');
       sheet.getRange(data.rowIndex, 7).setValue('รับงานแล้ว');
       sheet.getRange(data.rowIndex, 27).setValue(data.acceptedBy || '');
+      sheet.getRange(data.rowIndex, 34).setValue(new Date().toISOString());   // updatedAt
       writeLog(ss, data.tracking, 'รับงาน — ' + (data.acceptedBy || ''), data.acceptedBy, 'รับงานแล้ว');
       writeAccessLog(ss, data.username, 'accept', 'รับงาน: ' + (data.tracking || ''));
       return jsonOut({ success: true, action: 'accepted' });
@@ -514,6 +516,7 @@ function doPost(e) {
       if (downtimeMin > 0) sheet.getRange(data.rowIndex, 10).setValue(downtimeMin);  // col 10 = downtime
       sheet.getRange(data.rowIndex, 19).setValue(mergedCorr);         // col 19 = corrective
       if (mergedImgAfter) sheet.getRange(data.rowIndex, 30).setValue(mergedImgAfter); // col 30 = imgAfter
+      sheet.getRange(data.rowIndex, 34).setValue(new Date().toISOString());   // updatedAt
       writeLog(ss, data.tracking, 'ซ่อมสำเร็จ — เวลาเสร็จ: ' + (data.bdEnd || ''), data.byName, 'ซ่อมสำเร็จ');
       writeAccessLog(ss, data.username, 'repairComplete', 'ซ่อมสำเร็จ: ' + (data.tracking || ''));
       return jsonOut({ success: true, action: 'repairComplete' });
@@ -527,6 +530,7 @@ function doPost(e) {
       if (!sheet || !data.rowIndex) throw new Error('Sheet or rowIndex not found');
       sheet.getRange(data.rowIndex, 7).setValue('ยกเลิกงาน');           // col 7 = สถานะ
       sheet.getRange(data.rowIndex, 33).setValue(data.cancelReason || ''); // col 33 = เหตุผลยกเลิก
+      sheet.getRange(data.rowIndex, 34).setValue(new Date().toISOString());   // updatedAt
       writeLog(ss, data.tracking, 'ยกเลิกงาน — ' + (data.cancelReason || ''), data.byName, 'ยกเลิกงาน');
       writeAccessLog(ss, data.username, 'cancel', 'ยกเลิกงาน: ' + (data.tracking || ''));
       return jsonOut({ success: true, action: 'cancelled' });
@@ -1191,6 +1195,7 @@ function buildRow(data, whys, partsStr, keepTimestamp, now) {
     data.whyImages     || '',
     data.eventType     || '',
     data.cancelReason  || '',
+    new Date().toISOString(),   // index 33 = updatedAt (เวลาปัจจุบันเสมอ — bump ทั้ง create/update)
   ];
 }
 
@@ -1814,6 +1819,7 @@ function doGetAll(factory, area, status, month, machineId) {
         whyImages:    r[30] || '',
         eventType:    r[31] || '',
         cancelReason: r[32] || '',
+        updatedAt:    r[33] ? String(r[33]) : '',
       });
     }
   });

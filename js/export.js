@@ -190,7 +190,8 @@ async function _captureNode(node, capW, onMeasure, capH) {
     const prevClass = node.className;
     node.classList.remove('overflow-hidden');
     node.classList.add('capture-fix');
-    node.style.cssText = `width:${capW}px;max-width:${capW}px;margin:0;border-radius:0;box-shadow:none;display:block`;
+    node.style.cssText = `width:${capW}px;max-width:${capW}px;margin:0;border-radius:0;box-shadow:none;display:block`
+        + (capH ? `;height:${capH}px;overflow:hidden` : '');   // PNG slide: คืน height ที่ถูก strip → เนื้อหายืดเต็ม ไม่เหลือขาว
 
     // ซ่อน element ที่ไม่ต้องการใน export
     // ซ่อนปุ่มแก้ไข/เพิ่ม-ลบ ทั้งหมด (รวมทุก <button>) → รายงานสะอาด

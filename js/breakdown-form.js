@@ -190,7 +190,27 @@ let _loadingCount = 0;
 function showLoading(msg) {
   _loadingCount++;
   const t = document.getElementById('loading-text'); if (t && msg) t.textContent = msg;
+  _setLoadingMode('indeterminate');
   document.getElementById('loading-overlay')?.classList.remove('hidden');
+}
+function showProgress(done, total, msg) {   // งานที่นับได้ → % จริง
+  _loadingCount++;
+  const t = document.getElementById('loading-text'); if (t && msg) t.textContent = msg;
+  updateProgress(done, total);
+  document.getElementById('loading-overlay')?.classList.remove('hidden');
+}
+function updateProgress(done, total, msg) {
+  _setLoadingMode('determinate');
+  if (msg) { const t = document.getElementById('loading-text'); if (t) t.textContent = msg; }
+  const pct = total > 0 ? Math.min(100, Math.round(done / total * 100)) : 0;
+  const fill = document.getElementById('lo-bar-fill'); if (fill) fill.style.width = pct + '%';
+  const p = document.getElementById('lo-pct'); if (p) p.textContent = pct + '%';
+}
+function _setLoadingMode(mode) {
+  const bar = document.getElementById('lo-bar'), pct = document.getElementById('lo-pct');
+  if (!bar) return;
+  if (mode === 'determinate') { bar.classList.remove('indeterminate'); pct?.classList.remove('hidden'); }
+  else { bar.classList.add('indeterminate'); pct?.classList.add('hidden'); const f = document.getElementById('lo-bar-fill'); if (f) f.style.width = ''; }
 }
 function hideLoading(force) {
   _loadingCount = force ? 0 : Math.max(0, _loadingCount - 1);

@@ -166,11 +166,13 @@ function renderUaPending() {
 }
 
 function updatePendingBadge() {
-    const badge = document.getElementById('ua-pending-badge');
-    if (!badge) return;
     const n = _uaPendingList.length;
-    badge.textContent = n;
-    badge.classList.toggle('hidden', n === 0);
+    ['ua-pending-badge', 'ua-nav-badge', 'ua-nav-badge-m'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = n;
+        el.classList.toggle('hidden', n === 0);
+    });
 }
 
 async function refreshPendingBadge() {

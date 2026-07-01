@@ -163,6 +163,7 @@ function finalizeLogin(u) {
     closeLogin();
     if (typeof closeMoreSheet === 'function') closeMoreSheet();
     applyPermissions();
+    if (typeof refreshPendingBadge === 'function') refreshPendingBadge();   // โชว์ badge คำขอบน nav ทันที (guard can('ua.add') ในตัว)
     showToast(`✅ เข้าสู่ระบบเป็น ${u.name} (${u.level})`, 'success');
     if (typeof window._afterLoginCallback === 'function') {
         const cb = window._afterLoginCallback;

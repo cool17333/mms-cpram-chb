@@ -48,5 +48,36 @@ window.addEventListener('DOMContentLoaded', () => {
         if (y === cy) o.selected = true;
         ys.appendChild(o);
     }
+
+    // ---- Enter = ยืนยัน / ESC = ปิด บน modal ยืนยัน ----
+    const MODAL_KEYS = [
+        { id:'login-modal',            confirm:()=>doLogin(),              close:()=>closeLogin() },
+        { id:'register-modal',         confirm:()=>submitRegister(),       close:()=>closeRegister() },
+        { id:'forgot-pw-modal',        confirm:()=>submitForgotPw(),       close:()=>closeForgotPw() },
+        { id:'force-change-pin-modal', confirm:()=>submitForceChangePin(), close:()=>cancelForceChangePin() },
+        { id:'reset-pin-modal',        confirm:()=>submitResetPin(),       close:()=>closeResetPinModal() },
+        { id:'add-user-modal',         confirm:()=>submitAddUser(),        close:()=>closeAddUserModal() },
+        { id:'approve-modal',          confirm:()=>uaConfirmApprove(),     close:()=>closeApproveModal() },
+        { id:'settings-modal',         confirm:()=>saveSettings(),         close:()=>closeSettings() },
+        { id:'accept-modal',           confirm:()=>confirmAccept(),        close:()=>closeAcceptModal() },
+        { id:'cancel-modal',           confirm:()=>confirmCancel(),        close:()=>closeCancelModal(), enter:false }, // มี textarea เหตุผล → Enter = ขึ้นบรรทัด
+    ];
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== 'Escape') return;
+        let target = null;   // topmost open (visible ตัวสุดท้ายใน registry)
+        for (const m of MODAL_KEYS) {
+            const el = document.getElementById(m.id);
+            if (el && !el.classList.contains('hidden')) target = m;
+        }
+        if (!target) return;
+        if (e.key === 'Escape') {
+            if (target.esc === false) return;
+            e.preventDefault(); target.close();
+        } else {   // Enter
+            if (target.enter === false) return;
+            if (e.target && e.target.tagName === 'TEXTAREA') return;   // Enter ใน textarea = ขึ้นบรรทัด
+            e.preventDefault(); target.confirm();
+        }
+    });
 });
 

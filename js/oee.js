@@ -2,6 +2,11 @@
 // OEE / RELIABILITY / RANKING  (Phase 1: Availability + MTTR/MTBF)
 // ============================================================
 
+function openOee() {
+    if (!can('tpm.oee')) { showToast('🚧 สรุป OEE — เร็วๆ นี้ (Coming soon)', 'info'); return; }
+    switchTab('oee');
+}
+
 let _oeeData = [];
 let _oeeChart = null;
 
@@ -15,6 +20,7 @@ function fmtMin(m) {
 
 // B3: ตั้ง default date range ต้นเดือน→วันนี้ + reset table
 function initOeePanel() {
+    if (!can('tpm.oee')) { goTpmHub(); showToast('🚧 เร็วๆ นี้ (Coming soon)', 'info'); return; }
     var today = new Date();
     var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     var fmt = function(d) {

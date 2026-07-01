@@ -59,6 +59,9 @@ Object.keys(_SPARE_DEFAULT).forEach(function(role){
   var v = _SPARE_DEFAULT[role];
   PERM_MATRIX[role]['spare.view']=v[0]; PERM_MATRIX[role]['spare.edit']=v[1];
 });
+// v2.33: OEE perm code (admin-only default — coming soon / debug)
+var _OEE_DEFAULT = { Visitor:0,User:0,QA:0,Production:0,Technician:0,Engineer:0,Safety:0,Supervisor:0,Administrator:1 };
+Object.keys(_OEE_DEFAULT).forEach(function(role){ if (PERM_MATRIX[role]) PERM_MATRIX[role]['tpm.oee']=_OEE_DEFAULT[role]; });
 
 // ============================================================
 // PHASE 3 — Sheet-backed permission matrix (อ่านจาก _Permissions sheet, cache 60s)
@@ -90,7 +93,7 @@ function seedPermissions() {
   sh.clearContents();
   sh.getRange(1,1,1,3).setValues([['role','perm_code','allow']]).setBackground('#2475b0').setFontColor('#fff').setFontWeight('bold');
   const ROLES = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
-  const CODES = ['bd.view','bd.export','bd.report','bd.accept','bd.editdoc','bd.close','bd.whywhy','bd.manual','bd.cancel','mc.view','mc.edit','mc.delete','mc.add','mc.import','mc.backup','mc.restore','cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar','ua.add','ua.del','ua.level','ua.perm','ua.log','tpm.view','tpm.rank','tpm.approve','tpm.desc','spare.view','spare.edit'];
+  const CODES = ['bd.view','bd.export','bd.report','bd.accept','bd.editdoc','bd.close','bd.whywhy','bd.manual','bd.cancel','mc.view','mc.edit','mc.delete','mc.add','mc.import','mc.backup','mc.restore','cl.view','cl.history','cl.status','cl.export','cl.daily','cl.pm','cl.edit','cl.calendar','ua.add','ua.del','ua.level','ua.perm','ua.log','tpm.view','tpm.rank','tpm.approve','tpm.desc','tpm.oee','spare.view','spare.edit','spare.delete'];
   const rows = [];
   ROLES.forEach(function(role) { CODES.forEach(function(code) { rows.push([role, code, PERM_MATRIX[role][code] || 0]); }); });
   sh.getRange(2,1,rows.length,3).setValues(rows);
@@ -132,6 +135,24 @@ function migrateTpmPerms_runOnce() {
   if (rows.length) sh.getRange(sh.getLastRow()+1, 1, rows.length, 3).setValues(rows);
   CacheService.getScriptCache().remove('perm_matrix');
   Logger.log('migrateTpmPerms: appended ' + rows.length + ' tpm rows (คาด 36 ถ้ายังไม่มี)');
+}
+
+// Tools → Run → migrateOeePerm_runOnce  (v2.33 — append tpm.oee ไม่ทับ custom)
+function migrateOeePerm_runOnce() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sh = ss.getSheetByName('_Permissions');
+  if (!sh || sh.getLastRow() < 2) { seedPermissions(); return; }
+  var existing = {};
+  sh.getDataRange().getValues().slice(1).forEach(function(r){ existing[String(r[0]).trim()+'|'+String(r[1]).trim()] = true; });
+  var ROLES = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
+  var rows = [];
+  ROLES.forEach(function(role){
+    if (existing[role+'|tpm.oee']) return;
+    rows.push([role, 'tpm.oee', (PERM_MATRIX[role] && PERM_MATRIX[role]['tpm.oee']) || 0]);
+  });
+  if (rows.length) sh.getRange(sh.getLastRow()+1, 1, rows.length, 3).setValues(rows);
+  CacheService.getScriptCache().remove('perm_matrix');
+  Logger.log('migrateOeePerm: appended ' + rows.length + ' rows (คาด 9 ถ้ายังไม่มี)');
 }
 
 // Tools → Run → seedInitialAdmin  (รัน 1 ครั้ง — เปลี่ยน PIN หลัง setup!)
@@ -1069,6 +1090,13 @@ function doPost(e) {
       return jsonOut(spareBulkImport_(data));
     }
 
+    // ---- SPARE PARTS: spareDelete ----
+    if (data.action === 'spareDelete') {
+      if (!userCan(ss, data.username, data.pin, 'spare.delete'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ spare.delete' });
+      return jsonOut(spareDelete_(data));
+    }
+
     // ---- CREATE new row ----
     // ล็อกกันเลขรันชนกันเวลาหลายคนแจ้งพร้อมกัน
     const lock = LockService.getScriptLock();
@@ -1282,15 +1310,34 @@ function spareUpsert_(data) {
   const sh = spareSheet_(), rows = sh.getDataRange().getValues();
   const imageId = data.imageId ? saveImgToDrive(data.imageId, 'SpareParts_Images') : '';
   const id = data.partId || ('SP-' + Date.now() + Math.floor(Math.random()*1e3));
+  let partNo = data.partNo || '';
+  if ((data.type === 'SUPPLIER') && !partNo) partNo = nextSupplierPartNo_(rows);
   let rowIdx = -1;
   for (let i=1;i<rows.length;i++) if (rows[i][0] === data.partId) { rowIdx = i+1; break; }
-  const rec = [ id, data.partNo||'', data.name||'', data.type||'STORE', data.category||'',
+  const rec = [ id, partNo, data.name||'', data.type||'STORE', data.category||'',
                 data.location||'', data.supplier||'',
                 imageId || data.existingImageId || '',
                 data.note||'', data.active===false?false:true, new Date() ];
   if (rowIdx > 0) sh.getRange(rowIdx,1,1,rec.length).setValues([rec]);
   else            sh.appendRow(rec);
   return { success:true, partId:id };
+}
+function nextSupplierPartNo_(rows) {
+  var max = 0;
+  for (var i=1;i<rows.length;i++){
+    var m = String(rows[i][1]||'').match(/^SUP-(\d+)$/);
+    if (m) max = Math.max(max, parseInt(m[1],10));
+  }
+  return 'SUP-' + String(max+1).padStart(4,'0');
+}
+function spareDelete_(data) {
+  const sh = spareSheet_(), rows = sh.getDataRange().getValues();
+  const ids = {}; (data.partIds||[]).forEach(function(id){ ids[String(id)] = true; });
+  var n = 0;
+  for (var i=rows.length-1; i>=1; i--) {
+    if (ids[String(rows[i][0])]) { sh.deleteRow(i+1); n++; }
+  }
+  return { success:true, count:n };
 }
 function spareBulkImport_(data) {
   const sh = spareSheet_(), rows = sh.getDataRange().getValues();
@@ -1305,7 +1352,7 @@ function spareBulkImport_(data) {
   });
   return { success:true, count:(data.items||[]).length };
 }
-// Tools → Run → migrateSparePerms_runOnce (append spare.view/spare.edit ไม่ทับ custom)
+// Tools → Run → migrateSparePerms_runOnce (v2.33 — append spare.view/edit/delete ไม่ทับ custom)
 function migrateSparePerms_runOnce() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   var sh = ss.getSheetByName('_Permissions');
@@ -1314,13 +1361,13 @@ function migrateSparePerms_runOnce() {
   sh.getDataRange().getValues().slice(1).forEach(function(r){ existing[String(r[0]).trim()+'|'+String(r[1]).trim()] = true; });
   var ROLES = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
   var SPARE_DEFAULT = {
-    Visitor:[1,0], User:[1,0], QA:[1,0], Production:[1,0], Technician:[1,0],
-    Engineer:[1,1], Safety:[1,0], Supervisor:[1,0], Administrator:[1,1]
+    Visitor:[1,0,0], User:[1,0,0], QA:[1,0,0], Production:[1,0,0], Technician:[1,0,0],
+    Engineer:[1,1,1], Safety:[1,0,0], Supervisor:[1,0,0], Administrator:[1,1,1]
   };
   var rows = [];
   ROLES.forEach(function(role){
-    var v = SPARE_DEFAULT[role]||[0,0];
-    [['spare.view',v[0]],['spare.edit',v[1]]].forEach(function(pair){
+    var v = SPARE_DEFAULT[role]||[0,0,0];
+    [['spare.view',v[0]],['spare.edit',v[1]],['spare.delete',v[2]]].forEach(function(pair){
       if (existing[role+'|'+pair[0]]) return;
       rows.push([role, pair[0], pair[1]]);
     });

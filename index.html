@@ -277,7 +277,9 @@
             <div class="nav-submenu" id="sub-tpm">
                 <div class="sidebar-subitem" id="sni-tpm-hub" onclick="goTpmHub()">ภาพรวม</div>
                 <div class="sidebar-subitem" id="sni-tpm-rank" onclick="switchTab('mcrank')">Ranking เครื่องจักร</div>
-                <div class="sidebar-subitem" id="sni-tpm-oee" onclick="switchTab('oee')">สรุป OEE</div>
+                <div class="sidebar-subitem" id="sni-tpm-oee" onclick="openOee()">สรุป OEE
+                    <span class="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">เร็วๆ นี้</span>
+                </div>
             </div>
         </div>
         <!-- Checklist group -->
@@ -933,11 +935,12 @@
         </div>
 
         <!-- สรุป OEE -->
-        <div class="mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #16a085" onclick="switchTab('oee')">
+        <div class="mms-card p-6 cursor-pointer text-center" style="border-top:5px solid #16a085" onclick="openOee()">
             <div class="text-4xl mb-3">📈</div>
             <h3 class="font-bold mb-1" style="color:var(--mms-text)">สรุป OEE</h3>
+            <span class="inline-block mb-2 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">🚧 เร็วๆ นี้ (Coming soon)</span>
             <p class="text-xs mb-4" style="color:var(--mms-text-sub)">Availability · Performance · Quality</p>
-            <button class="mms-btn w-full justify-center text-sm" style="background:#16a085;color:#fff" onclick="event.stopPropagation();switchTab('oee')">📈 ดูสรุป OEE</button>
+            <button class="mms-btn w-full justify-center text-sm" style="background:#16a085;color:#fff" onclick="event.stopPropagation();openOee()">🚧 เร็วๆ นี้</button>
         </div>
 
     </div>
@@ -3230,6 +3233,12 @@
         </select>
         <input id="spare-filter-search" oninput="spareRender()" type="text" placeholder="ค้นหาชื่อ / Part No. / หมวด..." class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white outline-none flex-1 min-w-40">
     </div>
+    <!-- Delete toolbar (แสดงเมื่อมีสิทธิ์ spare.delete) -->
+    <div id="spare-del-bar" class="hidden flex flex-wrap items-center gap-2 mb-2">
+        <button onclick="spareSelectAllFiltered()" class="text-xs border border-gray-300 rounded-lg px-3 py-1.5 bg-white hover:bg-gray-50">เลือกทั้งหมด</button>
+        <button onclick="spareClearSelect()" class="text-xs border border-gray-300 rounded-lg px-3 py-1.5 bg-white hover:bg-gray-50">ล้างที่เลือก</button>
+        <button onclick="spareDeleteSelected()" class="mms-btn mms-btn-red text-xs ml-auto">🗑️ ลบที่เลือก (<span id="spare-del-count">0</span>)</button>
+    </div>
     <!-- List -->
     <div id="spare-list-wrap" class="space-y-2"></div>
 </div><!-- end panel-spare -->
@@ -3251,7 +3260,7 @@
                     </select>
                 </div>
                 <div class="flex-1">
-                    <label class="text-xs text-gray-700 font-bold mb-1 block">Part No.</label>
+                    <label class="text-xs text-gray-700 font-bold mb-1 block">Part No. <span id="sp-partno-star" class="text-orange-500">*</span></label>
                     <input id="sp-partno" type="text" placeholder="รหัสอะไหล่..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
                 </div>
             </div>
@@ -3261,7 +3270,7 @@
             </div>
             <div class="flex gap-2">
                 <div class="flex-1">
-                    <label class="text-xs text-gray-700 font-bold mb-1 block">หมวด</label>
+                    <label class="text-xs text-gray-700 font-bold mb-1 block">หมวด <span class="text-orange-500">*</span></label>
                     <select id="sp-category" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none bg-white">
                         <option value="">— เลือกหมวด —</option>
                     </select>
@@ -3280,7 +3289,7 @@
                 <input id="sp-note" type="text" placeholder="หมายเหตุเพิ่มเติม..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
             </div>
             <div>
-                <label class="text-xs text-gray-700 font-bold mb-1 block">รูปภาพอะไหล่</label>
+                <label class="text-xs text-gray-700 font-bold mb-1 block">รูปภาพอะไหล่ <span class="text-orange-500">*</span></label>
                 <input id="sp-img-input" type="file" accept="image/*" onchange="spareImgPreview(this)" class="text-sm text-gray-600">
                 <div id="sp-img-preview" class="mt-2 hidden"><img id="sp-img-preview-img" class="h-24 object-contain rounded border border-gray-200"></div>
             </div>
@@ -3538,14 +3547,14 @@
 <script src="js/breakdown-form.js?v=2.33"></script>
 <script src="js/records-summary.js?v=2.30"></script>
 <script src="js/export.js?v=2.30"></script>
-<script src="js/oee.js?v=2.30"></script>
+<script src="js/oee.js?v=2.33"></script>
 <script src="js/bootstrap.js?v=2.30"></script>
 <script src="js/checklist-core.js?v=2.30"></script>
 <script src="js/checklist-status.js?v=2.30"></script>
 <script src="js/mcrank.js?v=2.30"></script>
-<script src="js/spare-parts.js?v=2.33"></script>
+<script src="js/spare-parts.js?v=2.33b"></script>
 <script src="js/asset-hub.js?v=2.33"></script>
-<script src="js/user-access.js?v=2.30"></script>
+<script src="js/user-access.js?v=2.33"></script>
 <script src="js/scan.js?v=2.30"></script>
 </body>
 </html>

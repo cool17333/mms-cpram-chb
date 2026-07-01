@@ -314,6 +314,7 @@ async function loadHomeDash() {
             const p = await clFetch({ action:'getPmPlans', factory:'', area:'' });
             (p.data||[]).forEach(r => _clPmPlans[r.machineId] = r);
         }
+        if (typeof SPARE_CACHE !== 'undefined' && !SPARE_CACHE.length && typeof loadSpareCache === 'function') { try { await loadSpareCache(); } catch(e){} }
         const [dailyRes, pmRes] = await Promise.all([
             clFetch({ action:'getChecklists', factory:'', area:'', type:'daily', month:mo, year:yr }),
             clFetch({ action:'getChecklists', factory:'', area:'', type:'pm',   month:mo, year:yr }),
@@ -425,6 +426,33 @@ function renderHomeDash() {
         const pEl = document.getElementById(pmId);
         if (pEl) pEl.innerHTML = pmHtml;
     });
+
+    renderHomeRegistry();   // การ์ดทะเบียน + Ranking บนหน้าหลัก
+}
+
+// การ์ดหน้าหลัก: ทะเบียนทั้งหมด (เครื่อง/อะไหล่) + Ranking เครื่องจักรตาม Rank + ยังไม่ประเมิน
+function renderHomeRegistry() {
+    const mc = machineMaster || [];
+    const RANKS = ['A','B','C','D'];
+    const RCOLOR = { A:'#c0392b', B:'#e67e22', C:'#f1c40f', D:'#27ae60' };
+    const cnt = r => mc.filter(m => String(m.rank||'').toUpperCase() === r).length;
+    const unassessed = mc.filter(m => !RANKS.includes(String(m.rank||'').toUpperCase())).length;
+    const sp = (typeof SPARE_CACHE !== 'undefined') ? SPARE_CACHE : [];
+    const store = sp.filter(p => (p.type||'STORE') !== 'SUPPLIER').length;
+    const supp  = sp.filter(p => p.type === 'SUPPLIER').length;
+
+    const regEl = document.getElementById('home-registry-counts');
+    if (regEl) regEl.innerHTML =
+        `<div class="rounded-lg p-2 text-center bg-blue-50"><p class="text-2xl font-bold text-blue-600">${mc.length}</p><p class="text-[11px] text-gray-500">เครื่องจักร</p></div>` +
+        `<div class="rounded-lg p-2 text-center bg-indigo-50"><p class="text-2xl font-bold text-indigo-600">${store}</p><p class="text-[11px] text-gray-500">อะไหล่ Store</p></div>` +
+        `<div class="rounded-lg p-2 text-center bg-purple-50"><p class="text-2xl font-bold text-purple-600">${supp}</p><p class="text-[11px] text-gray-500">อะไหล่ Supplier</p></div>`;
+
+    const rankEl = document.getElementById('home-ranking-counts');
+    if (rankEl) rankEl.innerHTML =
+        '<div class="grid grid-cols-5 gap-2">' +
+        RANKS.map(r => `<div class="rounded-lg p-2 text-center" style="background:${RCOLOR[r]}1a"><p class="text-xl font-bold" style="color:${RCOLOR[r]}">${cnt(r)}</p><p class="text-[11px] text-gray-500">Rank ${r}</p></div>`).join('') +
+        `<div class="rounded-lg p-2 text-center bg-gray-100"><p class="text-xl font-bold text-gray-500">${unassessed}</p><p class="text-[11px] text-gray-500">ยังไม่ประเมิน</p></div>` +
+        '</div>';
 }
 
 async function loadClHubRecent() {

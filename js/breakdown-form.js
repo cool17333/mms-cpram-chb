@@ -863,6 +863,9 @@ function showAddDataConfirm() {
     const freshProblem = (document.getElementById('inp-problem-new')?.value || '').trim();
     if (formStage === 'report' && !freshProblem) { showToast('⚠️ กรุณาระบุอาการ (ปัญหาที่พบ)', 'error'); return; }
     if (formStage === 'manual' && !d.eventType) { showToast('⚠️ กรุณาเลือกประเภทเหตุการณ์ (Breakdown/Adjustment)', 'error'); return; }
+    // บังคับใส่จำนวนอะไหล่ทุกแถวที่กรอกชื่อ
+    const badPart = (d.parts || []).find(p => (p.name || '').trim() && !(Number(p.qty) > 0));
+    if (badPart) { showToast('⚠️ กรุณาระบุจำนวนอะไหล่ "' + badPart.name + '"', 'error'); return; }
 
     const h  = Math.floor(d.downtimeMin / 60);
     const m  = d.downtimeMin % 60;
@@ -1113,6 +1116,6 @@ function onPartNamePick(inp) {
     const hit = SPARE_CACHE.find(p => (p.name||'') === inp.value);
     if (!hit) return;
     const c = inp.closest('tr').querySelectorAll('input');
-    if (hit.partNo && !c[1].value) c[1].value = hit.partNo;
+    c[1].value = hit.partNo || '';   // autofill Part No. ใหม่ทุกครั้งที่เลือกชื่อ (ทับของเดิม)
 }
 

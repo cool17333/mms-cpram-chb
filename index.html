@@ -828,6 +828,28 @@
         </div>
     </div>
 
+    <!-- ระบบทะเบียน & Ranking เครื่องจักร -->
+    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        <div class="px-5 py-3 flex items-center gap-3" style="background:linear-gradient(135deg,#b45309,#d97706)">
+            <span class="text-white text-xl">📋</span>
+            <div class="flex-1">
+                <h2 class="text-white font-bold">ระบบทะเบียน & Ranking เครื่องจักร</h2>
+                <p class="text-amber-100 text-xs">ภาพรวมทะเบียนทั้งหมด + ผลประเมิน TPM Ranking</p>
+            </div>
+            <button onclick="renderHomeRegistry()" class="text-white/70 hover:text-white text-lg leading-none" title="รีเฟรช">🔄</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+            <div class="p-4">
+                <p class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">🗂️ ทะเบียนทั้งหมด</p>
+                <div id="home-registry-counts" class="grid grid-cols-3 gap-2"><div class="text-xs text-gray-400 col-span-3">กำลังโหลด...</div></div>
+            </div>
+            <div class="p-4">
+                <p class="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wide">📊 Ranking เครื่องจักร</p>
+                <div id="home-ranking-counts"><div class="text-xs text-gray-400">กำลังโหลด...</div></div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 </div><!-- end panel-home -->
@@ -3677,13 +3699,13 @@
 <script src="js/core.js?v=2.36"></script>
 <script src="js/machines.js?v=2.37"></script>
 <script src="js/breakdown-report.js?v=2.40"></script>
-<script src="js/breakdown-form.js?v=2.38"></script>
+<script src="js/breakdown-form.js?v=2.43"></script>
 <script src="js/pm-replacement.js?v=2.40"></script>
 <script src="js/records-summary.js?v=2.30"></script>
 <script src="js/export.js?v=2.30"></script>
 <script src="js/oee.js?v=2.34"></script>
 <script src="js/bootstrap.js?v=2.40"></script>
-<script src="js/checklist-core.js?v=2.34"></script>
+<script src="js/checklist-core.js?v=2.43"></script>
 <script src="js/checklist-status.js?v=2.30"></script>
 <script src="js/mcrank.js?v=2.36"></script>
 <script src="js/spare-parts.js?v=2.39"></script>

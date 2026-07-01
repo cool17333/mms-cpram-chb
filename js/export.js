@@ -120,7 +120,7 @@ function _download(href, filename) {
 }
 
 // เวอร์ชันโค้ด export — โชว์มุมล่างขวาของไฟล์ + หน้าเว็บ ไว้เช็คปัญหา cache รุ่นเก่า
-const EXPORT_VER = 'v2.10';
+const EXPORT_VER = 'v2.51';
 
 // แปลงวันเวลาทุก format → "dd-MM-yyyy HH:mm น." สำหรับ export (PNG header + PDF timeline)
 function fmtExportDateTime(v) {
@@ -395,7 +395,7 @@ function _pptImgWithThumbs(arr, label, labelBg, labelColor) {
     const main = arr[0].data || arr[0];
     const thumbs = arr.slice(1);
     return `<div style="display:flex;flex-direction:column;gap:4px;height:100%">
-        <div style="background:${labelBg};color:${labelColor};font-size:11px;font-weight:700;border-radius:5px;padding:0 10px 12px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;line-height:1">${label}</div>
+        <div style="background:${labelBg};color:${labelColor};font-size:11px;font-weight:700;border-radius:5px;padding:0 10px 8px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;line-height:1">${label}</div>
         <div style="flex:1;min-height:0;border-radius:8px;overflow:hidden;background:#ffffff;border:1px solid #f1f5f9;display:flex;align-items:center;justify-content:center">
             <img src="${main}" style="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain">
         </div>

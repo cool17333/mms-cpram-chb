@@ -19,6 +19,26 @@ const OLD_GAS_URLS = [
 })();
 let GAS_URL = localStorage.getItem('gas_url') || DEFAULT_GAS_URL;
 
+// GAS GET + retry — แก้ "Failed to fetch" transient (redirect googleusercontent / concurrency)
+// retry เฉพาะ network error (TypeError). ห้ามใช้กับ POST ที่ mutate (double-apply)
+async function gasGetJson(action, params, tries) {
+    tries = tries || 3;
+    const url = new URL(GAS_URL);
+    url.searchParams.set('action', action);
+    if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    let lastErr;
+    for (let i = 0; i < tries; i++) {
+        try {
+            const res = await fetch(url.toString());
+            return await res.json();
+        } catch (e) {
+            lastErr = e;   // Failed to fetch → รอแล้วลองใหม่ (backoff + jitter)
+            if (i < tries - 1) await new Promise(r => setTimeout(r, 500 * (i + 1) + Math.random() * 300));
+        }
+    }
+    throw lastErr;   // ครบ tries แล้วยังพัง → โยนให้ caller แสดง toast เดิม
+}
+
 // คืนค่า URL เริ่มต้น (ทางหนีจากการล็อก — ไม่ต้องเป็น Admin)
 function resetGasUrl() {
     localStorage.removeItem('gas_url');

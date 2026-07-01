@@ -39,11 +39,10 @@ async function loadUaUsers() {
     if (!GAS_URL) { document.getElementById('ua-user-tbody').innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">⚠️ ยังไม่ได้ตั้งค่า GAS URL</td></tr>'; return; }
     if (typeof showLoading === 'function') showLoading('กำลังโหลดผู้ใช้…');
     try {
-        const res  = await fetch(`${GAS_URL}?action=getUsers`);
-        const json = await res.json();
+        const json = await gasGetJson('getUsers');
         _uaUsers = json.data || [];
         renderUaUsers();
-        refreshPendingBadge();
+        await refreshPendingBadge();
     } catch (e) {
         document.getElementById('ua-user-tbody').innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-red-400">❌ โหลดไม่สำเร็จ: ' + e.message + '</td></tr>';
     } finally {
@@ -132,8 +131,7 @@ async function loadUaPending() {
     if (!GAS_URL) { if (tb) tb.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-gray-400">⚠️ ยังไม่ได้ตั้งค่า GAS URL</td></tr>'; return; }
     if (typeof showLoading === 'function') showLoading('กำลังโหลดคำขอ…');
     try {
-        const res  = await fetch(`${GAS_URL}?action=getPendingUsers`);
-        const json = await res.json();
+        const json = await gasGetJson('getPendingUsers');
         _uaPendingList = json.data || [];
         renderUaPending();
         updatePendingBadge();
@@ -178,8 +176,7 @@ function updatePendingBadge() {
 async function refreshPendingBadge() {
     if (!GAS_URL || !can('ua.add')) return;
     try {
-        const res  = await fetch(`${GAS_URL}?action=getPendingUsers`);
-        const json = await res.json();
+        const json = await gasGetJson('getPendingUsers');
         _uaPendingList = json.data || [];
         updatePendingBadge();
     } catch (e) {}
@@ -322,8 +319,7 @@ async function renderPermMatrix() {
     el.innerHTML = '<p class="text-gray-400 py-6 text-center animate-pulse">⏳ กำลังโหลด...</p>';
     showLoading('กำลังโหลดสิทธิ์…');
     try {
-        const res  = await fetch(`${GAS_URL}?action=getPermissions`);
-        const json = await res.json();
+        const json = await gasGetJson('getPermissions');
         const matrix = json.data || {};
         const roles  = ['Visitor','User','QA','Production','Technician','Engineer','Safety','Supervisor','Administrator'];
         const groups = [
@@ -413,8 +409,7 @@ async function loadUaLog() {
     el.innerHTML = '<p class="text-gray-400 py-4 text-center animate-pulse">⏳ กำลังโหลด...</p>';
     showLoading('กำลังโหลดประวัติ…');
     try {
-        const res  = await fetch(`${GAS_URL}?action=getAccessLog`);
-        const json = await res.json();
+        const json = await gasGetJson('getAccessLog');
         const rows = json.data || [];
         if (!rows.length) { el.innerHTML = '<p class="text-gray-400 py-6 text-center">ยังไม่มีประวัติ</p>'; return; }
         el.innerHTML = rows.map(r => `

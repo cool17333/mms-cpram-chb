@@ -293,12 +293,25 @@ function updateSumArea() {
 // ============================================================
 // STATUS BADGE
 // ============================================================
+// map ค่าที่เก็บจริงในชีต (ไม่เปลี่ยน) → label ใหม่ที่โชว์ — ลดสถานะเหลือ 6 + รวม legacy เข้าเป็นอันเดียว
+const STATUS_LABEL = {
+    'รอรับงาน':             'แจ้งปัญหาเครื่องจักร',
+    'แจ้ง Breakdown':       'แจ้งปัญหาเครื่องจักร',   // legacy
+    'รับงานแล้ว':           'กำลังแก้ไข',
+    'กำลังดำเนินการแก้ไข':  'กำลังแก้ไข',             // legacy — merge เข้ากับ รับงานแล้ว
+    'รออะไหล่':             'รออะไหล่',
+    'ซ่อมสำเร็จ':           'ซ่อมสำเร็จ',
+    'ดำเนินการเสร็จสิ้น':   'ปิดงานสำเร็จ',
+    'ยกเลิกงาน':            'ยกเลิกงาน',
+};
+function statusLabel(s) { return STATUS_LABEL[s] || s; }
+
 const STATUS_CFG = {
-    report:   { label:'รอรับงาน',              cls:'border-amber-400 bg-amber-900/30',   color:'#fbbf24', icon:'⏳' },
-    wip:      { label:'กำลังดำเนินการแก้ไข',   cls:'border-orange-400 bg-orange-900/30', color:'#fb923c', icon:'🔧' },
+    report:   { label:'แจ้งปัญหาเครื่องจักร',  cls:'border-amber-400 bg-amber-900/30',   color:'#fbbf24', icon:'⏳' },
+    wip:      { label:'กำลังแก้ไข',            cls:'border-orange-400 bg-orange-900/30', color:'#fb923c', icon:'🔧' },
     wait:     { label:'รออะไหล่',              cls:'border-yellow-400 bg-yellow-900/30', color:'#facc15', icon:'🔩' },
     repaired: { label:'ซ่อมสำเร็จ',            cls:'border-teal-400 bg-teal-900/30',     color:'#2dd4bf', icon:'🔨' },
-    done:     { label:'ดำเนินการเสร็จสิ้น',    cls:'border-green-400 bg-green-900/30',   color:'#4ade80', icon:'✅' },
+    done:     { label:'ปิดงานสำเร็จ',          cls:'border-green-400 bg-green-900/30',   color:'#4ade80', icon:'✅' },
 };
 
 function updateStatus(sel) {
@@ -804,7 +817,7 @@ function collectFormData() {
     const factory = document.getElementById('factory-select');
     const area    = document.getElementById('area-select');
     const statusSel = document.querySelector('#status-container select');
-    const statusMap = { report:'รอรับงาน', wip:'กำลังดำเนินการแก้ไข', wait:'รออะไหล่', done:'ดำเนินการเสร็จสิ้น' };
+    const statusMap = { report:'รอรับงาน', wip:'รับงานแล้ว', wait:'รออะไหล่', repaired:'ซ่อมสำเร็จ', done:'ดำเนินการเสร็จสิ้น' };
 
     const bdStart = getDT('bd-start');
     const bdEnd   = getDT('bd-end');

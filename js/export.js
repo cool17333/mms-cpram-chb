@@ -415,14 +415,14 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
     const dtStr   = d.downtimeMin ? `${h} ชม. ${mn} นาที` : '—';
     const over24  = d.downtimeMin > 24 * 60;
     const STATUS_STYLE = {
-        'ดำเนินการเสร็จสิ้น':      { bg:'#dcfce7', c:'#16a34a', lbl:'✅ ดำเนินการเสร็จสิ้น' },
-        'กำลังดำเนินการแก้ไข':     { bg:'#fef3c7', c:'#d97706', lbl:'🔧 กำลังดำเนินการ' },
+        'ดำเนินการเสร็จสิ้น':      { bg:'#dcfce7', c:'#16a34a', lbl:'✅ ปิดงานสำเร็จ' },
+        'กำลังดำเนินการแก้ไข':     { bg:'#fef3c7', c:'#d97706', lbl:'🔧 กำลังแก้ไข' },   // legacy — merge เข้ากับ รับงานแล้ว
         'รออะไหล่':                 { bg:'#ede9fe', c:'#7c3aed', lbl:'⏳ รออะไหล่' },
-        'รอรับงาน':                 { bg:'#fee2e2', c:'#dc2626', lbl:'🚨 รอรับงาน' },
-        'รับงานแล้ว':               { bg:'#dbeafe', c:'#2563eb', lbl:'📋 รับงานแล้ว' },
+        'รอรับงาน':                 { bg:'#fee2e2', c:'#dc2626', lbl:'🚨 แจ้งปัญหาเครื่องจักร' },
+        'รับงานแล้ว':               { bg:'#dbeafe', c:'#2563eb', lbl:'📋 กำลังแก้ไข' },
         'ซ่อมสำเร็จ':               { bg:'#ccfbf1', c:'#0f766e', lbl:'🔨 ซ่อมสำเร็จ' },
     };
-    const ss = STATUS_STYLE[d.status] || { bg:'#f1f5f9', c:'#64748b', lbl: d.status || '—' };
+    const ss = STATUS_STYLE[d.status] || { bg:'#f1f5f9', c:'#64748b', lbl: statusLabel(d.status) || '—' };
     const whyNodes = whyTree.map((n, i) => _buildWhyNodeHtml(n, String(i+1), 0)).filter(Boolean);
     const whyHtml = whyNodes.join('') || '';
     const hasWhy = whyNodes.length > 0;

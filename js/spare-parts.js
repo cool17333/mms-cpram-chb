@@ -93,7 +93,7 @@ function spareRender() {
         try {
             const r = await fetch(GAS_URL + '?action=getImage&id=' + encodeURIComponent(id));
             const j = await r.json();
-            if (j.success && j.data) img.src = j.data;
+            if (j.success && j.dataUrl) img.src = j.dataUrl;
         } catch(e){}
     });
 }

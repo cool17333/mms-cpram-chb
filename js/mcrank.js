@@ -840,7 +840,7 @@ async function exportMcRankPdf(codes) {
         return (_mcrData || []).find(function(r){ return r.machineCode === code; });
     }).filter(Boolean);
     if (!rows.length) { showToast('❌ ไม่พบข้อมูลเครื่องที่เลือก', 'error'); return; }
-    showLoading('กำลังสร้าง PDF…');
+    showProgress(0, rows.length, 'กำลังสร้าง PDF…');
     try {
         // โหลด description รายพื้นที่ (ใช้ทำ label คะแนน) — ครั้งเดียวต่อพื้นที่
         var areaSet = {};
@@ -858,6 +858,7 @@ async function exportMcRankPdf(codes) {
         var first = true;
 
         for (var i = 0; i < rows.length; i++) {
+            updateProgress(i, rows.length, 'กำลังสร้าง PDF เครื่อง ' + (i + 1) + '/' + rows.length);
             var row  = rows[i];
             var node = _mcBuildReportNode(row, descMap[row.area] || {}, CAP_W);
             document.body.appendChild(node);

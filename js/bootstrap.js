@@ -61,6 +61,7 @@ window.addEventListener('DOMContentLoaded', () => {
         { id:'settings-modal',         confirm:()=>saveSettings(),         close:()=>closeSettings() },
         { id:'accept-modal',           confirm:()=>confirmAccept(),        close:()=>closeAcceptModal() },
         { id:'cancel-modal',           confirm:()=>confirmCancel(),        close:()=>closeCancelModal(), enter:false }, // มี textarea เหตุผล → Enter = ขึ้นบรรทัด
+        { id:'success-modal',          confirm:()=>closeSuccessModal(),    close:()=>closeSuccessModal() },
     ];
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter' && e.key !== 'Escape') return;

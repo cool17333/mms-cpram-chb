@@ -216,6 +216,12 @@ function hideLoading(force) {
   _loadingCount = force ? 0 : Math.max(0, _loadingCount - 1);
   if (_loadingCount === 0) document.getElementById('loading-overlay')?.classList.add('hidden');
 }
+function showSuccessModal(title, detail) {
+  const t = document.getElementById('success-modal-title'); if (t) t.textContent = title || 'สำเร็จ';
+  const d = document.getElementById('success-modal-detail'); if (d) d.textContent = detail || '';
+  document.getElementById('success-modal')?.classList.remove('hidden');
+}
+function closeSuccessModal() { document.getElementById('success-modal')?.classList.add('hidden'); }
 function showToast(msg, type = 'success') {
     const toast = document.getElementById('toast');
     const inner = document.getElementById('toast-inner');

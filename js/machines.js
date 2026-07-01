@@ -233,7 +233,7 @@ async function machSaveModal() {
         else { const dup = machineMaster.findIndex(m => String(m.id).toLowerCase() === id.toLowerCase());
                if (dup >= 0) Object.assign(machineMaster[dup], full); else machineMaster.unshift(full); }
         closeMcModal(); renderMachTable();
-        showToast('✅ บันทึกเครื่องจักรแล้ว', 'success');
+        showSuccessModal('บันทึกเครื่องจักรสำเร็จ', id + ' · ' + name);
     } catch(e) { showToast('❌ เกิดข้อผิดพลาด: ' + e.message, 'error'); }
     finally { hideLoading(); }
 }
@@ -280,7 +280,7 @@ async function confirmMachDelete() {
         machineMaster.splice(_machDelIdx, 1);
         closeMachDelModal();
         renderMachTable();
-        showToast('🗑️ ลบเครื่องจักรแล้ว', 'success');
+        showSuccessModal('ลบเครื่องจักรสำเร็จ', (m.id || '') + (m.name ? ' · ' + m.name : ''));
     } catch(e) { showToast('❌ เกิดข้อผิดพลาด: ' + e.message, 'error'); }
     finally { hideLoading(); }
 }
@@ -295,7 +295,7 @@ async function saveMachines() {
         const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
             body: JSON.stringify({ action:'setMachines', username: currentUser.username, pin: currentUser.pin, machines: clean }) });
         const json = await res.json();
-        if (json && json.success) { showToast(`✅ บันทึก ${json.count} เครื่องจักรแล้ว`, 'success'); machineList=[]; loadMachines(); }
+        if (json && json.success) { machineList=[]; loadMachines(); showSuccessModal('บันทึกทะเบียนสำเร็จ', 'ทั้งหมด ' + json.count + ' เครื่อง'); }
         else showToast('❌ บันทึกไม่สำเร็จ: ' + (json && json.error || ''), 'error');
     } catch (e) { showToast('❌ ' + e.message, 'error'); }
     finally { hideLoading(); }

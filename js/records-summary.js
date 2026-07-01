@@ -65,8 +65,19 @@ function applyRecordFilter() {
         setVisible('rec-empty', true);
         return;
     }
+    rows.sort((a, b) => _recSortKey(b) - _recSortKey(a));   // แก้ไขล่าสุดอยู่บนสุด (updatedAt → fallback timestamp)
     setVisible('rec-empty', false);
     renderRecordsTable(rows);
+}
+
+// คีย์เรียง = เวลาแก้ไขล่าสุด (updatedAt) ถ้าไม่มี fallback วันที่สร้าง (timestamp) — parse ทุก format
+function _recSortKey(r) {
+    const v = r.updatedAt || r.timestamp || '';
+    const t = Date.parse(v);
+    if (!isNaN(t)) return t;                                            // ISO / JS Date string
+    const m = String(v).match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?/);  // Thai dd/MM/yyyy HH:mm[:ss]
+    if (m) return new Date(+m[3], +m[2]-1, +m[1], +m[4], +m[5], +(m[6]||0)).getTime();
+    return 0;
 }
 
 const STATUS_BADGE = {

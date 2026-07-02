@@ -381,7 +381,7 @@ function _buildWhyNodeHtml(node, label, depth) {
             <div style="flex:1">
                 <div style="background:${bg};border:1px solid ${border};border-radius:7px;padding:6px 12px;display:flex;align-items:center;gap:8px${isLeaf ? '' : ';margin-bottom:5px'}">
                     <span style="font-size:11px;font-weight:700;color:#94a3b8;flex-shrink:0">WHY ${label}</span>
-                    <span style="font-size:14px;color:${txtCol};font-weight:${isLeaf?700:500}">${text.replace(/</g,'&lt;')}${rootTag}</span>
+                    <span style="font-size:17px;color:${txtCol};font-weight:${isLeaf?700:500}">${text.replace(/</g,'&lt;')}${rootTag}</span>
                 </div>
                 ${children}
             </div>
@@ -433,7 +433,7 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
     const partsHtml = hasParts ? `
         <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.04)">
             <div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">🔩 อะไหล่ที่ใช้</div>
-            <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <table style="width:100%;border-collapse:collapse;font-size:15px">
                 <thead><tr style="background:#f1f5f9">
                     <th style="text-align:left;padding:4px 8px;color:#64748b">ชื่ออะไหล่</th>
                     <th style="text-align:center;padding:4px 8px;color:#64748b">Part No.</th>
@@ -488,21 +488,21 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
                 <div>
                   <div style="font-size:10px;color:#94a3b8;font-weight:600;margin-bottom:2px">ตำแหน่ง / สาย (LINE)</div>
-                  <div style="font-size:15px;font-weight:700;color:#1e293b">${(d.line||'—').replace(/</g,'&lt;')}</div>
+                  <div style="font-size:18px;font-weight:700;color:#1e293b">${(d.line||'—').replace(/</g,'&lt;')}</div>
                 </div>
                 <div>
                   <div style="font-size:10px;color:#94a3b8;font-weight:600;margin-bottom:2px">ประเภท BREAKDOWN</div>
-                  <div style="font-size:15px;font-weight:700;color:#1e293b">${(d.bdType||'—').replace(/</g,'&lt;')}</div>
+                  <div style="font-size:18px;font-weight:700;color:#1e293b">${(d.bdType||'—').replace(/</g,'&lt;')}</div>
                 </div>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                 <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
                   <div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:4px">🔴 ปัญหาที่พบ (PROBLEM)</div>
-                  <div style="font-size:14px;color:#dc2626;white-space:pre-wrap;line-height:1.4">${(d.problem||'—').replace(/</g,'&lt;')}</div>
+                  <div style="font-size:17px;color:#dc2626;white-space:pre-wrap;line-height:1.4">${(d.problem||'—').replace(/</g,'&lt;')}</div>
                 </div>
                 <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
                   <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:4px">⚙️ อุปกรณ์ที่เกิดปัญหา</div>
-                  <div style="font-size:14px;color:#92400e;white-space:pre-wrap;line-height:1.4">${(d.device||'—').replace(/</g,'&lt;')}</div>
+                  <div style="font-size:17px;color:#92400e;white-space:pre-wrap;line-height:1.4">${(d.device||'—').replace(/</g,'&lt;')}</div>
                 </div>
               </div>
             </div>
@@ -513,11 +513,11 @@ function buildPptSlide(slideW = 1600, slideH = 900) {
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                 <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
                   <div style="font-size:11px;font-weight:700;color:#ea580c;margin-bottom:4px">🔧 มาตรการแก้ไข (Corrective)</div>
-                  <div style="font-size:14px;color:#431407;white-space:pre-wrap;line-height:1.4">${(d.corrective||'—').replace(/</g,'&lt;')}</div>
+                  <div style="font-size:17px;color:#431407;white-space:pre-wrap;line-height:1.4">${(d.corrective||'—').replace(/</g,'&lt;')}</div>
                 </div>
                 <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
                   <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:4px">🛡️ มาตรการป้องกัน (Preventive)</div>
-                  <div style="font-size:14px;color:#14532d;white-space:pre-wrap;line-height:1.4">${(d.preventive||'—').replace(/</g,'&lt;')}</div>
+                  <div style="font-size:17px;color:#14532d;white-space:pre-wrap;line-height:1.4">${(d.preventive||'—').replace(/</g,'&lt;')}</div>
                 </div>
               </div>
             </div>

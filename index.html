@@ -1785,14 +1785,15 @@
         </div>
         <div class="flex-1 min-w-48">
             <label class="text-xs font-bold text-gray-500 block mb-1">เครื่องจักร</label>
-            <select id="clfw-machine" onchange="clFlowMachineChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
-                <option value="">-- เลือกเครื่องจักร --</option>
-            </select>
+            <input id="clfw-machine-input" list="clfw-machine-hint" type="text"
+                   placeholder="พิมพ์รหัส/ชื่อเครื่องจักร..." oninput="clFlowMachinePick(this)"
+                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+            <datalist id="clfw-machine-hint"></datalist>
         </div>
         <button onclick="clFlowReload()" class="mms-btn text-sm">🔄 รีเฟรช</button>
     </div>
     <div class="mms-card overflow-x-auto">
-        <div id="clfw-canvas" class="relative min-h-96 p-6" style="min-width:900px">
+        <div id="clfw-canvas" class="relative min-h-96 p-6" style="min-width:900px;border-radius:12px;background:#0f172a;background-image:radial-gradient(circle,#1e293b 1px,transparent 1px);background-size:22px 22px">
             <svg id="clfw-lines" class="absolute inset-0 w-full h-full pointer-events-none"></svg>
             <div id="clfw-nodes" class="relative flex gap-16 items-start"></div>
         </div>
@@ -3774,7 +3775,7 @@
 <script src="js/bootstrap.js?v=2.41"></script>
 <script src="js/checklist-core.js?v=2.45"></script>
 <script src="js/checklist-status.js?v=2.32"></script>
-<script src="js/cl-flowchart.js?v=1.0"></script>
+<script src="js/cl-flowchart.js?v=2.0"></script>
 <script src="js/mcrank.js?v=2.36"></script>
 <script src="js/spare-parts.js?v=2.39"></script>
 <script src="js/asset-hub.js?v=2.38"></script>

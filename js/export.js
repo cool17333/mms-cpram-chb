@@ -516,11 +516,11 @@ function buildPptSlide(slideW = 1600, slideH = 900, fontScale = 1) {
                 </div>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
+                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:flex-start">
                   <div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:4px">🔴 ปัญหาที่พบ (PROBLEM)</div>
                   <div style="font-size:${_cfs(17)}px;color:#dc2626;white-space:pre-wrap;line-height:1.4">${(d.problem||'—').replace(/</g,'&lt;')}</div>
                 </div>
-                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:flex-start">
                   <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:4px">⚙️ อุปกรณ์ที่เกิดปัญหา</div>
                   <div style="font-size:${_cfs(17)}px;color:#92400e;white-space:pre-wrap;line-height:1.4">${(d.device||'—').replace(/</g,'&lt;')}</div>
                 </div>
@@ -531,11 +531,11 @@ function buildPptSlide(slideW = 1600, slideH = 900, fontScale = 1) {
             <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
               <div style="font-size:13px;font-weight:800;color:#374151;margin-bottom:8px">📋 แผนมาตรการแก้ไขและป้องกัน</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
+                <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:flex-start">
                   <div style="font-size:11px;font-weight:700;color:#ea580c;margin-bottom:4px">🔧 มาตรการแก้ไข (Corrective)</div>
                   <div style="font-size:${_cfs(17)}px;color:#431407;white-space:pre-wrap;line-height:1.4">${(d.corrective||'—').replace(/</g,'&lt;')}</div>
                 </div>
-                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center">
+                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;justify-content:flex-start">
                   <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:4px">🛡️ มาตรการป้องกัน (Preventive)</div>
                   <div style="font-size:${_cfs(17)}px;color:#14532d;white-space:pre-wrap;line-height:1.4">${(d.preventive||'—').replace(/</g,'&lt;')}</div>
                 </div>

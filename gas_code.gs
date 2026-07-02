@@ -1115,6 +1115,20 @@ function doPost(e) {
       return jsonOut(pmReplaceDone_(data));
     }
 
+    // ---- PM REPLACEMENT: pmReplaceBatchSave ----
+    if (data.action === 'pmReplaceBatchSave') {
+      if (!userCan(ss, data.username, data.pin, 'cl.pm'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ cl.pm' });
+      return jsonOut(pmReplaceBatchSave_(data));
+    }
+
+    // ---- PM REPLACEMENT: pmReplaceCopy ----
+    if (data.action === 'pmReplaceCopy') {
+      if (!userCan(ss, data.username, data.pin, 'cl.pm'))
+        return jsonOut({ success:false, error:'ต้องมีสิทธิ์ cl.pm' });
+      return jsonOut(pmReplaceCopy_(data));
+    }
+
     // ---- CREATE new row ----
     // ล็อกกันเลขรันชนกันเวลาหลายคนแจ้งพร้อมกัน
     const lock = LockService.getScriptLock();
@@ -1461,9 +1475,11 @@ function pmReplacePlanSheet_() {
   let sh = ss.getSheetByName('_PmReplacePlan');
   if (!sh) {
     sh = ss.insertSheet('_PmReplacePlan');
-    const hdr = ['planId','machineId','partId','partLabel','cycleValue','cycleUnit','startDate','lastDone','nextDue','locationImageId','note','active','updatedAt'];
+    const hdr = ['planId','machineId','partId','partLabel','cycleValue','cycleUnit','startDate','lastDone','nextDue','locationImageId','note','active','updatedAt','partNo'];
     sh.getRange(1,1,1,hdr.length).setValues([hdr]).setBackground('#16a085').setFontColor('#fff').setFontWeight('bold');
     sh.setFrozenRows(1);
+  } else if (sh.getRange(1,14).getValue() !== 'partNo') {
+    sh.getRange(1,14).setValue('partNo').setBackground('#16a085').setFontColor('#fff').setFontWeight('bold');   // auto-migrate col N
   }
   return sh;
 }
@@ -1473,6 +1489,17 @@ function pmReplaceLogSheet_() {
   if (!sh) {
     sh = ss.insertSheet('_PmReplaceLog');
     const hdr = ['logId','planId','machineId','partId','doneDate','by','photoId','note','nextDueAfter','at'];
+    sh.getRange(1,1,1,hdr.length).setValues([hdr]).setBackground('#16a085').setFontColor('#fff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function pmReplaceEditLogSheet_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName('_PmReplaceEditLog');
+  if (!sh) {
+    sh = ss.insertSheet('_PmReplaceEditLog');
+    const hdr = ['logId','machineId','planId','action','detail','by','at'];
     sh.getRange(1,1,1,hdr.length).setValues([hdr]).setBackground('#16a085').setFontColor('#fff').setFontWeight('bold');
     sh.setFrozenRows(1);
   }
@@ -1510,6 +1537,7 @@ function pmReplaceList_(machineId) {
       planId: r[0], machineId: r[1], partId: r[2], partLabel: r[3],
       cycleValue: r[4], cycleUnit: r[5], startDate: r[6], lastDone: r[7],
       nextDue: r[8], locationImageId: r[9], note: r[10],
+      partNo: r[13] || '',
       partImageId: sp.imageId || '',
       status: pmStatus_(r[8]),
     });
@@ -1569,6 +1597,132 @@ function pmReplaceLog_(planId) {
     out.push({ logId:r[0], planId:r[1], machineId:r[2], partId:r[3], doneDate:r[4], by:r[5], photoId:r[6], note:r[7], nextDueAfter:r[8] });
   }
   return { success:true, data: out.reverse() };   // ล่าสุดก่อน
+}
+
+const PMR_UNIT_TH_ = { month:'เดือน', day:'วัน', year:'ปี' };
+
+function pmReplaceAddEditLog_(machineId, planId, action, detail, byName) {
+  pmReplaceEditLogSheet_().appendRow([
+    'PREL-' + Date.now() + Math.floor(Math.random() * 1e3), machineId, planId || '', action, detail, byName || '', new Date()
+  ]);
+}
+
+function pmReplaceEditLog_(machineId) {
+  const rows = pmReplaceEditLogSheet_().getDataRange().getValues();
+  const out = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0]) continue;
+    if (machineId && String(r[1]) !== String(machineId)) continue;
+    out.push({ logId:r[0], machineId:r[1], planId:r[2], action:r[3], detail:r[4], by:r[5], at:r[6] });
+  }
+  return { success:true, data: out.reverse() };   // ล่าสุดก่อน
+}
+
+// บันทึกหลายรายการพร้อมกัน (เพิ่ม/แก้/ลบ) — ความถี่บังคับหน่วยเดือนเสมอ (D4)
+function pmReplaceBatchSave_(data) {
+  const sh   = pmReplacePlanSheet_();
+  const rows = sh.getDataRange().getValues();
+  const machineId      = data.machineId || '';
+  const byName         = data.byName || '';
+  const items          = data.items || [];
+  const removedPlanIds = data.removedPlanIds || [];
+
+  const rowByPlanId = {};
+  for (let i = 1; i < rows.length; i++) if (rows[i][0]) rowByPlanId[rows[i][0]] = i + 1;
+
+  items.forEach(function (item) {
+    const isNew   = !item.planId;
+    const oldRow  = !isNew ? rows[rowByPlanId[item.planId] - 1] : null;
+    const locImg  = item.locationImageId ? saveImgToDrive(item.locationImageId, 'PmReplace_Images')
+      : (item.existingLocationImageId || (oldRow ? oldRow[9] : ''));
+    const startDate  = item.startDate || '';
+    const lastDone   = oldRow ? oldRow[7] : '';
+    const base       = lastDone || startDate;
+    const nextDue    = pmNextDue_(base, item.cycleMonths, 'month');
+    const nextDueStr = Utilities.formatDate(nextDue, 'Asia/Bangkok', 'yyyy-MM-dd');
+    const partLabel  = item.partNo ? item.partNo + ' - ' + item.partName : item.partName;
+    const rec = [
+      item.planId || '', machineId, item.partId || '', partLabel, Number(item.cycleMonths) || 0, 'month',
+      startDate, lastDone, nextDueStr, locImg || '', item.note || '', true, new Date(), item.partNo || ''
+    ];
+
+    if (isNew) {
+      const id = 'PR-' + Date.now() + Math.floor(Math.random() * 1e3);
+      rec[0] = id;
+      sh.appendRow(rec);
+      pmReplaceAddEditLog_(machineId, id, 'create',
+        'เพิ่ม: ' + (item.partNo ? '[' + item.partNo + '] ' : '') + item.partName + ' · ทุก ' + item.cycleMonths + ' เดือน เริ่ม ' + startDate,
+        byName);
+    } else {
+      const rowIdx = rowByPlanId[item.planId];
+      const diffs = [];
+      if (String(oldRow[2]) !== String(item.partId || '')) diffs.push('อะไหล่: ' + (oldRow[3] || '') + ' → ' + partLabel);
+      const oldCycleLabel = oldRow[4] + ' ' + (PMR_UNIT_TH_[oldRow[5]] || oldRow[5]);
+      if (Number(oldRow[4]) !== Number(item.cycleMonths) || oldRow[5] !== 'month') diffs.push('ความถี่: ' + oldCycleLabel + ' → ' + item.cycleMonths + ' เดือน');
+      if (String(oldRow[6]) !== String(startDate)) diffs.push('เดือนเริ่ม: ' + oldRow[6] + ' → ' + startDate);
+      if (item.locationImageId) diffs.push('เปลี่ยนรูป');
+      if (String(oldRow[10] || '') !== String(item.note || '')) diffs.push('หมายเหตุ');
+
+      sh.getRange(rowIdx, 1, 1, rec.length).setValues([rec]);
+      if (diffs.length) {
+        pmReplaceAddEditLog_(machineId, item.planId, 'update',
+          'แก้ไข ' + (item.partNo ? '[' + item.partNo + '] ' : '') + item.partName + ': ' + diffs.join(' · '),
+          byName);
+      }
+    }
+  });
+
+  removedPlanIds.forEach(function (planId) {
+    const rowIdx = rowByPlanId[planId];
+    if (!rowIdx) return;
+    const oldRow = rows[rowIdx - 1];
+    sh.getRange(rowIdx, 12).setValue(false);   // L active=false
+    pmReplaceAddEditLog_(machineId, planId, 'delete',
+      'ลบ: ' + (oldRow[13] ? '[' + oldRow[13] + '] ' : '') + oldRow[3], byName);
+  });
+
+  return { success:true, data: pmReplaceList_(machineId).data };
+}
+
+// คัดลอกแผนทั้งหมดจากเครื่องต้นทาง → ทับ (deactivate) แผนเดิมของเครื่องปลายทางทั้งหมด (D3)
+function pmReplaceCopy_(data) {
+  const sh        = pmReplacePlanSheet_();
+  const rows      = sh.getDataRange().getValues();
+  const sourceId  = data.sourceId || '';
+  const targetIds = data.targetIds || [];
+  const byName    = data.byName || '';
+
+  const sourcePlans = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0] || String(r[1]) !== String(sourceId) || r[11] === false) continue;
+    sourcePlans.push(r);
+  }
+
+  targetIds.forEach(function (targetId) {
+    let removedCount = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[0] || String(r[1]) !== String(targetId) || r[11] === false) continue;
+      sh.getRange(i + 1, 12).setValue(false);
+      removedCount++;
+    }
+    sourcePlans.forEach(function (sp, idx) {
+      const startDate  = sp[6];
+      const nextDue    = pmNextDue_(startDate, sp[4], sp[5] || 'month');
+      const nextDueStr = Utilities.formatDate(nextDue, 'Asia/Bangkok', 'yyyy-MM-dd');
+      sh.appendRow([
+        'PR-' + Date.now() + Math.floor(Math.random() * 1e3) + '-' + idx, targetId, sp[2], sp[3], sp[4], sp[5] || 'month',
+        startDate, '', nextDueStr, sp[9] || '', sp[10] || '', true, new Date(), sp[13] || ''
+      ]);
+    });
+    pmReplaceAddEditLog_(targetId, '', 'copy',
+      'คัดลอกจาก ' + sourceId + ' (' + sourcePlans.length + ' รายการ) ทับของเดิม ' + removedCount + ' รายการ',
+      byName);
+  });
+
+  return { success:true, count: targetIds.length };
 }
 
 // โรงงาน → รหัส CHB (โรงงาน 1 → CHB1, โรงงาน 2 → CHB2)
@@ -1724,6 +1878,7 @@ function doGet(e) {
     if (action === 'spareList')           return jsonOut(spareList_());
     if (action === 'pmReplaceList')       return jsonOut(pmReplaceList_(e.parameter.machineId||''));
     if (action === 'pmReplaceLog')        return jsonOut(pmReplaceLog_(e.parameter.planId||''));
+    if (action === 'pmReplaceEditLog')    return jsonOut(pmReplaceEditLog_(e.parameter.machineId||''));
 
     return jsonOut({ success: false, error: 'Unknown action' });
 

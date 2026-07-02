@@ -47,6 +47,7 @@ let _clScCurrentTab = 'daily';
 let _clChartObj = null;
 let _clDailyPage = 0; let _clDailyPageSize = 10; let _clDailyTotalPages = 1;
 let _clPmPage    = 0; let _clPmPageSize    = 10; let _clPmTotalPages    = 1;
+let _clPmrepPage = 0; let _clPmrepPageSize = 10; let _clPmrepTotalPages = 1;
 
 // ---- helpers ----
 function clFacOptions() {
@@ -1287,6 +1288,6 @@ function clScTab(tab) {
     document.getElementById('clsc-tab-pm').className    = tab==='pm'    ? 'mms-btn mms-btn-green' : 'mms-btn';
     const pmrepBtn = document.getElementById('clsc-tab-pmrep');
     if (pmrepBtn) pmrepBtn.className = tab==='pmrep' ? 'mms-btn mms-btn-green' : 'mms-btn';
-    if (tab === 'pmrep') { if (typeof initPmReplace === 'function') initPmReplace(); return; }   // PM Replacement มี init/data ของตัวเอง
+    if (tab === 'pmrep' && typeof initPmReplace === 'function') initPmReplace();   // โหลด _pmrByMachine แบบ async แล้วรีเฟรชตารางเองเมื่อเสร็จ
     renderClSchedule();
 }

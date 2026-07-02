@@ -1601,7 +1601,7 @@
     </div>
     <div class="flex gap-2 mb-4 flex-wrap">
         <button id="clsc-tab-daily" onclick="clScTab('daily')" class="mms-btn mms-btn-green">📋 Daily Items</button>
-        <button id="clsc-tab-pm" onclick="clScTab('pm')" class="mms-btn">🔧 แผน PM</button>
+        <button id="clsc-tab-pm" onclick="clScTab('pm')" class="mms-btn">🔧 PM Inspection</button>
         <button id="clsc-tab-pmrep" onclick="clScTab('pmrep')" class="mms-btn" data-perm="cl.pm">🔩 PM Replacement</button>
     </div>
     <div id="clsc-daily-view">
@@ -1659,7 +1659,7 @@
     <div id="clsc-pm-view" class="hidden">
         <div class="mms-card overflow-hidden">
             <div class="p-4 border-b border-gray-100 flex flex-wrap gap-2 justify-between items-center">
-                <h3 class="font-bold text-sm">แผน PM (Preventive Maintenance)</h3>
+                <h3 class="font-bold text-sm">PM Inspection (Preventive Maintenance)</h3>
                 <div class="flex items-center gap-3">
                     <span id="clsc-pm-count" class="text-xs text-gray-500"></span>
                     <div class="flex items-center gap-1.5">
@@ -1711,20 +1711,55 @@
     </div>
     <div id="clsc-pmrep-view" class="hidden">
         <div class="mms-card overflow-hidden">
-            <div class="p-4 border-b border-gray-100 flex flex-wrap gap-3 justify-between items-center">
+            <div class="p-4 border-b border-gray-100 flex flex-wrap gap-2 justify-between items-center">
                 <div>
                     <h3 class="font-bold text-sm">🔩 PM Replacement — เปลี่ยนอะไหล่ตามรอบ</h3>
                     <p class="text-xs text-gray-400 mt-0.5">ตั้งรอบเปลี่ยนอะไหล่รายเครื่อง · เตือนเมื่อครบกำหนด</p>
                 </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <select id="pmr-machine-select" onchange="pmrLoadForMachine()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none bg-white w-56">
-                        <option value="">-- เลือกเครื่องจักร --</option>
-                    </select>
-                    <button onclick="pmrOpenAdd()" data-perm="cl.pm" class="hidden mms-btn mms-btn-red text-sm">➕ ตั้งค่าเปลี่ยนอะไหล่</button>
+                <div class="flex items-center gap-3">
+                    <span id="clsc-pmrep-count" class="text-xs text-gray-500"></span>
+                    <div class="flex items-center gap-1.5">
+                        <label class="text-xs text-gray-400 font-medium whitespace-nowrap">แสดง</label>
+                        <select id="clsc-pmrep-page-size" onchange="clScSetPageSize('pmrep',this.value)"
+                            class="border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-gray-400 bg-white">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="0">ทั้งหมด</option>
+                        </select>
+                        <label class="text-xs text-gray-400 font-medium">รายการ</label>
+                    </div>
                 </div>
             </div>
-            <div id="pmr-list-wrap" class="p-4 space-y-3">
-                <p class="text-gray-400 text-sm text-center py-8">เลือกเครื่องจักรเพื่อดูแผนเปลี่ยนอะไหล่</p>
+            <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="text-left px-4 py-3 font-bold text-gray-600">รหัสเครื่องจักร</th>
+                        <th class="text-left px-4 py-3 font-bold text-gray-600">ชื่อเครื่องจักร</th>
+                        <th class="text-center px-3 py-3 font-bold text-gray-600">รายการอะไหล่</th>
+                        <th class="text-center px-3 py-3 font-bold text-gray-600">สถานะ</th>
+                        <th class="text-center px-3 py-3 font-bold text-gray-600"></th>
+                    </tr>
+                </thead>
+                <tbody id="clsc-pmrep-body">
+                    <tr><td colspan="5" class="text-center text-gray-400 py-8">เลือก Factory เพื่อดูข้อมูล</td></tr>
+                </tbody>
+            </table>
+            </div>
+            <div id="clsc-pmrep-pagination" class="hidden px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+                <span id="clsc-pmrep-page-info" class="text-xs text-gray-500"></span>
+                <div class="flex items-center gap-1">
+                    <button onclick="clScGoPage('pmrep',0)" id="clsc-pmrep-pg-first"
+                        class="px-2.5 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">«</button>
+                    <button onclick="clScGoPage('pmrep',_clPmrepPage-1)" id="clsc-pmrep-pg-prev"
+                        class="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">‹ ก่อน</button>
+                    <div id="clsc-pmrep-pg-nums" class="flex gap-1"></div>
+                    <button onclick="clScGoPage('pmrep',_clPmrepPage+1)" id="clsc-pmrep-pg-next"
+                        class="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">ถัดไป ›</button>
+                    <button onclick="clScGoPage('pmrep',_clPmrepTotalPages-1)" id="clsc-pmrep-pg-last"
+                        class="px-2.5 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">»</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1779,49 +1814,26 @@
 
 
 <!-- MODAL: เพิ่ม/แก้แผนเปลี่ยนอะไหล่ -->
-<div id="pmr-edit-modal" class="modal-bg hidden" onclick="if(event.target===this)pmrCloseEdit()">
-    <div class="modal-box max-w-lg w-full" onclick="event.stopPropagation()">
+<div id="pmr-batch-modal" class="modal-bg hidden" onclick="if(event.target===this)pmrCloseBatch()">
+    <div class="modal-box max-w-2xl w-full" onclick="event.stopPropagation()">
         <div class="flex items-center justify-between px-5 py-4" style="background:linear-gradient(135deg,#16a085,#117a63)">
-            <h3 id="pmr-edit-title" class="font-bold text-white flex items-center gap-2">🔧 เพิ่มแผนเปลี่ยนอะไหล่</h3>
-            <button onclick="pmrCloseEdit()" class="text-white/70 hover:text-white text-2xl leading-none">&times;</button>
+            <div class="min-w-0">
+                <h3 id="pmr-batch-title" class="font-bold text-white flex items-center gap-2">🔩 ตั้งค่าเปลี่ยนอะไหล่</h3>
+                <p id="pmr-batch-subtitle" class="text-xs text-white/70 mt-0.5"></p>
+            </div>
+            <div class="flex items-center gap-3 flex-shrink-0">
+                <button onclick="pmrOpenEditLog()" class="text-xs font-bold text-white/80 hover:text-white underline whitespace-nowrap">📜 ประวัติการแก้ไข</button>
+                <button onclick="pmrCloseBatch()" class="text-white/70 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
         </div>
-        <div class="p-5 space-y-3">
-            <div>
-                <label class="text-xs text-gray-700 font-bold mb-1 block">อะไหล่ <span class="text-orange-500">*</span></label>
-                <input id="pmr-part-input" list="pmr-part-hint" type="text" placeholder="พิมพ์ชื่ออะไหล่..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none" oninput="pmrPartPick(this)">
-                <datalist id="pmr-part-hint"></datalist>
-            </div>
-            <div class="flex gap-2">
-                <div class="flex-1">
-                    <label class="text-xs text-gray-700 font-bold mb-1 block">รอบเปลี่ยนทุก <span class="text-orange-500">*</span></label>
-                    <input id="pmr-cycle-value" type="number" min="1" placeholder="เช่น 6" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-                </div>
-                <div class="flex-1">
-                    <label class="text-xs text-gray-700 font-bold mb-1 block">หน่วย</label>
-                    <select id="pmr-cycle-unit" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none bg-white">
-                        <option value="month">เดือน</option>
-                        <option value="day">วัน</option>
-                        <option value="year">ปี</option>
-                    </select>
-                </div>
-            </div>
-            <div>
-                <label class="text-xs text-gray-700 font-bold mb-1 block">เดือนที่เริ่ม <span class="text-orange-500">*</span></label>
-                <input id="pmr-start-date" type="month" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-            </div>
-            <div>
-                <label class="text-xs text-gray-700 font-bold mb-1 block">รูปภาพบริเวณที่เปลี่ยน <span class="text-orange-500">*</span></label>
-                <input id="pmr-loc-img-input" type="file" accept="image/*" onchange="pmrLocImgPreview(this)" class="text-sm text-gray-600">
-                <div id="pmr-loc-img-preview" class="mt-2 hidden"><img id="pmr-loc-img-preview-img" class="h-24 object-contain rounded border border-gray-200"></div>
-            </div>
-            <div>
-                <label class="text-xs text-gray-700 font-bold mb-1 block">หมายเหตุ</label>
-                <input id="pmr-note" type="text" placeholder="หมายเหตุเพิ่มเติม..." class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
-            </div>
-            <div class="flex gap-2 pt-2">
-                <button onclick="pmrSaveEdit()" class="flex-1 mms-btn mms-btn-blue">💾 บันทึก</button>
-                <button onclick="pmrCloseEdit()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-900 border border-gray-300 rounded-lg transition-colors">ยกเลิก</button>
-            </div>
+        <div class="p-5">
+            <datalist id="pmr-part-hint"></datalist>
+            <div id="pmr-batch-rows" class="space-y-3 max-h-[60vh] overflow-y-auto"></div>
+            <button onclick="pmrAddRow()" class="mt-3 w-full py-2 text-sm font-bold text-teal-600 border-2 border-dashed border-teal-300 rounded-lg hover:bg-teal-50 transition-colors">➕ เพิ่มรายการ</button>
+        </div>
+        <div class="flex gap-2 justify-end px-5 pb-5">
+            <button onclick="pmrCloseBatch()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-900 border border-gray-300 rounded-lg transition-colors">ยกเลิก</button>
+            <button onclick="pmrSaveBatch()" class="mms-btn mms-btn-blue">💾 บันทึกทั้งหมด</button>
         </div>
     </div>
 </div>
@@ -1865,6 +1877,19 @@
         </div>
         <div class="p-5">
             <div id="pmr-history-body" class="max-h-80 overflow-y-auto space-y-2 text-sm"></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: ประวัติการแก้ไขแผน (PM Replacement) -->
+<div id="pmr-editlog-modal" class="modal-bg hidden" onclick="if(event.target===this)pmrCloseEditLog()">
+    <div class="modal-box max-w-lg w-full" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-5 py-4" style="background:linear-gradient(135deg,#374151,#1f2937)">
+            <h3 class="font-bold text-white flex items-center gap-2">📜 ประวัติการแก้ไข</h3>
+            <button onclick="pmrCloseEditLog()" class="text-white/70 hover:text-white text-2xl leading-none">&times;</button>
+        </div>
+        <div class="p-5">
+            <div id="pmr-editlog-body" class="max-h-80 overflow-y-auto space-y-2 text-sm"></div>
         </div>
     </div>
 </div>
@@ -3704,17 +3729,17 @@
 </div><!-- end app-content -->
 
 <script src="js/permissions.js?v=2.30"></script>
-<script src="js/core.js?v=2.36"></script>
+<script src="js/core.js?v=2.37"></script>
 <script src="js/machines.js?v=2.37"></script>
 <script src="js/breakdown-report.js?v=2.42"></script>
 <script src="js/breakdown-form.js?v=2.46"></script>
-<script src="js/pm-replacement.js?v=2.42"></script>
+<script src="js/pm-replacement.js?v=2.43"></script>
 <script src="js/records-summary.js?v=2.46"></script>
 <script src="js/export.js?v=2.58"></script>
 <script src="js/oee.js?v=2.34"></script>
-<script src="js/bootstrap.js?v=2.40"></script>
-<script src="js/checklist-core.js?v=2.44"></script>
-<script src="js/checklist-status.js?v=2.30"></script>
+<script src="js/bootstrap.js?v=2.41"></script>
+<script src="js/checklist-core.js?v=2.45"></script>
+<script src="js/checklist-status.js?v=2.31"></script>
 <script src="js/mcrank.js?v=2.36"></script>
 <script src="js/spare-parts.js?v=2.39"></script>
 <script src="js/asset-hub.js?v=2.38"></script>

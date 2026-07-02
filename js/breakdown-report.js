@@ -41,6 +41,7 @@ const PAGE_TITLE = {
     'cl-calendar':  '📅 ปฏิทิน PM',
     'cl-schedule':  '🔧 รายละเอียดตรวจสอบ',
     'cl-status':    '✅ สถานะการตรวจ',
+    'cl-flow':      '🔀 Flowchart เครื่องจักร',
     'oee':          '📊 ระบบ TPM — สรุป OEE',
     'mcrank':       '📊 ระบบ TPM — Ranking เครื่องจักร',
     'tpm-hub':      '📈 ระบบ TPM',
@@ -582,7 +583,7 @@ async function submitReportPopup() {
 }
 
 const BD_SUB_PANELS = new Set(['form', 'records', 'summary']);
-const CL_SUB_PANELS = new Set(['cl-form', 'cl-list', 'cl-summary', 'cl-calendar', 'cl-schedule', 'cl-status']);
+const CL_SUB_PANELS = new Set(['cl-form', 'cl-list', 'cl-summary', 'cl-calendar', 'cl-schedule', 'cl-status', 'cl-flow']);
 
 // ===== NAV helpers =====
 function openMoreSheet() {
@@ -606,7 +607,7 @@ function updateNavActive(panel) {
         'home':'bn-home',
         'bd-hub':'bn-bd','form':'bn-bd','records':'bn-bd','summary':'bn-bd',
         'machines':'bn-mach', 'asset-hub':'bn-mach', 'spare':'bn-mach',
-        'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl','cl-status':'bn-cl',
+        'cl-hub':'bn-cl','cl-form':'bn-cl','cl-list':'bn-cl','cl-summary':'bn-cl','cl-calendar':'bn-cl','cl-schedule':'bn-cl','cl-status':'bn-cl','cl-flow':'bn-cl',
         'log':'bn-more', 'oee':'bn-more', 'mcrank':'bn-more', 'tpm-hub':'bn-more',
     };
     document.getElementById(bnMap[panel])?.classList.add('active');
@@ -626,6 +627,7 @@ function updateNavActive(panel) {
         'cl-calendar': ['cl','sni-cl-calendar'],
         'cl-schedule': ['cl','sni-cl-schedule'],
         'cl-status':   ['cl','sni-cl-status'],
+        'cl-flow':     ['cl','sni-cl-flow'],
         'tpm-hub':     ['tpm','sni-tpm-hub'],
         'oee':         ['tpm','sni-tpm-oee'],
         'mcrank':      ['tpm','sni-tpm-rank'],
@@ -670,6 +672,7 @@ function switchTab(name) {
     if (name === 'cl-calendar') initClCalendar();
     if (name === 'cl-schedule') initClSchedule();
     if (name === 'cl-status') initClStatus();
+    if (name === 'cl-flow') initClFlow();
     if (name === 'ua') { uaSwitch?.('users'); }
     if (name === 'oee') initOeePanel?.();
     if (name === 'mcrank') initMcRankPanel();

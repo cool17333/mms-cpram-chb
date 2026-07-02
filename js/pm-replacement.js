@@ -80,6 +80,7 @@ function pmrRenderTable(machines) {
                 <div class="flex gap-2 justify-center">
                     ${canEdit ? `<button onclick="pmrOpenBatch('${id}')" class="px-2.5 py-1 text-xs font-bold bg-teal-50 text-teal-600 hover:bg-teal-100 rounded-lg transition-colors">✏️ แก้ไข</button>` : ''}
                     ${canEdit ? `<button onclick="openClCopyModal('pmrep','${id}')" class="px-2.5 py-1 text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors">📋 คัดลอก</button>` : ''}
+                    <button onclick="clFlowOpen('${id}')" class="px-2.5 py-1 text-xs font-bold bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">🔀 Flow</button>
                 </div>
             </td>
         </tr>`;

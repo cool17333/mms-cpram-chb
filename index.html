@@ -656,6 +656,18 @@
                 <input type="radio" name="png-content" value="all"> Report + รูปทั้งหมด (หลายไฟล์)
             </label>
         </div>
+        <!-- ขนาดตัวอักษรข้อมูล PNG — แสดงเฉพาะเมื่อเลือก PNG -->
+        <div id="png-font-row" class="hidden mb-4">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-bold text-gray-600">ขนาดตัวอักษรข้อมูล</p>
+                <span id="png-font-label" class="text-xs font-bold text-orange-600">100%</span>
+            </div>
+            <input id="png-font-slider" type="range" min="80" max="120" step="5" value="100"
+                   oninput="_updateFontLabel()" class="w-full accent-orange-500 cursor-pointer">
+            <div class="flex justify-between text-[10px] text-gray-400 mt-1">
+                <span>เล็ก</span><span>ปกติ</span><span>ใหญ่</span>
+            </div>
+        </div>
         <p class="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 mb-5">
             💡 PDF = ย่อเนื้อหาให้พอดีในหน้าเดียว &nbsp;•&nbsp; PNG = ภาพความละเอียดสูง วางใน PowerPoint แล้วลาก fit slide
         </p>
@@ -3698,7 +3710,7 @@
 <script src="js/breakdown-form.js?v=2.46"></script>
 <script src="js/pm-replacement.js?v=2.42"></script>
 <script src="js/records-summary.js?v=2.46"></script>
-<script src="js/export.js?v=2.55"></script>
+<script src="js/export.js?v=2.56"></script>
 <script src="js/oee.js?v=2.34"></script>
 <script src="js/bootstrap.js?v=2.40"></script>
 <script src="js/checklist-core.js?v=2.44"></script>

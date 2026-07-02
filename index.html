@@ -301,6 +301,7 @@
                 <div class="sidebar-subitem" id="sni-cl-calendar" onclick="switchTab('cl-calendar')">ปฏิทิน PM</div>
                 <div class="sidebar-subitem" id="sni-cl-schedule" onclick="switchTab('cl-schedule')">รายละเอียดตรวจสอบ</div>
                 <div class="sidebar-subitem" id="sni-cl-status" onclick="switchTab('cl-status')">สถานะการตรวจ</div>
+                <div class="sidebar-subitem" id="sni-cl-flow" onclick="switchTab('cl-flow')">Flowchart เครื่องจักร</div>
             </div>
         </div>
     </nav>
@@ -1765,6 +1766,39 @@
     </div>
 </div>
 </div><!-- end panel-cl-schedule -->
+
+<!-- ==================== CHECKLIST: FLOWCHART ==================== -->
+<div id="panel-cl-flow" class="tab-panel p-4 md:p-6">
+<div class="max-w-6xl mx-auto">
+    <div class="mms-card p-4 mb-4 flex flex-wrap gap-3 items-end">
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">Factory</label>
+            <select id="clfw-fac" onchange="clFlowFacChange()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">-- เลือก Factory --</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-gray-500 block mb-1">พื้นที่</label>
+            <select id="clfw-area" onchange="clFlowAreaChange()" class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">ทั้งหมด</option>
+            </select>
+        </div>
+        <div class="flex-1 min-w-48">
+            <label class="text-xs font-bold text-gray-500 block mb-1">เครื่องจักร</label>
+            <select id="clfw-machine" onchange="clFlowMachineChange()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">-- เลือกเครื่องจักร --</option>
+            </select>
+        </div>
+        <button onclick="clFlowReload()" class="mms-btn text-sm">🔄 รีเฟรช</button>
+    </div>
+    <div class="mms-card overflow-x-auto">
+        <div id="clfw-canvas" class="relative min-h-96 p-6" style="min-width:900px">
+            <svg id="clfw-lines" class="absolute inset-0 w-full h-full pointer-events-none"></svg>
+            <div id="clfw-nodes" class="relative flex gap-16 items-start"></div>
+        </div>
+    </div>
+</div>
+</div><!-- end panel-cl-flow -->
 
 <!-- ==================== CHECKLIST: STATUS ==================== -->
 <div id="panel-cl-status" class="tab-panel p-4 md:p-6">
@@ -3731,15 +3765,16 @@
 <script src="js/permissions.js?v=2.30"></script>
 <script src="js/core.js?v=2.37"></script>
 <script src="js/machines.js?v=2.37"></script>
-<script src="js/breakdown-report.js?v=2.42"></script>
+<script src="js/breakdown-report.js?v=2.43"></script>
 <script src="js/breakdown-form.js?v=2.46"></script>
-<script src="js/pm-replacement.js?v=2.43"></script>
+<script src="js/pm-replacement.js?v=2.44"></script>
 <script src="js/records-summary.js?v=2.46"></script>
 <script src="js/export.js?v=2.58"></script>
 <script src="js/oee.js?v=2.34"></script>
 <script src="js/bootstrap.js?v=2.41"></script>
 <script src="js/checklist-core.js?v=2.45"></script>
-<script src="js/checklist-status.js?v=2.31"></script>
+<script src="js/checklist-status.js?v=2.32"></script>
+<script src="js/cl-flowchart.js?v=1.0"></script>
 <script src="js/mcrank.js?v=2.36"></script>
 <script src="js/spare-parts.js?v=2.39"></script>
 <script src="js/asset-hub.js?v=2.38"></script>

@@ -104,6 +104,7 @@ function renderClSchedule() {
     if (_clScCurrentTab === 'daily')      { _clDailyPage = 0; renderClScDaily(machines); }
     else if (_clScCurrentTab === 'pmrep') { _clPmrepPage = 0; pmrRenderTable(machines); }
     else                                   { _clPmPage = 0; renderClScPm(machines); }
+    if (typeof clFlowRefreshIfActive === 'function') clFlowRefreshIfActive();
 }
 function clScSetPageSize(tab, val) {
     if (tab === 'daily')      { _clDailyPageSize = parseInt(val); _clDailyPage = 0; }
@@ -175,6 +176,7 @@ function renderClScDaily(machines) {
             <td class="px-4 py-2.5 text-center flex gap-2 justify-center">
                 ${canEdit ? `<button onclick="openClItemsEditor('per-machine-daily','${id}')" class="px-2.5 py-1 text-xs font-bold bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors">✏️ แก้ไข</button>` : ''}
                 ${canEdit ? `<button onclick="openClCopyModal('daily','${id}')" class="px-2.5 py-1 text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors">📋 คัดลอก</button>` : ''}
+                <button onclick="clFlowOpen('${id}')" class="px-2.5 py-1 text-xs font-bold bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">🔀 Flow</button>
             </td>
         </tr>`;
     }).join('');
@@ -211,6 +213,7 @@ function renderClScPm(machines) {
                 <div class="flex gap-2 justify-center">
                     ${canEdit ? `<button onclick="openClItemsEditor('per-machine-pm','${id}')" class="px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors">✏️ แก้ไข</button>` : ''}
                     ${canEdit ? `<button onclick="openClCopyModal('pm','${id}')" class="px-2.5 py-1 text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors">📋 คัดลอก</button>` : ''}
+                    <button onclick="clFlowOpen('${id}')" class="px-2.5 py-1 text-xs font-bold bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">🔀 Flow</button>
                 </div>
             </td>
         </tr>`;

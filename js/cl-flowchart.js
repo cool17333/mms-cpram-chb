@@ -2,11 +2,12 @@
 // CHECKLIST: FLOWCHART รายเครื่องจักร
 // node เครื่องจักร → 3 function (Checklist รายวัน / PM Inspection / PM Replacement)
 // คลิก function = toggle ขยาย (ค้างได้หลายอันพร้อมกัน) เห็นทุกรายการเป็น node ย่อย
-// แก้ไข inline ได้ทีละกิ่ง — โหมดแก้ครั้งเดียว บันทึกทีเดียว (draft แยกจาก cache จริง)
+// แก้ไข inline ได้เฉพาะ Checklist รายวัน (โหมดแก้ครั้งเดียว บันทึกทีเดียว)
+// PM Inspection / PM Replacement = ดูอย่างเดียว + ปุ่ม ✏️ เปิด popup เดิม
 // ============================================================
 let _clfwMachineId = '';
 let _clfwExpanded  = { daily:false, pm:false, pmrep:false };
-let _clfwEditing   = { daily:false, pm:false, pmrep:false };
+let _clfwEditing   = { daily:false };
 let _clfwDraft      = null;
 let _clfwResizeBound = false;
 
@@ -37,17 +38,16 @@ async function initClFlow() {
 function clFlowOpen(machineId) {
     _clfwMachineId = machineId;
     _clfwExpanded  = { daily:false, pm:false, pmrep:false };
-    _clfwEditing   = { daily:false, pm:false, pmrep:false };
+    _clfwEditing   = { daily:false };
     _clfwDraft     = null;
     switchTab('cl-flow');
 }
 
 // ---- กันทิ้ง draft เงียบๆ ระหว่างแก้ไขอยู่ในหน้าเดียวกัน ----
 function _clfwConfirmDiscardIfEditing() {
-    const anyEditing = Object.values(_clfwEditing).some(Boolean);
-    if (!anyEditing) return true;
+    if (!_clfwEditing.daily) return true;
     if (!confirm('กำลังแก้ไขอยู่ — การดำเนินการนี้จะทิ้งการแก้ไขที่ยังไม่บันทึก ดำเนินการต่อ?')) return false;
-    _clfwEditing = { daily:false, pm:false, pmrep:false };
+    _clfwEditing.daily = false;
     _clfwDraft = null;
     return true;
 }
@@ -139,20 +139,32 @@ function clFlowToggle(key) {
 function clFlowActive() { return !!document.getElementById('panel-cl-flow')?.classList.contains('active') && !!_clfwMachineId; }
 function clFlowRefreshIfActive() { if (clFlowActive()) clFlowRender(); }
 
-// PM Inspection: pmItems เป็น tree (เหมือน Why-Why) → flatten เอาเฉพาะ leaf พร้อม path (สำหรับเขียนกลับตอนแก้ไข)
+// PM Inspection: pmItems เป็น tree (เหมือน Why-Why) → flatten เอาเฉพาะ leaf (ใช้นับ badge จำนวนรายการ)
 function _clfwFlattenPmItems(pmItems) {
     const items = [];
-    const walk = (node, prefix, path) => {
-        if (!node.children || !node.children.length) items.push({ prefix, rawLabel: node.label || node.text || '', path });
-        else node.children.forEach((ch, j) => walk(ch, prefix + '.' + (j+1), [...path, j]));
+    const walk = (node, prefix) => {
+        if (!node.children || !node.children.length) items.push({ prefix, rawLabel: node.label || node.text || '' });
+        else node.children.forEach((ch, j) => walk(ch, prefix + '.' + (j+1)));
     };
-    (pmItems || []).forEach((n, i) => walk(n, String(i+1), [i]));
+    (pmItems || []).forEach((n, i) => walk(n, String(i+1)));
     return items;
 }
-function _clfwGetNodeByPath(tree, path) {
-    let node = { children: tree };
-    for (const idx of path) node = node.children[idx];
-    return node;
+// render tree แบ่งชั้นเต็ม (parent+leaf) สำหรับแสดงผลใน detail group — parent ตัวหนา indent ตามชั้น
+function _clfwRenderPmTree(pmItems) {
+    const rows = [];
+    const walk = (node, prefix, depth) => {
+        const isLeaf = !node.children || !node.children.length;
+        const label  = String(node.label || node.text || '').replace(/</g,'&lt;');
+        const indent = depth * 14;
+        if (isLeaf) {
+            rows.push(`<div class="rounded-lg px-2.5 py-1.5 text-xs text-gray-700" style="margin-left:${indent}px;background:${CLFW_BRANCH.pm.itemBg};border:1px solid ${CLFW_BRANCH.pm.color}33">${prefix} ${label}</div>`);
+        } else {
+            rows.push(`<div class="rounded-lg px-2.5 py-1.5 text-xs font-bold" style="margin-left:${indent}px;background:${CLFW_BRANCH.pm.bg};border:1px solid ${CLFW_BRANCH.pm.color}66;color:${CLFW_BRANCH.pm.color}">${prefix} ${label}</div>`);
+            node.children.forEach((ch,j) => walk(ch, prefix + '.' + (j+1), depth+1));
+        }
+    };
+    (pmItems||[]).forEach((n,i) => walk(n, String(i+1), 0));
+    return rows.join('') || _CLFW_EMPTY_NODE;
 }
 
 function _clfwFuncCard(key, badgeHtml, editOnclick, canEdit) {
@@ -178,10 +190,8 @@ function _clfwDetailGroup(key, bodyHtml, editBtnHtml) {
         <div class="space-y-1.5">${bodyHtml}</div>
     </div>`;
 }
-function _clfwEditBtnHtml(anyEditing, onclickFn) {
-    return anyEditing
-        ? `<button disabled class="text-[11px] font-bold text-gray-300 cursor-not-allowed">✏️ แก้ไขในผัง</button>`
-        : `<button onclick="${onclickFn}" class="text-[11px] font-bold text-gray-500 hover:text-gray-700 underline">✏️ แก้ไขในผัง</button>`;
+function _clfwEditBtnHtml(onclickFn) {
+    return `<button onclick="${onclickFn}" class="text-[11px] font-bold text-gray-500 hover:text-gray-700 underline">✏️ แก้ไข</button>`;
 }
 
 function clFlowRender() {
@@ -199,6 +209,7 @@ function clFlowRender() {
     // ---- ข้อมูล 3 กิ่ง ----
     const dailyItems    = clResolveDailyItems(id);
     const dailyIsCustom = Array.isArray(_clPmPlans[id]?.dailyItems) && _clPmPlans[id].dailyItems.length > 0;
+    const dailyCustomIdSet = new Set((dailyIsCustom ? _clPmPlans[id].dailyItems : []).map(i => i.id || i.label));
 
     const pmPlan   = clGetPmPlan(id);
     const pmLeaves = _clfwFlattenPmItems(pmPlan.pmItems);
@@ -212,7 +223,6 @@ function clFlowRender() {
 
     const canEditCl  = can('cl.edit');
     const canEditPmr = can('cl.pm');
-    const anyEditing = Object.values(_clfwEditing).some(Boolean);
 
     // ---- คอลัมน์ 1: เครื่องจักร ----
     const machineHtml = `<div id="clfw-node-machine" class="flex-shrink-0 border-2 border-gray-800 rounded-xl px-4 py-3 shadow-lg" style="width:200px;background:#f1f5f9">
@@ -233,46 +243,46 @@ function clFlowRender() {
         ${_clfwFuncCard('pmrep', pmrBadge, `pmrOpenBatch('${id}')`, canEditPmr)}
     </div>`;
 
-    // ---- คอลัมน์ 3: detail (โหมดปกติ / โหมดแก้ไข ต่อกิ่ง) ----
+    // ---- คอลัมน์ 3: detail ----
+    // Checklist รายวัน — inline editable (โหมดแก้ไข/ปกติ)
     let dailyBody, dailyEditBtn;
     if (_clfwEditing.daily) {
         dailyBody = _clfwDailyEditHtml();
         dailyEditBtn = '';
     } else {
         dailyBody = dailyItems.length
-            ? dailyItems.map((it,i) => `<div class="border rounded-lg px-2.5 py-1.5 text-xs text-gray-700" style="background:${CLFW_BRANCH.daily.itemBg};border-color:${CLFW_BRANCH.daily.color}33">${i+1}. ${String(it.label||it.text||'').replace(/</g,'&lt;')}</div>`).join('')
-            : _CLFW_EMPTY_NODE;
-        dailyEditBtn = canEditCl ? _clfwEditBtnHtml(anyEditing, `clFlowEditDaily('${id}')`) : '';
-    }
-
-    let pmBody, pmEditBtn;
-    if (_clfwEditing.pm) {
-        pmBody = _clfwPmEditHtml(id);
-        pmEditBtn = '';
-    } else {
-        const pmHeader = `<div class="border rounded-lg px-2.5 py-1.5 text-xs text-gray-700 mb-1.5" style="background:${CLFW_BRANCH.pm.itemBg};border-color:${CLFW_BRANCH.pm.color}33">PM ทุก ${pmFreq} เดือน${pmStart?` · เริ่ม ${pmStart}`:''} · ถัดไป ${pmNext}</div>`;
-        const pmItemsHtml = pmLeaves.length
-            ? pmLeaves.map(it => `<div class="border rounded-lg px-2.5 py-1.5 text-xs text-gray-700" style="background:${CLFW_BRANCH.pm.itemBg};border-color:${CLFW_BRANCH.pm.color}33">${it.prefix} ${String(it.rawLabel).replace(/</g,'&lt;')}</div>`).join('')
-            : _CLFW_EMPTY_NODE;
-        pmBody = pmHeader + pmItemsHtml;
-        pmEditBtn = canEditCl ? _clfwEditBtnHtml(anyEditing, `clFlowEditPm('${id}')`) : '';
-    }
-
-    let pmrepBody, pmrepEditBtn;
-    if (_clfwEditing.pmrep) {
-        pmrepBody = _clfwPmrepEditHtml(id);
-        pmrepEditBtn = '';
-    } else {
-        pmrepBody = pmrPlans.length
-            ? pmrPlans.map(p => {
-                const color = PMR_STATUS_COLOR[p.status] || '#94a3b8';
-                const lbl   = (p.partNo ? '['+p.partNo+'] ' : '') + String(p.partLabel||'').replace(/</g,'&lt;');
-                const unit  = PMR_UNIT_LABEL[p.cycleUnit] || p.cycleUnit;
-                return `<div class="border-l-4 rounded-lg px-2.5 py-1.5 text-xs text-gray-700" style="background:${CLFW_BRANCH.pmrep.itemBg};border-left-color:${color}">${lbl}<br><span class="text-gray-400">ทุก ${p.cycleValue} ${unit} · ครบกำหนด ${p.nextDue||'—'}</span></div>`;
+            ? dailyItems.map((it,i) => {
+                const isDefaultItem = !dailyCustomIdSet.has(it.id || it.label);
+                const style = isDefaultItem
+                    ? `border:1px dashed ${CLFW_BRANCH.daily.color}88;background:#f8fafc;color:#6b7280`
+                    : `background:${CLFW_BRANCH.daily.itemBg};border:1px solid ${CLFW_BRANCH.daily.color}33;color:#374151`;
+                return `<div class="rounded-lg px-2.5 py-1.5 text-xs" style="${style}">${isDefaultItem?'🔒 ':''}${i+1}. ${String(it.label||it.text||'').replace(/</g,'&lt;')}</div>`;
             }).join('')
             : _CLFW_EMPTY_NODE;
-        pmrepEditBtn = (canEditPmr && pmrPlans.length) ? _clfwEditBtnHtml(anyEditing, `clFlowEditPmrep('${id}')`) : '';
+        dailyEditBtn = canEditCl ? _clfwEditBtnHtml(`clFlowEditDaily('${id}')`) : '';
     }
+
+    // PM Inspection — view-only, แสดง tree แบ่งชั้น + ปุ่มเปิด modal เดิม
+    const pmHeader = `<div class="border rounded-lg px-2.5 py-1.5 text-xs text-gray-700 mb-1.5" style="background:${CLFW_BRANCH.pm.itemBg};border-color:${CLFW_BRANCH.pm.color}33">PM ทุก ${pmFreq} เดือน${pmStart?` · เริ่ม ${pmStart}`:''} · ถัดไป ${pmNext}</div>`;
+    const pmBody = pmHeader + _clfwRenderPmTree(pmPlan.pmItems);
+    const pmEditBtn = canEditCl ? _clfwEditBtnHtml(`openClItemsEditor('per-machine-pm','${id}')`) : '';
+
+    // PM Replacement — view-only, การ์ด 3 บรรทัดแบ่งชั้น + ปุ่มเปิด popup เดิม
+    const pmrepBody = pmrPlans.length
+        ? pmrPlans.map(p => {
+            const color = PMR_STATUS_COLOR[p.status] || '#94a3b8';
+            const partName = p.partNo ? String(p.partLabel||'').replace(p.partNo + ' - ', '') : (p.partLabel || '');
+            const lbl   = (p.partNo ? '['+p.partNo+'] ' : '') + String(partName).replace(/</g,'&lt;');
+            const unit  = PMR_UNIT_LABEL[p.cycleUnit] || p.cycleUnit;
+            const stLbl = PMR_STATUS_LABEL[p.status] || '';
+            return `<div class="border-l-4 rounded-lg px-2.5 py-1.5 text-xs" style="background:${CLFW_BRANCH.pmrep.itemBg};border-left-color:${color}">
+                <div class="font-bold text-gray-700">${lbl}</div>
+                <div class="text-gray-500 mt-0.5">ทุก ${p.cycleValue} ${unit}${p.startDate?` · เริ่ม ${String(p.startDate).slice(0,7)}`:''}</div>
+                <div class="text-gray-400 mt-0.5">ครบกำหนด ${p.nextDue||'—'} · <span style="color:${color}">● ${stLbl}</span></div>
+            </div>`;
+        }).join('')
+        : _CLFW_EMPTY_NODE;
+    const pmrepEditBtn = canEditPmr ? _clfwEditBtnHtml(`pmrOpenBatch('${id}')`) : '';
 
     const detailHtml = `<div class="flex-shrink-0 flex flex-col gap-6">
         ${_clfwDetailGroup('daily', dailyBody, dailyEditBtn)}
@@ -284,177 +294,66 @@ function clFlowRender() {
     clFlowDrawLines();
 }
 
-// ================= โหมดแก้ไข inline =================
-
-// ---- Checklist รายวัน ----
+// ================= โหมดแก้ไข inline: เฉพาะ Checklist รายวัน =================
 function clFlowEditDaily(id) {
-    const isDefault = !(_clPmPlans[id]?.dailyItems?.length > 0);
-    if (isDefault && !confirm('เครื่องนี้ใช้รายการกลางอยู่ — การแก้จะสร้างชุด Custom เฉพาะเครื่องนี้ ไม่กระทบเครื่องอื่น\n\nดำเนินการต่อ?')) return;
-    _clfwDraft = clResolveDailyItems(id).map(i => ({...i}));
+    const plan = _clPmPlans[id] || {};
+    const hasCustom = Array.isArray(plan.dailyItems) && plan.dailyItems.length > 0;
+    _clfwDraft = {
+        useDefault: hasCustom ? !!plan.dailyMergeDefault : true,
+        customItems: hasCustom ? plan.dailyItems.map(i => ({...i})) : [],
+    };
     _clfwEditing.daily = true;
     clFlowRender();
 }
 function _clfwDailyEditHtml() {
-    const rows = _clfwDraft.map((it,i) => `
+    const defList = (_clDailyDefault.length ? _clDailyDefault : CL_DAILY_DEFAULT);
+    const defBlock = _clfwDraft.useDefault ? `
+        <div class="border border-dashed rounded-lg p-2 mb-2" style="border-color:${CLFW_BRANCH.daily.color}88;background:#f8fafc">
+            <div class="text-[10px] font-bold text-gray-400 mb-1">🔒 รายการ Default (${defList.length}) — แก้ไม่ได้</div>
+            <div class="space-y-1">
+                ${defList.map((it,i) => `<div class="text-xs text-gray-500 px-2 py-1 bg-white rounded border border-gray-100">${i+1}. ${String(it.label||'').replace(/</g,'&lt;')}</div>`).join('')}
+            </div>
+        </div>` : '';
+    const customRows = _clfwDraft.customItems.map((it,i) => `
         <div class="flex items-center gap-1.5">
-            <input type="text" value="${String(it.label||'').replace(/"/g,'&quot;')}" oninput="_clfwDraft[${i}].label=this.value" class="flex-1 border border-gray-200 rounded px-2 py-1 text-xs bg-white">
+            <input type="text" value="${String(it.label||'').replace(/"/g,'&quot;')}" oninput="_clfwDraft.customItems[${i}].label=this.value" class="flex-1 border border-gray-200 rounded px-2 py-1 text-xs bg-white">
             <button onclick="_clfwDailyRemoveRow(${i})" class="text-red-400 hover:text-red-600 text-sm flex-shrink-0">🗑️</button>
         </div>`).join('');
-    return `<div class="space-y-1.5">${rows || '<p class="text-xs text-gray-400">ยังไม่มีรายการ</p>'}</div>
+    return `<label class="flex items-center gap-2 text-xs font-bold text-gray-700 mb-2 cursor-pointer">
+            <input type="checkbox" ${_clfwDraft.useDefault?'checked':''} onchange="_clfwDailyToggleDefault(this)">
+            ใช้รายการ Default (${defList.length} รายการ)
+        </label>
+        ${defBlock}
+        <div class="text-[10px] font-bold text-gray-400 mb-1">รายการเพิ่มเอง (Custom)</div>
+        <div class="space-y-1.5">${customRows || '<p class="text-xs text-gray-400">ยังไม่มีรายการเพิ่มเอง</p>'}</div>
         <button onclick="_clfwDailyAddRow()" class="mt-2 w-full py-1.5 text-xs font-bold rounded border border-dashed hover:opacity-80" style="color:${CLFW_BRANCH.daily.color};border-color:${CLFW_BRANCH.daily.color}">➕ เพิ่มรายการ</button>
         <div class="flex gap-2 mt-2">
             <button onclick="clFlowSaveDaily('${_clfwMachineId}')" class="flex-1 text-white text-xs font-bold py-1.5 rounded" style="background:${CLFW_BRANCH.daily.color}">💾 บันทึก</button>
             <button onclick="clFlowCancelEdit('daily')" class="px-3 py-1.5 text-xs font-bold text-gray-500 border border-gray-300 rounded hover:bg-gray-50 bg-white">✖ ยกเลิก</button>
         </div>`;
 }
-function _clfwDailyAddRow() { _clfwDraft.push({ id:'', label:'' }); clFlowRender(); }
-function _clfwDailyRemoveRow(i) { _clfwDraft.splice(i,1); clFlowRender(); }
+function _clfwDailyToggleDefault(cb) { _clfwDraft.useDefault = cb.checked; clFlowRender(); }
+function _clfwDailyAddRow() { _clfwDraft.customItems.push({ id:'', label:'' }); clFlowRender(); }
+function _clfwDailyRemoveRow(i) { _clfwDraft.customItems.splice(i,1); clFlowRender(); }
 
 async function clFlowSaveDaily(id) {
     const editorName = currentUser.name;
     if (!editorName) { showToast('กรุณาเข้าสู่ระบบก่อน', 'warn'); openLogin(); return; }
     if (!can('cl.edit')) { showToast('ไม่มีสิทธิ์', 'error'); return; }
-    const items = _clfwDraft.map((it,i) => ({ id:'c'+i, label:String(it.label||'').trim() })).filter(it => it.label);
-    if (!items.length) { showToast('⚠️ ต้องมีอย่างน้อย 1 รายการ', 'error'); return; }
+    const useDefault = _clfwDraft.useDefault;
+    const items = _clfwDraft.customItems.map((it,i) => ({ id:'c'+i, label:String(it.label||'').trim() })).filter(it => it.label);
+    if (!useDefault && !items.length) { showToast('⚠️ ต้องมีอย่างน้อย 1 รายการ หรือเปิดใช้ Default', 'error'); return; }
     const m = machineMaster.find(x => (x.id||x.machineId||'') === id) || {};
-    const merge = _clPmPlans[id]?.dailyMergeDefault || false;
     try {
-        const res = await clPost({ action:'saveMachineItems', type:'daily', machineId:id, machineName:m.name||m.machineName||'', factory:m.factory||'', area:m.area||'', items, dailyMergeDefault: merge, editedBy: editorName });
+        const res = await clPost({ action:'saveMachineItems', type:'daily', machineId:id, machineName:m.name||m.machineName||'', factory:m.factory||'', area:m.area||'', items, dailyMergeDefault: useDefault, editedBy: editorName });
         if (!res.success) { showToast('บันทึกล้มเหลว: '+(res.error||''), 'error'); return; }
         if (!_clPmPlans[id]) _clPmPlans[id] = {};
         _clPmPlans[id].dailyItems = items;
+        _clPmPlans[id].dailyMergeDefault = useDefault;
         _clfwEditing.daily = false; _clfwDraft = null;
         clFlowRender();
         showToast('บันทึกรายการ Daily เรียบร้อย', 'success');
     } catch (e) { showToast('เชื่อมต่อ GAS ล้มเหลว', 'error'); }
-}
-
-// ---- PM Inspection ----
-function clFlowEditPm(id) {
-    const plan = clGetPmPlan(id);
-    _clfwDraft = {
-        freq: plan.pmFreqMonths || 3,
-        start: String(plan.pmStartMonth || plan.pmStartDate || '').slice(0,7),
-        tree: structuredClone(plan.pmItems || []),
-    };
-    _clfwEditing.pm = true;
-    clFlowRender();
-}
-function _clfwPmEditHtml(id) {
-    const leaves = _clfwFlattenPmItems(_clfwDraft.tree);
-    const rows = leaves.map(it => `
-        <div class="flex items-center gap-1.5">
-            <span class="text-[10px] text-gray-400 w-8 flex-shrink-0">${it.prefix}</span>
-            <input type="text" value="${String(it.rawLabel||'').replace(/"/g,'&quot;')}" data-path="${it.path.join('_')}" oninput="_clfwPmSetLeaf(this)" class="flex-1 border border-gray-200 rounded px-2 py-1 text-xs bg-white">
-            <button onclick="_clfwPmRemoveLeaf('${it.path.join('_')}')" class="text-red-400 hover:text-red-600 text-sm flex-shrink-0">🗑️</button>
-        </div>`).join('');
-    return `<div class="flex gap-2 mb-2">
-            <input type="number" min="1" value="${_clfwDraft.freq}" oninput="_clfwDraft.freq=parseInt(this.value)||1" placeholder="ความถี่ (เดือน)" class="w-1/2 border border-gray-200 rounded px-2 py-1 text-xs bg-white">
-            <input type="month" value="${_clfwDraft.start}" oninput="_clfwDraft.start=this.value" class="w-1/2 border border-gray-200 rounded px-2 py-1 text-xs bg-white">
-        </div>
-        <div class="space-y-1.5">${rows || '<p class="text-xs text-gray-400">ยังไม่มีรายการ</p>'}</div>
-        <button onclick="_clfwPmAddRoot()" class="mt-2 w-full py-1.5 text-xs font-bold rounded border border-dashed hover:opacity-80" style="color:${CLFW_BRANCH.pm.color};border-color:${CLFW_BRANCH.pm.color}">➕ เพิ่มรายการ</button>
-        <p class="text-[10px] text-gray-400 mt-1">โครงสร้างซ้อนหลายชั้น → <button onclick="openClItemsEditor('per-machine-pm','${id}')" class="underline">เปิดหน้าตั้งค่าเต็ม</button></p>
-        <div class="flex gap-2 mt-2">
-            <button onclick="clFlowSavePm('${id}')" class="flex-1 text-white text-xs font-bold py-1.5 rounded" style="background:${CLFW_BRANCH.pm.color}">💾 บันทึก</button>
-            <button onclick="clFlowCancelEdit('pm')" class="px-3 py-1.5 text-xs font-bold text-gray-500 border border-gray-300 rounded hover:bg-gray-50 bg-white">✖ ยกเลิก</button>
-        </div>`;
-}
-function _clfwPmSetLeaf(inp) {
-    const path = inp.dataset.path.split('_').map(Number);
-    const node = _clfwGetNodeByPath(_clfwDraft.tree, path);
-    if (node) node.label = inp.value;
-}
-function _clfwPmRemoveLeaf(pathStr) {
-    const path = pathStr.split('_').map(Number);
-    if (path.length === 1) {
-        _clfwDraft.tree.splice(path[0], 1);
-    } else {
-        const parent = _clfwGetNodeByPath(_clfwDraft.tree, path.slice(0,-1));
-        if (parent) parent.children.splice(path[path.length-1], 1);
-    }
-    clFlowRender();
-}
-function _clfwPmAddRoot() { _clfwDraft.tree.push({ label:'', children:[] }); clFlowRender(); }
-
-async function clFlowSavePm(id) {
-    const editorName = currentUser.name;
-    if (!editorName) { showToast('กรุณาเข้าสู่ระบบก่อน', 'warn'); openLogin(); return; }
-    if (!can('cl.edit')) { showToast('ไม่มีสิทธิ์', 'error'); return; }
-    const freq = _clfwDraft.freq, start = _clfwDraft.start;
-    if (!freq || freq < 1) { showToast('⚠️ กรุณาระบุความถี่', 'error'); return; }
-    const leaves = _clfwFlattenPmItems(_clfwDraft.tree);
-    if (leaves.some(l => !String(l.rawLabel||'').trim())) { showToast('⚠️ กรุณากรอกข้อความให้ครบทุกรายการ', 'error'); return; }
-    const m = machineMaster.find(x => (x.id||x.machineId||'') === id) || {};
-    try {
-        const planRes = await clPost({ action:'savePmPlans', plans:[{ machineId:id, machineName:m.name||m.machineName||'', factory:m.factory||'', area:m.area||'', dailyEnabled:true, pmFreqMonths:freq, pmStartMonth:start }] });
-        if (!planRes.success) { showToast('บันทึกแผน PM ล้มเหลว: '+(planRes.error||''), 'error'); return; }
-        const res = await clPost({ action:'saveMachineItems', type:'pm', machineId:id, machineName:m.name||m.machineName||'', factory:m.factory||'', area:m.area||'', items:_clfwDraft.tree, editedBy: editorName });
-        if (!res.success) { showToast('บันทึกรายการล้มเหลว: '+(res.error||''), 'error'); return; }
-        if (!_clPmPlans[id]) _clPmPlans[id] = {};
-        Object.assign(_clPmPlans[id], { pmItems:_clfwDraft.tree, pmFreqMonths:freq, pmStartMonth:start });
-        _clfwEditing.pm = false; _clfwDraft = null;
-        clFlowRender();
-        showToast('บันทึกรายการ PM เรียบร้อย', 'success');
-    } catch (e) { showToast('เชื่อมต่อ GAS ล้มเหลว', 'error'); }
-}
-
-// ---- PM Replacement (D2: แก้ได้เฉพาะ ความถี่/เดือนเริ่ม/หมายเหตุ) ----
-function clFlowEditPmrep(id) {
-    _clfwDraft = (_pmrByMachine[id]||[]).map(p => ({
-        planId: p.planId, partId: p.partId,
-        partName: p.partNo ? String(p.partLabel||'').replace(p.partNo + ' - ', '') : (p.partLabel || ''),
-        partNo: p.partNo || '',
-        cycleMonths: p.cycleUnit === 'month' ? p.cycleValue : '',
-        legacyCycleLabel: p.cycleUnit !== 'month' ? `เดิม: ${p.cycleValue} ${PMR_UNIT_LABEL[p.cycleUnit]||p.cycleUnit}` : '',
-        startDate: String(p.startDate||'').slice(0,7),
-        note: p.note || '',
-        status: p.status,
-        existingLocationImageId: p.locationImageId || '',
-    }));
-    _clfwEditing.pmrep = true;
-    clFlowRender();
-}
-function _clfwPmrepEditHtml(id) {
-    const rows = _clfwDraft.map((row,i) => `
-        <div class="border-l-2 pl-2 mb-2" style="border-color:${PMR_STATUS_COLOR[row.status]||'#94a3b8'}">
-            <div class="text-xs font-bold text-gray-700">${row.partNo?('['+row.partNo+'] '):''}${String(row.partName).replace(/</g,'&lt;')}</div>
-            <div class="flex gap-1.5 mt-1">
-                <input type="number" min="1" value="${row.cycleMonths}" placeholder="${row.legacyCycleLabel||'เดือน'}" oninput="_clfwDraft[${i}].cycleMonths=parseInt(this.value)||''" class="w-1/3 border border-gray-200 rounded px-1.5 py-1 text-xs bg-white">
-                <input type="month" value="${row.startDate}" oninput="_clfwDraft[${i}].startDate=this.value" class="w-1/3 border border-gray-200 rounded px-1.5 py-1 text-xs bg-white">
-                <input type="text" value="${String(row.note||'').replace(/"/g,'&quot;')}" placeholder="หมายเหตุ" oninput="_clfwDraft[${i}].note=this.value" class="w-1/3 border border-gray-200 rounded px-1.5 py-1 text-xs bg-white">
-            </div>
-        </div>`).join('');
-    return `${rows}
-        <p class="text-[10px] text-gray-400 mt-1">เปลี่ยนอะไหล่/รูป/เพิ่มลบรายการ → <button onclick="pmrOpenBatch('${id}')" class="underline">เปิดหน้าตั้งค่าเต็ม</button></p>
-        <div class="flex gap-2 mt-2">
-            <button onclick="clFlowSavePmrep('${id}')" class="flex-1 text-white text-xs font-bold py-1.5 rounded" style="background:${CLFW_BRANCH.pmrep.color}">💾 บันทึก</button>
-            <button onclick="clFlowCancelEdit('pmrep')" class="px-3 py-1.5 text-xs font-bold text-gray-500 border border-gray-300 rounded hover:bg-gray-50 bg-white">✖ ยกเลิก</button>
-        </div>`;
-}
-
-async function clFlowSavePmrep(id) {
-    const editorName = currentUser.name;
-    if (!editorName) { showToast('กรุณาเข้าสู่ระบบก่อน', 'warn'); openLogin(); return; }
-    if (!can('cl.pm')) { showToast('ไม่มีสิทธิ์', 'error'); return; }
-    for (const row of _clfwDraft) {
-        if (!row.cycleMonths || row.cycleMonths < 1) { showToast('⚠️ กรุณาระบุความถี่ให้ครบทุกรายการ', 'error'); return; }
-        if (!row.startDate) { showToast('⚠️ กรุณาระบุเดือนเริ่มให้ครบทุกรายการ', 'error'); return; }
-    }
-    const items = _clfwDraft.map(row => ({
-        planId: row.planId, partId: row.partId, partName: row.partName, partNo: row.partNo,
-        cycleMonths: row.cycleMonths, startDate: row.startDate, note: row.note,
-        locationImageId: null, existingLocationImageId: row.existingLocationImageId || '',
-    }));
-    try {
-        const j = await clPost({ action:'pmReplaceBatchSave', machineId:id, byName:editorName, items, removedPlanIds:[] });
-        if (j.success) {
-            _pmrByMachine[id] = j.data || [];
-            _clfwEditing.pmrep = false; _clfwDraft = null;
-            clFlowRender();
-            showToast('บันทึกแผนเปลี่ยนอะไหล่เรียบร้อย', 'success');
-        } else showToast('เกิดข้อผิดพลาด: '+(j.error||''), 'error');
-    } catch (e) { showToast('เชื่อมต่อ GAS ไม่ได้', 'error'); }
 }
 
 function clFlowCancelEdit(key) {

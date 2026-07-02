@@ -10,13 +10,14 @@ let _clfwEditing   = { daily:false, pm:false, pmrep:false };
 let _clfwDraft      = null;
 let _clfwResizeBound = false;
 
+// bg = การ์ด function/กลุ่ม detail (โทนเข้มขึ้นหน่อย), itemBg = การ์ด item ย่อยข้างใน (อ่อนกว่า bg แยกชั้นชัดเจน)
 const CLFW_BRANCH = {
-    daily: { color:'#16a34a', bg:'#f0fdf4', icon:'📋', label:'Checklist รายวัน' },
-    pm:    { color:'#2563eb', bg:'#eff6ff', icon:'🔧', label:'PM Inspection' },
-    pmrep: { color:'#0d9488', bg:'#f0fdfa', icon:'🔩', label:'PM Replacement' },
+    daily: { color:'#16a34a', bg:'#dcfce7', itemBg:'#f0fdf4', icon:'📋', label:'Checklist รายวัน' },
+    pm:    { color:'#2563eb', bg:'#dbeafe', itemBg:'#eff6ff', icon:'🔧', label:'PM Inspection' },
+    pmrep: { color:'#0d9488', bg:'#ccfbf1', itemBg:'#f0fdfa', icon:'🔩', label:'PM Replacement' },
 };
 const CLFW_LANE = { daily:0, pm:1, pmrep:2 };
-const _CLFW_EMPTY_NODE = '<div class="bg-white border border-dashed border-gray-300 rounded-lg px-2.5 py-2 text-xs text-gray-400 text-center">ยังไม่มีรายการ — กด ✏️ เพื่อตั้งค่า</div>';
+const _CLFW_EMPTY_NODE = '<div class="border border-dashed border-gray-300 rounded-lg px-2.5 py-2 text-xs text-gray-400 text-center" style="background:#f8fafc">ยังไม่มีรายการ — กด ✏️ เพื่อตั้งค่า</div>';
 
 async function initClFlow() {
     if (!machineMaster.length) await loadMachineMaster();
@@ -157,7 +158,7 @@ function _clfwGetNodeByPath(tree, path) {
 function _clfwFuncCard(key, badgeHtml, editOnclick, canEdit) {
     const br = CLFW_BRANCH[key];
     const open = _clfwExpanded[key];
-    return `<div id="clfw-node-${key}" onclick="clFlowToggle('${key}')" class="bg-white rounded-xl px-4 py-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow" style="width:220px;border-left:4px solid ${br.color}">
+    return `<div id="clfw-node-${key}" onclick="clFlowToggle('${key}')" class="rounded-xl px-4 py-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow" style="width:220px;background:${br.bg};border-left:4px solid ${br.color}">
         <div class="flex items-center justify-between gap-2">
             <div class="font-bold text-sm" style="color:${br.color}">${br.icon} ${br.label}</div>
             <span class="text-gray-400 text-xs">${open ? '▾' : '▸'}</span>
@@ -214,7 +215,7 @@ function clFlowRender() {
     const anyEditing = Object.values(_clfwEditing).some(Boolean);
 
     // ---- คอลัมน์ 1: เครื่องจักร ----
-    const machineHtml = `<div id="clfw-node-machine" class="flex-shrink-0 bg-white border-2 border-gray-800 rounded-xl px-4 py-3 shadow-lg" style="width:200px">
+    const machineHtml = `<div id="clfw-node-machine" class="flex-shrink-0 border-2 border-gray-800 rounded-xl px-4 py-3 shadow-lg" style="width:200px;background:#f1f5f9">
         <div class="font-bold text-sm text-gray-900">${machineName}</div>
         <div class="text-xs text-gray-400 font-mono mt-0.5">${id}</div>
     </div>`;
@@ -239,7 +240,7 @@ function clFlowRender() {
         dailyEditBtn = '';
     } else {
         dailyBody = dailyItems.length
-            ? dailyItems.map((it,i) => `<div class="bg-white border rounded-lg px-2.5 py-1.5 text-xs text-gray-700" style="border-color:${CLFW_BRANCH.daily.color}33">${i+1}. ${String(it.label||it.text||'').replace(/</g,'&lt;')}</div>`).join('')
+            ? dailyItems.map((it,i) => `<div class="border rounded-lg px-2.5 py-1.5 text-xs text-gray-700" style="background:${CLFW_BRANCH.daily.itemBg};border-color:${CLFW_BRANCH.daily.color}33">${i+1}. ${String(it.label||it.text||'').replace(/</g,'&lt;')}</div>`).join('')
             : _CLFW_EMPTY_NODE;
         dailyEditBtn = canEditCl ? _clfwEditBtnHtml(anyEditing, `clFlowEditDaily('${id}')`) : '';
     }
@@ -249,9 +250,9 @@ function clFlowRender() {
         pmBody = _clfwPmEditHtml(id);
         pmEditBtn = '';
     } else {
-        const pmHeader = `<div class="bg-white border rounded-lg px-2.5 py-1.5 text-xs text-gray-700 mb-1.5" style="border-color:${CLFW_BRANCH.pm.color}33">PM ทุก ${pmFreq} เดือน${pmStart?` · เริ่ม ${pmStart}`:''} · ถัดไป ${pmNext}</div>`;
+        const pmHeader = `<div class="border rounded-lg px-2.5 py-1.5 text-xs text-gray-700 mb-1.5" style="background:${CLFW_BRANCH.pm.itemBg};border-color:${CLFW_BRANCH.pm.color}33">PM ทุก ${pmFreq} เดือน${pmStart?` · เริ่ม ${pmStart}`:''} · ถัดไป ${pmNext}</div>`;
         const pmItemsHtml = pmLeaves.length
-            ? pmLeaves.map(it => `<div class="bg-white border rounded-lg px-2.5 py-1.5 text-xs text-gray-700" style="border-color:${CLFW_BRANCH.pm.color}33">${it.prefix} ${String(it.rawLabel).replace(/</g,'&lt;')}</div>`).join('')
+            ? pmLeaves.map(it => `<div class="border rounded-lg px-2.5 py-1.5 text-xs text-gray-700" style="background:${CLFW_BRANCH.pm.itemBg};border-color:${CLFW_BRANCH.pm.color}33">${it.prefix} ${String(it.rawLabel).replace(/</g,'&lt;')}</div>`).join('')
             : _CLFW_EMPTY_NODE;
         pmBody = pmHeader + pmItemsHtml;
         pmEditBtn = canEditCl ? _clfwEditBtnHtml(anyEditing, `clFlowEditPm('${id}')`) : '';
@@ -267,7 +268,7 @@ function clFlowRender() {
                 const color = PMR_STATUS_COLOR[p.status] || '#94a3b8';
                 const lbl   = (p.partNo ? '['+p.partNo+'] ' : '') + String(p.partLabel||'').replace(/</g,'&lt;');
                 const unit  = PMR_UNIT_LABEL[p.cycleUnit] || p.cycleUnit;
-                return `<div class="bg-white border-l-4 rounded-lg px-2.5 py-1.5 text-xs text-gray-700" style="border-left-color:${color}">${lbl}<br><span class="text-gray-400">ทุก ${p.cycleValue} ${unit} · ครบกำหนด ${p.nextDue||'—'}</span></div>`;
+                return `<div class="border-l-4 rounded-lg px-2.5 py-1.5 text-xs text-gray-700" style="background:${CLFW_BRANCH.pmrep.itemBg};border-left-color:${color}">${lbl}<br><span class="text-gray-400">ทุก ${p.cycleValue} ${unit} · ครบกำหนด ${p.nextDue||'—'}</span></div>`;
             }).join('')
             : _CLFW_EMPTY_NODE;
         pmrepEditBtn = (canEditPmr && pmrPlans.length) ? _clfwEditBtnHtml(anyEditing, `clFlowEditPmrep('${id}')`) : '';
@@ -472,12 +473,12 @@ function clFlowDrawLines() {
     svg.setAttribute('height', canvas.scrollHeight);
     const cRect = canvas.getBoundingClientRect();
     const NS = 'http://www.w3.org/2000/svg';
-    const addPath = (fromEl, toEl, color, laneOffset) => {
+    const addPath = (fromEl, toEl, color, laneOffset, fromYFrac) => {
         if (!fromEl || !toEl) return;
         const fRect = fromEl.getBoundingClientRect();
         const tRect = toEl.getBoundingClientRect();
         const x1 = fRect.right - cRect.left;
-        const y1 = fRect.top - cRect.top + fRect.height/2;
+        const y1 = fRect.top - cRect.top + fRect.height * (fromYFrac ?? 0.5);
         const x2 = tRect.left - cRect.left;
         const y2 = tRect.top - cRect.top + tRect.height/2;
         const midX = x1 + laneOffset;
@@ -490,10 +491,12 @@ function clFlowDrawLines() {
         svg.appendChild(path);
     };
     const machineEl = document.getElementById('clfw-node-machine');
+    // แยกจุดออกจาก machine node ตามสัดส่วนความสูง (25%/50%/75%) กันเส้นทับกันตั้งแต่ต้นทาง
+    const MACHINE_EXIT_FRAC = { daily:0.25, pm:0.5, pmrep:0.75 };
     ['daily','pm','pmrep'].forEach(key => {
         const lane  = CLFW_LANE[key];
         const color = CLFW_BRANCH[key].color;
-        addPath(machineEl, document.getElementById('clfw-node-' + key), color, 20 + lane*10);
+        addPath(machineEl, document.getElementById('clfw-node-' + key), color, 26 + lane*16, MACHINE_EXIT_FRAC[key]);
         if (_clfwExpanded[key]) addPath(document.getElementById('clfw-node-' + key), document.getElementById('clfw-detail-' + key), color, 16 + lane*12);
     });
 }

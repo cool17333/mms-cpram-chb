@@ -62,9 +62,10 @@ window.addEventListener('DOMContentLoaded', () => {
         { id:'accept-modal',           confirm:()=>confirmAccept(),        close:()=>closeAcceptModal() },
         { id:'cancel-modal',           confirm:()=>confirmCancel(),        close:()=>closeCancelModal(), enter:false }, // มี textarea เหตุผล → Enter = ขึ้นบรรทัด
         { id:'success-modal',          confirm:()=>closeSuccessModal(),    close:()=>closeSuccessModal() },
-        { id:'pmr-edit-modal',         confirm:()=>pmrSaveEdit(),          close:()=>pmrCloseEdit() },
+        { id:'pmr-batch-modal',        confirm:()=>{},                     close:()=>pmrCloseBatch(),   enter:false }, // ฟอร์มหลายแถว → Enter ไม่ผูก save
         { id:'pmr-done-modal',         confirm:()=>pmrConfirmDone(),       close:()=>pmrCloseDone() },
         { id:'pmr-history-modal',      confirm:()=>pmrCloseHistory(),      close:()=>pmrCloseHistory() },
+        { id:'pmr-editlog-modal',      confirm:()=>pmrCloseEditLog(),      close:()=>pmrCloseEditLog() },
     ];
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter' && e.key !== 'Escape') return;

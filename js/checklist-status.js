@@ -101,23 +101,27 @@ function renderClSchedule() {
     const search = (document.getElementById('clsc-search')?.value || '').toLowerCase();
     let machines = clMachinesFor(fac, area);
     if (search) machines = machines.filter(m => (m.id||m.machineId||'').toLowerCase().includes(search) || (m.name||m.machineName||'').toLowerCase().includes(search));
-    if (_clScCurrentTab === 'daily') { _clDailyPage = 0; renderClScDaily(machines); }
-    else { _clPmPage = 0; renderClScPm(machines); }
+    if (_clScCurrentTab === 'daily')      { _clDailyPage = 0; renderClScDaily(machines); }
+    else if (_clScCurrentTab === 'pmrep') { _clPmrepPage = 0; pmrRenderTable(machines); }
+    else                                   { _clPmPage = 0; renderClScPm(machines); }
 }
 function clScSetPageSize(tab, val) {
-    if (tab === 'daily') { _clDailyPageSize = parseInt(val); _clDailyPage = 0; }
-    else                 { _clPmPageSize    = parseInt(val); _clPmPage    = 0; }
+    if (tab === 'daily')      { _clDailyPageSize = parseInt(val); _clDailyPage = 0; }
+    else if (tab === 'pmrep') { _clPmrepPageSize = parseInt(val); _clPmrepPage = 0; }
+    else                      { _clPmPageSize    = parseInt(val); _clPmPage    = 0; }
     renderClSchedule();
 }
 function clScGoPage(tab, page) {
-    if (tab === 'daily') { _clDailyPage = Math.max(0, Math.min(page, _clDailyTotalPages-1)); }
-    else                 { _clPmPage    = Math.max(0, Math.min(page, _clPmTotalPages-1)); }
+    if (tab === 'daily')      { _clDailyPage = Math.max(0, Math.min(page, _clDailyTotalPages-1)); }
+    else if (tab === 'pmrep') { _clPmrepPage = Math.max(0, Math.min(page, _clPmrepTotalPages-1)); }
+    else                      { _clPmPage    = Math.max(0, Math.min(page, _clPmTotalPages-1)); }
     const fac    = document.getElementById('clsc-fac')?.value  || '';
     const area   = document.getElementById('clsc-area')?.value || '';
     const search = (document.getElementById('clsc-search')?.value || '').toLowerCase();
     let machines = clMachinesFor(fac, area);
     if (search) machines = machines.filter(m => (m.id||m.machineId||'').toLowerCase().includes(search) || (m.name||m.machineName||'').toLowerCase().includes(search));
     if (tab === 'daily') renderClScDaily(machines);
+    else if (tab === 'pmrep') pmrRenderTable(machines);
     else renderClScPm(machines);
 }
 function clScRenderPagBar(tab, page, totalPages, total, start, pageSize) {
@@ -433,14 +437,16 @@ async function enterBdKiosk(machineId, token) {
 let _mccAllMachines = []; // machines in current scope for copy modal
 
 function openClCopyModal(type, sourceId) {
-    if (!can('cl.edit')) { showToast('ไม่มีสิทธิ์แก้ไขรายการตรวจ', 'warn'); return; }
+    const permOk = type === 'pmrep' ? can('cl.pm') : can('cl.edit');
+    if (!permOk) { showToast('ไม่มีสิทธิ์', 'warn'); return; }
     _clCopyType     = type;
     _clCopySourceId = sourceId;
     const fac  = document.getElementById('clsc-fac')?.value  || '';
     const area = document.getElementById('clsc-area')?.value || '';
     const sourceM = machineMaster.find(m => (m.id||m.machineId||'') === sourceId) || {};
     const sourceName = sourceM.name || sourceM.machineName || sourceId;
-    document.getElementById('mcc-title').textContent    = `📋 Copy ${type === 'pm' ? 'PM' : 'Daily'} Items`;
+    const typeLabel = type === 'pm' ? 'PM' : type === 'pmrep' ? 'PM Replacement' : 'Daily';
+    document.getElementById('mcc-title').textContent    = `📋 Copy ${typeLabel} Items`;
     document.getElementById('mcc-subtitle').textContent = `จาก: ${sourceName} (${sourceId})`;
     document.getElementById('mcc-search').value         = '';
     document.getElementById('mcc-select-all').checked   = false;
@@ -477,6 +483,20 @@ async function saveClCopy() {
     if (!editorName) { showToast('กรุณาเข้าสู่ระบบก่อนดำเนินการ', 'warn'); openLogin(); return; }
     const targetIds = [...document.querySelectorAll('.mcc-checkbox:checked')].map(cb => cb.value);
     if (!targetIds.length) { showToast('กรุณาเลือกเครื่องจักรปลายทางอย่างน้อย 1 เครื่อง', 'warn'); return; }
+    if (_clCopyType === 'pmrep') {
+        try {
+            const res = await clPost({ action:'pmReplaceCopy', sourceId: _clCopySourceId, targetIds, byName: editorName });
+            if (res.success) {
+                showToast(`📋 Copy สำเร็จ ${res.count} เครื่อง`, 'success');
+                document.getElementById('modal-cl-copy').classList.add('hidden');
+                await pmrLoadAll();
+                renderClSchedule();
+            } else {
+                showToast('Copy ล้มเหลว: ' + (res.error||''), 'error');
+            }
+        } catch (e) { showToast('เชื่อมต่อ GAS ล้มเหลว', 'error'); }
+        return;
+    }
     try {
         const res = await clPost({ action:'copyMachineItems', type: _clCopyType, sourceId: _clCopySourceId, targetIds, editedBy: editorName });
         if (res.success) {
